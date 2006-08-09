@@ -302,7 +302,10 @@ function filefield_widget($op, $node, $field, &$node_field) {
       // Attach new files 
       if ($file = file_check_upload($fieldname . '_upload')) {
         $file = (array)$file;
-        $ext = str_replace('.','',strstr(basename($file['filepath']), '.'));
+        debug_msg($file,'uploaded file');
+        $ext = str_replace('.','',strstr($file['filename'], '.'));
+        $ext = array_pop(explode('.',$file['filename']));
+        debug_msg($ext,'uploaded extension');
         if (strpos($field['widget']['filetypes'], $ext) !== FALSE) { 
           //do mime specific handling.
         }
