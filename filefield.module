@@ -93,7 +93,6 @@ function filefield_field_settings($op, $field) {
     case 'database columns':
       $columns = array(
         'fid' => array('type' => 'int', 'not null' => TRUE, 'default' => '0'),
-        'name' => array('type' => 'varchar', length => 255, 'not null' => TRUE, 'default' => "''", 'sortable' => TRUE),
         'description' => array('type' => 'varchar', length => 255, 'not null' => TRUE, 'default' => "''", 'sortable' => TRUE),
       );
       return $columns;
@@ -151,6 +150,7 @@ function filefield_file_update($node, &$file, $field) {
  * Implementation of hook_field().
  */
 function filefield_field($op, $node, $field, &$node_field, $a1, $a2) {
+  drupal_set_message('hook_field: '.$op.'<pre>'.print_r($node_field, true).'</pre>');
   $fieldname = $field['field_name'];
   switch ($op) {
     // called after content.module loads default data.
@@ -302,10 +302,10 @@ function filefield_widget($op, $node, $field, &$node_field) {
       // Attach new files 
       if ($file = file_check_upload($fieldname . '_upload')) {
         $file = (array)$file;
-        debug_msg($file,'uploaded file');
+        drupal_set_message('<pre>'.print_r($file, true).'</pre>');
         $ext = str_replace('.','',strstr($file['filename'], '.'));
         $ext = array_pop(explode('.',$file['filename']));
-        debug_msg($ext,'uploaded extension');
+        drupal_set_message('extension: '.$ext);
         if (strpos($field['widget']['filetypes'], $ext) !== FALSE) { 
           //do mime specific handling.
         }
@@ -403,14 +403,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
           '#type' => 'markup',
           '#value' => '<p>'. t('system filename:') . $file['filename']. '</p>',
         );
-        $form[$fieldname][$delta]['name'] = array(
-          '#type' => 'textfield',
-          '#title' =>  t('Displayed Filename'),
-          '#default_value' => $file['name'],
-          '#description' => t('Filename to be displayed to users.'),
-          '#maxlength' => 255,
-          '#size' => 10,
-        );
+
         $form[$fieldname][$delta]['description'] = array(
           '#type' => 'textfield',
           '#title' =>  t('File Description'),
@@ -446,7 +439,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
 
 function filefield_field_view_item($field, $node_field_item) {
     $file = _filefield_file_load($node_field_item['fid']);
-    return theme('filefield_view_file', $file, $node_field_item['name'], $node_field_item['description']); 
+    return theme('filefield_view_file', $file, $node_field_item['description']); 
 }
 
 
@@ -464,12 +457,12 @@ function _filefield_file_load($fid = NULL) {
   return FALSE;
 }
 
-function theme_filefield_file_preview($file, $name='', $desc='') {
-  return '<span class="filefield-image-preview">'. theme('filefield_file', $file, $name, $desc) .'</span>';
+function theme_filefield_file_preview($file) {
+  return '<span class="filefield-image-preview">'. theme('filefield_file', $file) .'</span>';
 }
 
-function theme_filefield_view_file($file, $name = '', $desc = '') {
-  return theme('filefield_file', $file, $name, $desc);
+function theme_filefield_view_file($file) {
+  return theme('filefield_file', $file);
 }
 
 
@@ -486,16 +479,14 @@ function theme_filefield_edit_image_row($element) {
   $output .= '<div style="clear:both">&nbsp;</div>';
   if (!isset($element['replace'])) {
     $output .= '<div class="filefield-edit-file-alt">'.form_render($element['name']).'</div>';
-    $output .= '<div class="filefield-edit-file-title">'.form_render($element['description']).'</div>';
   }
   $output = '<div class="filefield-edit-file-row">'. $output .'</div>';
   return $output;  
 }
 
-function theme_filefield_file($file, $name = '', $desc = '') {
+function theme_filefield_file($file) {
   $file = (array)$file;
   if (is_file($file['filepath'])) {
-    $attributes = drupal_attributes($attributes);
     if ($file['fid'] == 'upload') {
       $path = file_create_filename($file['filename'], file_create_path());
     }
@@ -503,12 +494,8 @@ function theme_filefield_file($file, $name = '', $desc = '') {
       $path = $file['filepath'];
     }
     $url = file_create_url($path);
-    if ($name == '') {
-      $name = $file['name'];
-    }
-    if ($desc == '') {
-      $desc = $file['description'];
-    }
+    $name = $file['filename'];
+    $desc = $file['description'];
     return '<a href="'. check_url($url) .'">'.check_plain($name).'</a>';
   }
 }
