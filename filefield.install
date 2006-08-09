@@ -1,0 +1,8 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_install().
+ */
+function filefield_install() {
+}
