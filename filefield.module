@@ -366,19 +366,14 @@ function _filefield_widget_form($node, $field, &$node_field) {
     foreach($node_field as $delta => $file) {
       if ($file['filepath']) {
         $form[$fieldname][$delta] = array (
-          '#theme' => 'filefield_edit_file_row',
+          '#prefix' => '<div class="filefield-row">',
+          '#suffix' => '</div>',
         );
-
-        $form[$fieldname][$delta]['flags']['delete'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('Delete'),
-          '#default_value' => 0,
-          '#attributes' => array('id' => $fieldname .'-'. $delta.'-delete-checkbox'),
-        );
+        
       
-        $form[$fieldname][$delta]['preview'] = array(
+        $form[$fieldname][$delta]['icon'] = array(
           '#type' => 'markup',
-          '#value' => theme('filefield_preview', $file),
+          '#value' => theme('filefield_icon', $file),
         );
         
         $form[$fieldname][$delta]['description'] = array(
@@ -390,9 +385,14 @@ function _filefield_widget_form($node, $field, &$node_field) {
           '#type' => 'textfield',
           '#title' =>  t('File Description'),
           '#default_value' =>  $file['description'],
-          '#description' => t('File Description'), 
-          '#maxlength' => 255,
-          '#size' => 10,
+          '#size' => 32,
+          '#maxlength' => 32,
+        );
+        $form[$fieldname][$delta]['flags']['delete'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Delete'),
+          '#default_value' => 0,
+          '#attributes' => array('id' => $fieldname .'-'. $delta.'-delete-checkbox'),
         );
         // must set #tree => true, so data structure will be carried
         // with node into hook_field.... 
@@ -439,31 +439,13 @@ function _filefield_file_load($fid = NULL) {
   return FALSE;
 }
 
-function theme_filefield_preview($file) {
-  return '<span class="filefield-image-preview">'. theme('filefield', $file) .'</span>';
+function theme_filefield_icon($file) {
+  $ext = array_pop(explode('.',$file['filename']));
+  return '<div class="filefield-icon-container"><div class="filefield-icon field-icon-'. $ext .'">&nbsp;</div></div>'."\n";
 }
 
 function theme_filefield_view_file($file) {
   return theme('filefield', $file);
-}
-
-
-
-function theme_filefield_edit_image_row($element) {
-  $output = '<div class="filefield-edit-preview">'. form_render($element['preview']) .'</div>';
-  $output .= '<div class="filefield-edit-file-description">'. form_render($element['description']) .'</div>';
-  //$output .= '<div class="filefield-edit-file-fid">'. $element['fid']['#value'] .'</div>';
-  if (isset($element['replace'])) {
-    $output .= '<div class="filefield-edit-file-replace">'. form_render($element['replace']) .'</div>';
-  } else {
-    $output .= '<div class="filefield-edit-file-flags">'. form_render($element['flags']) .'</div>';
-  }
-  $output .= '<div style="clear:both">&nbsp;</div>';
-  if (!isset($element['replace'])) {
-    $output .= '<div class="filefield-edit-file-alt">'.form_render($element['name']).'</div>';
-  }
-  $output = '<div class="filefield-edit-file-row">'. $output .'</div>';
-  return $output;  
 }
 
 function theme_filefield($file) {
