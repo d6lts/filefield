@@ -150,7 +150,7 @@ function filefield_file_update($node, &$file, $field) {
  * Implementation of hook_field().
  */
 function filefield_field($op, $node, $field, &$node_field, $a1, $a2) {
-  drupal_set_message('hook_field: '.$op.'<pre>'.print_r($node_field, true).'</pre>');
+  //drupal_set_message('hook_field: '.$op.'<pre>'.print_r($node_field, true).'</pre>');
   $fieldname = $field['field_name'];
   switch ($op) {
     // called after content.module loads default data.
@@ -164,15 +164,15 @@ function filefield_field($op, $node, $field, &$node_field, $a1, $a2) {
       break; 
 
     case 'view':
-      $images = array();
+      $files = array();
       foreach ($node_field as $delta => $item) {
         // do not show images flagged for deletion in preview.
         if (!$item['flags']['delete'] == 1) {
-          $node_field[$delta]['view'] = theme('filefield_file', $item); 
-          $files[] =  $node_field[$delta]['view'];
+          $node_field[$delta]['view'] = theme('filefield', $item); 
+          $files[] =  $node_field[$delta];
         }
       }
-      $view = theme('filefield_multiple', $files);
+      $view = theme('field', $node, $field, $files, $a1, $a2);
       
       $output = '<div class="'. $field['field_name'] .'">'. $view .'</div>';
       break;
@@ -219,40 +219,21 @@ function filefield_widget_settings($op, $widget) {
   switch ($op) {
     case 'form':
       $form = array();
-      $form['filetypes'] = array (
+      $form['file_extensions'] = array (
         '#type' => 'textfield', 
-        '#title' => t('Allowed upload extensions.'), 
-        '#default_value' => $widget['filetypes'] ? $widget['filetypes'] : 'txt',
-        '#size' => 15, 
-        '#maxlength' => 10, 
-        '#description' => 
-        t('Allowed extensions for upload. Will default to txt.')
+        '#title' => t('Permitted upload file extensions.'), 
+        '#default_value' => $widget['file_extensions'] ? $widget['file_extensions'] : 'txt',
+        '#size' => 64, 
+        '#maxlength' => 64, 
+        '#description' => t('Extensions a user can upload to this field. Seperate extensions with a space and do not include the leading dot.')
       );
       return $form;
     case 'validate':
       break;
     case 'save':
-      return array('filetypes');
+      return array('file_extensions');
   }
 }
-
-/*
- // This be deprecated...
-function _filefield_scale_image($file, $resolution = 0) {
-  $info = image_get_info($file['filepath']);
-  if ($info) {
-    list($width, $height) = explode('x', $resolution);
-    if ($width && $height) {
-      $result = image_scale($file['filepath'], $file['filepath'], $width, $height);
-      if ($result) {
-        $file['filesize'] = filesize($file['filepath']);
-        drupal_set_message(t('The image was resized to fit within the maximum allowed resolution of %resolution pixels', array('%resolution' => theme('placeholder',$resolution))));      
-      }
-    }
-  }
-  return $file;
-}
-*/
 
 
 function filefield_clear_session() {
@@ -302,15 +283,14 @@ function filefield_widget($op, $node, $field, &$node_field) {
       // Attach new files 
       if ($file = file_check_upload($fieldname . '_upload')) {
         $file = (array)$file;
-        drupal_set_message('<pre>'.print_r($file, true).'</pre>');
-        $ext = str_replace('.','',strstr($file['filename'], '.'));
         $ext = array_pop(explode('.',$file['filename']));
-        drupal_set_message('extension: '.$ext);
-        if (strpos($field['widget']['filetypes'], $ext) !== FALSE) { 
+        $allowed_extensions = array_unique(explode(' ', trim($field['widget']['file_extensions'])));
+        if (in_array($ext, $allowed_extensions)) { 
           //do mime specific handling.
         }
         else {
-          return false;
+          form_set_error($field['field_name'] .'_upload',t('Files with the extension %ext are not allowed. Please upload a file with an extension from the following list: %allowed_extensions', array('%ext' => theme('placeholder',$ext), '%allowed_extensions' => theme('placeholder', $field['widget']['file_extensions']))));
+          return FALSE;
         }
         $file['fid'] = 'upload';
         if (!$field['multiple']) {
@@ -319,6 +299,7 @@ function filefield_widget($op, $node, $field, &$node_field) {
         }
         $file['sessionid'] = count($_SESSION['filefield'][$fieldname]);
         $_SESSION['filefield'][$fieldname][$file['sessionid']] = $file;
+        //drupal_set_message('<pre>'. print_r($_SESSION['filefield'], true) .'</pre>');
       }
         
 
@@ -329,6 +310,8 @@ function filefield_widget($op, $node, $field, &$node_field) {
           $node_field[] = $file;
         }
       }
+      //drupal_set_message('nodefield: <pre>'. print_r($node_field, true) .'</pre>');
+
       break;
 
     case 'form':
@@ -340,7 +323,6 @@ function filefield_widget($op, $node, $field, &$node_field) {
       if ($field['required']) {
         if (!count($node_field)) {
           form_set_error($fieldname, $field['widget']['label'] .' is required.');
-
         }
       }
       return;
@@ -365,7 +347,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
   // displayed if they are a child of '#type' = form issue
   $form[$fieldname][$fieldname .'_upload'] = array(
     '#type'  => 'file',
-    '#description' => t('Attach a file.'),
+    '#description' => t('Attach a file. allowed extensions(%ext)', array('%ext' => theme('placeholder', $field['widget']['file_extensions']))),
     '#tree' => FALSE,
     '#weight' => 9,
   );
@@ -378,7 +360,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
     '#tree' => FALSE,
     '#weight' => 10,
   );
-
+  //drupal_set_message('nodefield: <pre>'. print_r($node_field, true) .'</pre>');
   // Store the file data object to be carried on.
   if (is_array($node_field) && count($node_field)) {
     foreach($node_field as $delta => $file) {
@@ -396,7 +378,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
       
         $form[$fieldname][$delta]['preview'] = array(
           '#type' => 'markup',
-          '#value' => theme('filefield_file_preview', $file),
+          '#value' => theme('filefield_preview', $file),
         );
         
         $form[$fieldname][$delta]['description'] = array(
@@ -457,12 +439,12 @@ function _filefield_file_load($fid = NULL) {
   return FALSE;
 }
 
-function theme_filefield_file_preview($file) {
-  return '<span class="filefield-image-preview">'. theme('filefield_file', $file) .'</span>';
+function theme_filefield_preview($file) {
+  return '<span class="filefield-image-preview">'. theme('filefield', $file) .'</span>';
 }
 
 function theme_filefield_view_file($file) {
-  return theme('filefield_file', $file);
+  return theme('filefield', $file);
 }
 
 
@@ -484,7 +466,7 @@ function theme_filefield_edit_image_row($element) {
   return $output;  
 }
 
-function theme_filefield_file($file) {
+function theme_filefield($file) {
   $file = (array)$file;
   if (is_file($file['filepath'])) {
     if ($file['fid'] == 'upload') {
@@ -498,15 +480,4 @@ function theme_filefield_file($file) {
     $desc = $file['description'];
     return '<a href="'. check_url($url) .'">'.check_plain($name).'</a>';
   }
-}
-
-/**
- * formats an array of images.
- * @param images
- *    array of individually themed images
- * @return 
- *    html string
- */
-function theme_filefield_multiple($files) {
-  return implode("\n", $files);
 }
