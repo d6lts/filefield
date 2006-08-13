@@ -12,6 +12,10 @@
  *   @hurrah!!
  */
 
+function filefield_init () {
+  //drupal_set_message('POST: <pre>'. print_r($_POST, true) .'</pre>');
+}
+
 /**
  * Implementation of hook_help().
  */
@@ -48,7 +52,7 @@ function filefield_menu($maycache) {
       }
     }
   }
-  drupal_set_message('SESSION @ hook_menu: <pre>'. print_r($_SESSION['filefield'], true) .'</pre>');
+  //drupal_set_message('SESSION @ hook_menu: <pre>'. print_r($_SESSION['filefield'], true) .'</pre>');
   return $items;
 }
 
@@ -137,17 +141,13 @@ function filefield_file_update($node, &$file, $field) {
   $file = (array)$file; 
   //drupal_set_message(' filefield_file_update: <pre>'. print_r($file, true) .'</pre>');
   if ($file['remove'] == TRUE) {
-    return _filefield_file_delete($file, $field['field_name']);
+     _filefield_file_delete($file, $field['field_name']);
+     return NULL;
   }
   if ($file['fid'] == 'upload') {  
     return filefield_file_insert($node, $file, $field);
   }
   else {
-    if ($file['fid'] == 0) {
-      $dbinfo = content_database_info($field);
-      //drupal_set_message('stuff to build delete query: <pre>'. print_r($dbinfo, true) .'</pre>');
-      //$result = db_query("DELETE FROM {%s} WHERE nid = %d AND %s_fid = 0", $dbinfo['table'], $node->nid, $field['field_name']);
-    }
     // if fid is not numeric here we should complain.
     // else we update the file table.  
   }
@@ -165,21 +165,15 @@ function filefield_field($op, $node, $field, &$node_field, $a1, $a2) {
     case 'load':
       $values = array();
       foreach ($node_field as $delta => $file) {
-        drupal_set_message('loading file form content.module: <pre>'. print_r($file, true) .'</pre>');
+        //drupal_set_message('loading file form content.module: <pre>'. print_r($file, true) .'</pre>');
         $dbfile =  _filefield_file_load($file['fid']);
-        drupal_set_message('loading file from db: <pre>'. print_r($dbfile, true) .'</pre>');
-        if (empty($dbfile)) {
-  
-          $values[$delta] = $file;
-        }
-        else {
+        //drupal_set_message('loading file from db: <pre>'. print_r($dbfile, true) .'</pre>');
+        if (!empty($file)) {
           $values[$delta]  = array_merge($file, $dbfile);
+          //$node_field[$delta] = $values[$delta];
         }
-        drupal_set_message('merged file data: <pre>'. print_r($values, true) .'</pre>');
-        $node_field[$delta] = $values[$delta];
-        drupal_set_message('merged node field file data: <pre>'. print_r($node_field, true) .'</pre>');
       }
-      drupal_set_message('post: hook_field: '.$op.'<pre>'.print_r($node_field, true).'</pre>');
+      //drupal_set_message('post: hook_field: '.$op.'<pre>'.print_r($node_field, true).'</pre>');
       $output = array($fieldname => $values);
       break; 
 
@@ -299,7 +293,8 @@ function filefield_widget($op, $node, $field, &$node_field) {
   $fieldname = $field['field_name'];
   switch ($op) {
     case 'prepare form values':
-      drupal_set_message('pre filefield_widget: '. $op .'<pre>'. print_r($node_field, true) .'</pre>');
+     // drupal_set_message('pre filefield_widget: '. $op .'<pre>'. print_r($node_field, true) .'</pre>');
+      //drupal_set_message('pre filefield_widget node: '. $op .'<pre>'. print_r($node, true) .'</pre>');
       // clean up the session if we weren't posted.
       if (!count($_POST)) {
         filefield_clear_session();
@@ -307,7 +302,7 @@ function filefield_widget($op, $node, $field, &$node_field) {
 
       // Attach new files 
       if ($file = file_check_upload($fieldname . '_upload')) {
-        drupal_set_message('file found!!!');
+        //drupal_set_message('file found!!!');
         $file = (array)$file;
         $ext = array_pop(explode('.',$file['filename']));
         $allowed_extensions = array_unique(explode(' ', trim($field['widget']['file_extensions'])));
@@ -325,7 +320,7 @@ function filefield_widget($op, $node, $field, &$node_field) {
         }
         $file['sessionid'] = count($_SESSION['filefield'][$fieldname]);
         $_SESSION['filefield'][$fieldname][$file['sessionid']] = $file;
-        drupal_set_message('SESSION: <pre>'. print_r($_SESSION['filefield'], true) .'</pre>');
+       // drupal_set_message('SESSION: <pre>'. print_r($_SESSION['filefield'], true) .'</pre>');
       }
         
 
@@ -336,7 +331,7 @@ function filefield_widget($op, $node, $field, &$node_field) {
           $node_field[] = $file;
         }
       }
-      drupal_set_message('end prepare nodefield: <pre>'. print_r($node_field, true) .'</pre>');
+      //drupal_set_message('end prepare nodefield: <pre>'. print_r($node_field, true) .'</pre>');
 
       break;
 
@@ -354,16 +349,16 @@ function filefield_widget($op, $node, $field, &$node_field) {
       return;
 
     case 'process form values':
-      drupal_set_message('<pre>'. print_r($node, true) .'</pre>');
+      //drupal_set_message('<pre>'. print_r($node, true) .'</pre>');
       foreach ($node_field as $delta => $item) {
         if ($item['fid'] == '0') {
-          unset($node_field[$delta]);
+          $node_field[$delta] = NULL;
         }
       }
       return; 
 
   }
-  drupal_set_message('post filefield_widget: '. $op .'<pre>'. print_r($node_field, true) .'<pre>');
+  //drupal_set_message('post filefield_widget: '. $op .'<pre>'. print_r($node_field, true) .'<pre>');
 }
 
 function _filefield_widget_form($node, $field, &$node_field) {
@@ -380,9 +375,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
     '#tree' => TRUE,
     '#theme' => 'filefield_current',
   );
-      
-  // Seperate from tree becase of that silly things won't be 
-  // displayed if they are a child of '#type' = form issue
+  
   $form[$fieldname][$fieldname .'_upload'] = array(
     '#type'  => 'file',
     '#description' => t('Attach a file. allowed extensions(%ext)', array('%ext' => theme('placeholder', $field['widget']['file_extensions']))),
@@ -398,15 +391,9 @@ function _filefield_widget_form($node, $field, &$node_field) {
     '#tree' => FALSE,
     '#weight' => 10,
   );
-/*
-  $form[$fieldname] = array(
-      '#theme' => 'filefield_current',
-      '#tree' => TRUE,
-  );
-*/
 
-  drupal_set_message('form: <pre>'. print_r($form, TRUE) .'</pre>');
-  drupal_set_message('filefield_widget_form: nodefield: <pre>'. print_r($node_field, true) .'</pre>');
+  //drupal_set_message('form: <pre>'. print_r($form, TRUE) .'</pre>');
+  //drupal_set_message('filefield_widget_form: nodefield: <pre>'. print_r($node_field, true) .'</pre>');
   if (is_array($node_field) && count($node_field)) {
     foreach($node_field as $delta => $file) {
       if (!empty($file))  {
@@ -441,24 +428,31 @@ function _filefield_widget_form($node, $field, &$node_field) {
     }
     // end foreach...
   }
-  drupal_set_message('form: <pre>'. print_r($form, TRUE) .'</pre>');
+  //drupal_set_message('filefield_form('. $fieldname .'): <pre>'. print_r($form, TRUE) .'</pre>');
   return $form;
 }
 
 function theme_filefield_current(&$form) {
   $header = array(t('Type'), t('Description'), t('Size'),  t('List'), t('Delete'));
   //drupal_set_message('form: <pre>'. print_r($form, TRUE) .'</pre>');
+
   foreach (element_children($form) as $key) {
-    drupal_set_message($key);
-    $row = array();
-    $row[] = form_render($form[$key]['icon']);
-    $row[] = form_render($form[$key]['description']);
-    $row[] = form_render($form[$key]['size']);
-    $row[] = form_render($form[$key]['list']);
-    $row[] = form_render($form[$key]['remove']);
-    $rows[] = $row;
+    //drupal_set_message($key);
+    //only display numerically keyed fields in form.
+    //numeric key == $delta
+    if (is_numeric($key)) {
+      $row = array();
+      $row[] = form_render($form[$key]['icon']);
+      $row[] = form_render($form[$key]['description']);
+      $row[] = form_render($form[$key]['size']);
+      $row[] = form_render($form[$key]['list']);
+      $row[] = form_render($form[$key]['remove']);
+      $rows[] = $row;
+    }
   }
-  $output = theme('table', $header, $rows);
+  if (count($rows)) {
+    $output = theme('table', $header, $rows);
+  }
   $output .= form_render($form);
   return $output;
 }
