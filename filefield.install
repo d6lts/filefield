@@ -6,3 +6,28 @@
  */
 function filefield_install() {
 }
+
+function filefield_update_1() {
+ $ret = array();
+
+  include_once(drupal_get_path('module', 'content') .'/content.module');
+  include_once(drupal_get_path('module', 'content') .'/content_admin.inc');
+
+
+
+  $fields = content_fields();
+
+  foreach ($fields as $field) {
+    switch ($field['type']) {
+      case 'file':
+        $columns = array(
+          'list' => array('type' => 'int', 'not null' => TRUE, 'default' => '0'),
+        );
+        content_alter_db_field(array(), array(), $field, $columns);
+        break;
+    }
+  }
+  db_query('DELETE FROM {cache}');
+  return $ret;
+
+}

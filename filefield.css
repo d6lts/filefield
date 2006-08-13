@@ -23,7 +23,7 @@ div.filefield-icon-container {
 div.filefield-icon {
   width: 32px;
   height: 32px;
-  background-image: url(ico/0.png);
+  /* background-image: url(ico/0.png); */
   float: left;
 }
 
