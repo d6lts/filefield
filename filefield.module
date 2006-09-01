@@ -326,16 +326,21 @@ function filefield_widget($op, $node, $field, &$node_field) {
 
       
       // Load files from preview state. before committing actions.
+      /* commented out until cck prepare form values / node_field situation is worked out 
       if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
         foreach($_SESSION['filefield'][$fieldname] as $delta => $file) {
           $node_field[] = $file;
         }
       }
-      //drupal_set_message('end prepare nodefield: <pre>'. print_r($node_field, true) .'</pre>');
-
+      */
       break;
 
     case 'form':
+      if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
+        foreach($_SESSION['filefield'][$fieldname] as $delta => $file) {
+          $node_field[] = $file;
+        }
+      }
       
       $form = _filefield_widget_form($node, $field, $node_field);
       return $form;
