@@ -406,8 +406,14 @@ function _filefield_widget_form($node, $field, &$node_field) {
           '#type' => 'markup',
           '#value' => theme('filefield_icon', $file),
         );
-       
-        $description = file_create_url((strpos($file['fid'], 'upload') === false ? $file->filepath :  file_create_filename($file['filename'], file_create_path())));      
+      
+        if (strpos($file['fid'], 'upload') === false) {
+          $filepath =  $file['filepath'];
+        }
+        else {
+          $filepath =  file_create_filename($file['filename'], file_create_path());
+        }
+        $description = file_create_url($filepath);      
         $description = "<small>". check_plain($description) ."</small>";
         $form[$fieldname][$delta]['description'] = array('#type' => 'textfield', '#default_value' => (strlen($file['description'])) ? $file['description'] : $file['filename'], '#maxlength' => 256, '#description' => $description );
         $form[$fieldname][$delta]['size'] = array('#type' => 'markup', '#value' => format_size($file['filesize']));
