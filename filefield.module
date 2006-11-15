@@ -22,7 +22,7 @@ function filefield_init () {
 function filefield_help($section) {
   switch ($section) {
     case 'admin/modules#description':
-      return t('Defines a file  field type for content.module.');
+      return t('<strong>CCK:</strong> Defines a file  field type for content.module.');
   }
 }
 
