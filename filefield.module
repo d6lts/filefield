@@ -337,7 +337,7 @@ function filefield_widget($op, $node, $field, &$node_field) {
 
 function _filefield_widget_form($node, $field, &$node_field) {
   $fieldname = $field['field_name'];
-  theme_add_style(drupal_get_path('module', 'filefield') .'/filefield.css');
+  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
  
   $form = array(); 
   $form[$fieldname] = array(
@@ -419,18 +419,18 @@ function theme_filefield_current(&$form) {
     //numeric key == $delta
     if (is_numeric($key)) {
       $row = array();
-      $row[] = form_render($form[$key]['icon']);
-      $row[] = form_render($form[$key]['description']);
-      $row[] = form_render($form[$key]['size']);
-      $row[] = form_render($form[$key]['list']);
-      $row[] = form_render($form[$key]['remove']);
+      $row[] = drupal_render($form[$key]['icon']);
+      $row[] = drupal_render($form[$key]['description']);
+      $row[] = drupal_render($form[$key]['size']);
+      $row[] = drupal_render($form[$key]['list']);
+      $row[] = drupal_render($form[$key]['remove']);
       $rows[] = $row;
     }
   }
   if (count($rows)) {
     $output = theme('table', $header, $rows);
   }
-  $output .= form_render($form);
+  $output .= drupal_render($form);
   return $output;
 }
 
