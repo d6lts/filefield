@@ -3,28 +3,15 @@
 
 /**
  * @file
- * Defines an image field type.
- *  uses content.module to store the fid, and the drupal files table to store the actual file data.
+ * Defines a file field type.
+ *
+ * uses content.module to store the fid, and the drupal files 
+ * table to store the actual file data.
  *
  * @todo
  *   - access control
- *   - multiple image support for views integration. -- stange territory.
- *   @hurrah!!
  */
 
-function filefield_init () {
-  //drupal_set_message('POST: <pre>'. print_r($_POST, true) .'</pre>');
-}
-
-/**
- * Implementation of hook_help().
- */
-function filefield_help($section) {
-  switch ($section) {
-    case 'admin/modules#description':
-      return t('<strong>CCK:</strong> Defines a file  field type for content.module.');
-  }
-}
 
 function filefield_menu($maycache) {
   $items = array();
@@ -301,7 +288,7 @@ function filefield_widget($op, $node, $field, &$node_field) {
           //do mime/extension specific handling.
         }
         else {
-          form_set_error($field['field_name'] .'_upload',t('Files with the extension %ext are not allowed. Please upload a file with an extension from the following list: %allowed_extensions', array('%ext' => theme('placeholder',$ext), '%allowed_extensions' => theme('placeholder', $field['widget']['file_extensions']))));
+          form_set_error($field['field_name'] .'_upload',t('Files with the extension %ext are not allowed. Please upload a file with an extension from the following list: %allowed_extensions', array('%ext' => $ext, '%allowed_extensions' => $field['widget']['file_extensions'])));
           return FALSE;
         }
 
@@ -365,7 +352,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
   
   $form[$fieldname][$fieldname .'_upload'] = array(
     '#type'  => 'file',
-    '#description' => $field['widget']['description'] . t('<br />allowed extensions(%ext)', array('%ext' => theme('placeholder', $field['widget']['file_extensions']))),
+    '#description' => $field['widget']['description'] . t('<br />allowed extensions(%ext)', array('%ext' => $field['widget']['file_extensions'])),
     '#weight' => 9,
     '#tree' => FALSE,
   );
