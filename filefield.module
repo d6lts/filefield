@@ -89,9 +89,10 @@ function filefield_field_settings($op, $field) {
     case 'form':
       $form = array();
       return $form;
-    case 'validate':
 
+    case 'validate':
       break;
+
     case 'save':
       return array();
 
@@ -158,38 +159,30 @@ function filefield_file_update($node, &$file, $field) {
  * Implementation of hook_field().
  */
 function filefield_field($op, $node, $field, &$node_field, $a1, $a2) {
-  //drupal_set_message('pre hook_field: '.$op.'<pre>'.print_r($node_field, true).'</pre>');
   $fieldname = $field['field_name'];
   switch ($op) {
-    // called after content.module loads default data.
     case 'load':
-      $values = array();
-      foreach ($node_field as $delta => $file) {
-        //drupal_set_message('loading file form content.module: <pre>'. print_r($file, true) .'</pre>');
-        $dbfile =  _filefield_file_load($file['fid']);
-        //drupal_set_message('loading file from db: <pre>'. print_r($dbfile, true) .'</pre>');
-        if (!empty($file)) {
-          $values[$delta]  = array_merge($file, $dbfile);
-          //$node_field[$delta] = $values[$delta];
+      $output = array();
+      if (count($node_field)) {
+        $values = array();
+        foreach ($node_field as $delta => $file) {
+          if (!empty($file)) {
+            $values[$delta]  = array_merge($node_field[$delta], _filefield_file_load($file['fid']));
+            $node_field[$delta] = $values[$delta];
+          }
+          $output = array($fieldname => $values);
         }
       }
-      //drupal_set_message('post: hook_field: '.$op.'<pre>'.print_r($node_field, true).'</pre>');
-      $output = array($fieldname => $values);
       break; 
 
     case 'view':
       $files = array();
       foreach ($node_field as $delta => $item) {
-        //drupal_set_message('<pre>'. print_r($item, true) .'</pre>');
-        // do not show images flagged for deletion in preview.
         if (!$item['remove']  && $item['list']) {
-          $node_field[$delta]['view'] = theme('filefield', $item); 
-          $files[] =  $node_field[$delta];
+          $node_field[$delta]['view'] = content_format($field, $item, ($page ? 'default' : 'preview')); 
         }
       }
-      $view = theme('field', $node, $field, $files, $a1, $a2);
-      
-      $output = '<div class="'. $field['field_name'] .'">'. $view .'</div>';
+      $output = theme('field', $node, $field, $node_field, $a1, $a2);
       break;
 
     // called before content.module defaults.
@@ -212,7 +205,6 @@ function filefield_field($op, $node, $field, &$node_field, $a1, $a2) {
       }
       break;
   }
-  //drupal_set_message('post hook_field: '.$op.'<pre>'.print_r($node_field, true).'</pre>');
   return $output;
 }
 
@@ -293,26 +285,27 @@ function filefield_widget($op, $node, $field, &$node_field) {
   $fieldname = $field['field_name'];
   switch ($op) {
     case 'prepare form values':
-     // drupal_set_message('pre filefield_widget: '. $op .'<pre>'. print_r($node_field, true) .'</pre>');
-      //drupal_set_message('pre filefield_widget node: '. $op .'<pre>'. print_r($node, true) .'</pre>');
-      // clean up the session if we weren't posted.
       if (!count($_POST)) {
         filefield_clear_session();
       }
 
       // Attach new files 
       if ($file = file_check_upload($fieldname . '_upload')) {
-        //drupal_set_message('file found!!!');
         $file = (array)$file;
+      
+        // test allowed extensions. We do this when the file is uploaded, rather than waiting for the
+        // field itseld to reach op==validate.
         $ext = array_pop(explode('.',$file['filename']));
         $allowed_extensions = array_unique(explode(' ', trim($field['widget']['file_extensions'])));
         if (in_array($ext, $allowed_extensions)) { 
-          //do mime specific handling.
+          //do mime/extension specific handling.
         }
         else {
           form_set_error($field['field_name'] .'_upload',t('Files with the extension %ext are not allowed. Please upload a file with an extension from the following list: %allowed_extensions', array('%ext' => theme('placeholder',$ext), '%allowed_extensions' => theme('placeholder', $field['widget']['file_extensions']))));
           return FALSE;
         }
+
+        // prepare file array. 
         $file['fid'] = 'upload';
         if (!$field['multiple']) {
           // Remove old temporary file from session.
@@ -320,7 +313,6 @@ function filefield_widget($op, $node, $field, &$node_field) {
         }
         $file['sessionid'] = count($_SESSION['filefield'][$fieldname]);
         $_SESSION['filefield'][$fieldname][$file['sessionid']] = $file;
-       // drupal_set_message('SESSION: <pre>'. print_r($_SESSION['filefield'], true) .'</pre>');
       }
         
 
@@ -352,16 +344,6 @@ function filefield_widget($op, $node, $field, &$node_field) {
         }
       }
       return;
-
-    case 'process form values':
-      //drupal_set_message('<pre>'. print_r($node, true) .'</pre>');
-      foreach ($node_field as $delta => $item) {
-        if ($item['fid'] == '0') {
-          $node_field[$delta] = NULL;
-        }
-      }
-      return; 
-
   }
   //drupal_set_message('post filefield_widget: '. $op .'<pre>'. print_r($node_field, true) .'<pre>');
 }
@@ -374,7 +356,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
   $form[$fieldname] = array(
     '#type' => 'fieldset',
     '#title' => t($field['widget']['label']),
-    '#weight' => 5,
+    '#weight' => $field['widget']['weight'],
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#tree' => TRUE,
@@ -383,7 +365,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
   
   $form[$fieldname][$fieldname .'_upload'] = array(
     '#type'  => 'file',
-    '#description' => t('Attach a file. allowed extensions(%ext)', array('%ext' => theme('placeholder', $field['widget']['file_extensions']))),
+    '#description' => $field['widget']['description'] . t('<br />allowed extensions(%ext)', array('%ext' => theme('placeholder', $field['widget']['file_extensions']))),
     '#weight' => 9,
     '#tree' => FALSE,
   );
@@ -397,11 +379,9 @@ function _filefield_widget_form($node, $field, &$node_field) {
     '#weight' => 10,
   );
 
-  //drupal_set_message('form: <pre>'. print_r($form, TRUE) .'</pre>');
-  //drupal_set_message('filefield_widget_form: nodefield: <pre>'. print_r($node_field, true) .'</pre>');
   if (is_array($node_field) && count($node_field)) {
     foreach($node_field as $delta => $file) {
-      if (!empty($file))  {
+      if ($file['filepath'])  {
         $form[$fieldname][$delta]['icon'] = array(
           '#type' => 'markup',
           '#value' => theme('filefield_icon', $file),
@@ -428,16 +408,15 @@ function _filefield_widget_form($node, $field, &$node_field) {
       
         // Special handling for single value fields
         // mark original item for deletion.
-        if (!$field['multiple'] && $delta == 0 && (count($_SESSION['filefield'][$fieldname]) > 1)) {
+        if (!$field['multiple'] && $delta == 0) {
           $form[$fieldname][$delta]['remove']['#value'] = 1;
           $form[$fieldname][$delta]['replace'] = array(
             '#type' => 'markup',
-            '#value' => t('If a new file is uploaded, the current file will be replaced upon submitting the node edit form.'),
+            '#value' => t('If a new file is uploaded, this file will be replaced upon submitting this form.'),
           );
         }
       }
     }
-    // end foreach...
   }
   //drupal_set_message('filefield_form('. $fieldname .'): <pre>'. print_r($form, TRUE) .'</pre>');
   return $form;
@@ -469,26 +448,46 @@ function theme_filefield_current(&$form) {
 }
 
 
+/**
+ * Implementation of hook_field formatter.
+ * @todo: finish transformer.module and integrate like imagecache with imagefield.
+ */
+function filefield_field_formatter_info() {
+  $formatters = array(
+     'default' => array(
+        'label' => t('Default'),
+        'field types' => array('file'),
+      ),
+  );
+  return $formatters;
+}
+
+function filefield_field_formatter($field, $item, $formatter) {
+  if(!isset($item['fid'])) {
+    return '';
+  }
+  $file = _filefield_file_load($item['fid']);
+  return theme('filefield', $file, $item);
+}
+
+/*
+deprecated dodo delete when we're sure its safe to go.
 function filefield_field_view_item($field, $node_field_item) {
     $file = _filefield_file_load($node_field_item['fid']);
     return theme('filefield_view_file', $file, $node_field_item['description']); 
 }
+*/
 
 
 function _filefield_file_load($fid = NULL) {
-  // Exit if we were not passed an fid to load;
-  if (!isset($fid)) { 
-    //drupal_set_message('_filefield_file_load did not recieve an fid');
-    return false;
+  if (isset($fid)) { 
+    if (is_numeric($fid)) {
+      $result = db_query('SELECT * FROM {files} WHERE fid = %d', $fid);
+      $file = db_fetch_array($result);
+      return ($file) ? $file : array();
+    }
   }
-  // Test to catch fid, eventuall plan to have node_load syntax
-  // once file_attributes table is complete
-  if (is_numeric($fid)) {
-    $result = db_query('SELECT * FROM {files} WHERE fid = %d', $fid);
-    return  db_fetch_array($result);
-  }
-  //drupal_set_message('expected file not found.');
-  return FALSE;
+  return array();
 }
 
 function theme_filefield_icon($file) {
@@ -498,8 +497,6 @@ function theme_filefield_icon($file) {
     $ext = 0; 
   }
   $imagepath = drupal_get_path('module','filefield') .'/ico/'. $ext .'.png';
-
-
   
   return '<div class="filefield-icon-container"><div class="filefield-icon field-icon-'. $ext .'"><img src="'. $imagepath .'" /></div></div>';
   //return '<div class="filefield-icon-container"><div class="filefield-icon field-icon-'. $ext .'">&nbsp;</div></div>'."\n";
