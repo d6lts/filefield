@@ -1,3 +1,6 @@
 ; $Id$
 name = File Field
-description = <strong>CCK:</stron> Defines a file field type. <em>Note: Requires content.module.</em>
+description = Defines a file field type.
+version = "$Name$"
+dependencies = content
+package = CCK

@@ -64,7 +64,7 @@ function _filefield_preview() {
  */
 function filefield_field_info() {
   return array(
-    'file' => array('label' => 'file'),
+    'file' => array('label' => 'File'),
   );
 }
 
@@ -317,7 +317,7 @@ function filefield_widget($op, $node, $field, &$node_field) {
     case 'form':
       if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
         foreach($_SESSION['filefield'][$fieldname] as $delta => $file) {
-          $node_field[] = $file;
+          $node_field[$delta] = $file;
         }
       }
       
