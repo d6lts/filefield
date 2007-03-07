@@ -91,9 +91,10 @@ function filefield_field_settings($op, $field) {
  *    file to be inserted, passed by reference since fid should be attached.
  *    
  */
-function filefield_file_insert($node, &$file, $field) {
+function filefield_file_insert($node, $field, &$file) {
   $fieldname = $field['field_name'];
   if ($file = file_save_upload((object)$file, file_directory_path() . '/'.$file['filename'])) {
+    module_invoke_all('filefield', 'file_save', $node, $field, $file);
     $file = (array)$file;
     $file['fid'] = db_next_id('{files}_fid');
     db_query('INSERT into {files} (fid, nid, filename, filepath, filemime, filesize)  
@@ -115,9 +116,10 @@ function filefield_file_insert($node, &$file, $field) {
  * @param $file
  * @param $field
  */
-function filefield_file_update($node, &$file, $field) {
+function filefield_file_update($node, $field, &$file) {
   $file = (array)$file; 
   if ($file['remove'] == TRUE) {
+     module_invoke_all('filefield', 'file_delete', $node, $field, $file);
      _filefield_file_delete($file, $field['field_name']);
      // should I return an array here instead as imagefield does, or is that a bug in 
      // in imagefield. I remember I was working on a content.module patch that would
@@ -125,7 +127,7 @@ function filefield_file_update($node, &$file, $field) {
      return NULL;
   }
   if ($file['fid'] == 'upload') {  
-    return filefield_file_insert($node, $file, $field);
+    return filefield_file_insert($node, $field, $file);
   }
   else {
     // if fid is not numeric here we should complain.
@@ -146,42 +148,33 @@ function filefield_field($op, $node, $field, &$node_field, $teaser, $page) {
         $values = array();
         foreach ($node_field as $delta => $file) {
           if (!empty($file)) {
-            $node_field[$delta]  = array_merge($node_field[$delta], _filefield_file_load($file['fid']));
+            //$node_field[$delta] = array_merge($node_field[$delta], _filefield_file_load($file['fid']));
+            $node_field[$delta] += _filefield_file_load($file['fid']);
+            // let modules load extended attributes.
+            $node_field[$delta] += module_invoke_all('filefield_file', 'file', $node, $field, $node_field[$delta]);
           }
           $output = array($fieldname => $node_field);
         }
       }
       break; 
 
-    case 'view':
-      // left for compatability with versions of content.module before
-      // the display settings patch. this is deprecated.
-      $formatter = 'default';
-      foreach ($node_field as $delta => $item) {
-        if (!$item['remove']  && $item['list']) {
-          $node_field[$delta]['view'] = content_format($field, $item, ($page ? 'default' : 'preview')); 
-        }
-      }
-      $output = theme('field', $node, $field, $node_field, $teaser, $page);
-      break;
-
     // called before content.module defaults.
     case 'insert':
       foreach ($node_field as  $delta => $item) {
-        $node_field[$delta] = filefield_file_insert($node, $item, $field); 
+        $node_field[$delta] = filefield_file_insert($node, $field, $item); 
       }
       break;
 
     // called before content.module defaults.
     case 'update':
       foreach ($node_field as $delta => $item) {
-        $node_field[$delta] = filefield_file_update($node, $item, $field); 
+        $node_field[$delta] = filefield_file_update($node, $field, $item); 
       }
       break;
 
     case 'delete':
       foreach ($node_field as $delta => $item) {
-        _filefield_file_delete($item, $field['field_name']); 
+        _filefield_file_delete($node, $field, $item); 
       }
       break;
   }
@@ -246,13 +239,14 @@ function filefield_clear_field_session($fieldname) {
   }
 }
 
-function _filefield_file_delete($file, $fieldname) {
+function _filefield_file_delete($node, $field, $file) {
   if (is_numeric($file['fid'])) {
     db_query('DELETE FROM {files} WHERE fid = %d', $file['fid']);
   }
   else {
-    unset($_SESSION['filefield'][$fieldname][$file['sessionid']]);
+    unset($_SESSION['filefield'][$field['field_name']][$file['sessionid']]);
   }
+  module_invoke_all('filefield_file', 'delete', $node, $field, $file);
   return file_delete($file['filepath']);
 }
 
@@ -263,75 +257,83 @@ function filefield_widget($op, $node, $field, &$node_field) {
   $fieldname = $field['field_name'];
   switch ($op) {
     case 'prepare form values':
-      // @todo split this into its own function. determine if we can make it a form element.
-      if (!count($_POST)) {
-        filefield_clear_session();
-      }
-      // Attach new files 
-      if ($file = file_check_upload($fieldname . '_upload')) {
-        $file = (array)$file;
-      
-        // test allowed extensions. We do this when the file is uploaded, rather than waiting for the
-        // field itseld to reach op==validate.
-        $ext = array_pop(explode('.',$file['filename']));
-        $allowed_extensions = array_unique(explode(' ', trim($field['widget']['file_extensions'])));
-        if (in_array($ext, $allowed_extensions)) { 
-            // do mime/extension specific handling here.
-        }
-        else {
-          form_set_error($field['field_name'] .'_upload',t('Files with the extension %ext are not allowed. Please upload a file with an extension from the following list: %allowed_extensions', array('%ext' => $ext, '%allowed_extensions' => $field['widget']['file_extensions'])));
-          return FALSE;
-        }
-
-        $filepath = file_create_filename($file['filename'], file_create_path());
-        if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
-          if (strpos($filepath, file_directory_path()) !== FALSE) {
-            $filepath = trim(substr($filepath, strlen(file_directory_path())), '\\/');
-          }
-          $filepath = 'system/files/'. $filepath;
-        };
-
-        // prepare file array. 
-        $file['fid'] = 'upload';
-        $file['preview'] = $filepath;
-
-        // if this is a single value filefield mark any other images for deletion.
-        if (!$field['multiple']) {
-          if (is_array($node_field)) {
-            foreach($node_field as $delta => $session_file) {
-              $node_field[$delta]['remove'] = TRUE;
-            }
-          }
-          // Remove old temporary file from session.
-          filefield_clear_field_session($fieldname);
-        }
-        // Add the file to the session.
-        
-        $file_id = count($node_field) + count($_SESSION['filefield'][$fieldname]);
-        $_SESSION['filefield'][$fieldname][$file_id] = $file;
-      }
-        
-
-      
-      // Load files from preview state. before committing actions.
-      if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
-        foreach($_SESSION['filefield'][$fieldname] as $delta => $file) {
-          $node_field[] = $file;
-        }
-      }
+      _filefield_widget_prepare($node, $field, $node_field);
       break;
 
     case 'form':
-      $form = _filefield_widget_form($node, $field, $node_field);
-      return $form;
+      return  _filefield_widget_form($node, $field, $node_field);
 
     case 'validate':
-      if ($field['required']) {
-        if (!count($node_field)) {
-          form_set_error($fieldname, $field['widget']['label'] .' is required.');
+      _filefield_widget_validate($node, $field, $node_field);
+      break;
+  }
+}
+
+function _filefield_widget_prepare($node, $field, &$node_field) {
+  $fieldname = $field['field_name'];
+
+  // @todo split this into its own function. determine if we can make it a form element.
+  if (!count($_POST)) {
+    filefield_clear_session();
+  }
+  // Attach new files 
+  if ($file = file_check_upload($fieldname . '_upload')) {
+    $file = (array)$file;
+     
+    // test allowed extensions. We do this when the file is uploaded, rather than waiting for the
+    // field itseld to reach op==validate.
+    $ext = array_pop(explode('.',$file['filename']));
+    $allowed_extensions = array_unique(explode(' ', trim($field['widget']['file_extensions'])));
+
+    $valid = in_array($ext, $allowed_extensions);
+    if (!$valid) {
+      // set base validation error message.
+      form_set_error($field['field_name'] .'_upload',t('Files with the extension %ext are not allowed. Please upload a file with an extension from the following list: %allowed_extensions', array('%ext' => $ext, '%allowed_extensions' => $field['widget']['file_extensions'])));
+    }
+    
+    // let extended validation from other module happen so we get all error messages.
+    // if you implement hook_filefield_file() return FALSE to stop the upload.
+    $valid = in_array(module_invoke_all('filefield_file', 'validate', $node, $field, $node_field), 'FALSE');
+    
+    if (!$valid) {
+      return FALSE;
+    }
+
+    // let modules massage act on the file.
+    module_invoke_all('filefield_file', 'prepare', $node, $field, $node_field);
+
+    $filepath = file_create_filename($file['filename'], file_create_path());
+    if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
+      if (strpos($filepath, file_directory_path()) !== FALSE) {
+        $filepath = trim(substr($filepath, strlen(file_directory_path())), '\\/');
+      }
+      $filepath = 'system/files/'. $filepath;
+    };
+
+    // prepare file array. 
+    $file['fid'] = 'upload';
+    $file['preview'] = $filepath;
+
+    // if this is a single value filefield mark any other images for deletion.
+    if (!$field['multiple']) {
+      if (is_array($node_field)) {
+        foreach($node_field as $delta => $session_file) {
+          $node_field[$delta]['remove'] = TRUE;
         }
       }
-      return;
+      // Remove old temporary file from session.
+      filefield_clear_field_session($fieldname);
+    }
+        
+    $file_id = count($node_field) + count($_SESSION['filefield'][$fieldname]);
+    $_SESSION['filefield'][$fieldname][$file_id] = $file;
+  }
+      
+  // Load files from preview state. before committing actions.
+  if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
+    foreach($_SESSION['filefield'][$fieldname] as $delta => $file) {
+      $node_field[] = $file;
+    }
   }
 }
 
@@ -368,6 +370,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
 
   if (is_array($node_field) && count($node_field)) {
     foreach($node_field as $delta => $file) {
+      // @todo: split into its own form and theme functions per file like imagefield
       if ($file['filepath'] && !$file['remove']) {
 
         $form[$fieldname][$delta]['icon'] = array(
@@ -398,6 +401,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
             '#value' => t('If a new file is uploaded, this file will be replaced upon submitting this form.'),
           );
         }
+        module_invoke_all('filefield_file', 'form', $node, $form, $form[$fieldname][$delta]);
       }
       elseif ($file['filepath'] && $file['remove']) {
         $form[$fieldname][$delta]['remove'] = array(
@@ -405,9 +409,18 @@ function _filefield_widget_form($node, $field, &$node_field) {
           '#value' => $file['remove'],
         );
       }
+     
     }
   }
   return $form;
+}
+
+function _filefield_widget_validate($node, $field, $node_field) {
+  if ($field['required']) {
+    if (!count($node_field)) {
+      form_set_error($fieldname, $field['widget']['label'] .' is required.');
+    }
+  }
 }
 
 function theme_filefield_current(&$form) {
