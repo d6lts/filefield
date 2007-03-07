@@ -279,7 +279,6 @@ function _filefield_widget_prepare($node, $field, &$node_field) {
   // Attach new files 
   if ($file = file_check_upload($fieldname . '_upload')) {
     $file = (array)$file;
-     
     // test allowed extensions. We do this when the file is uploaded, rather than waiting for the
     // field itseld to reach op==validate.
     $ext = array_pop(explode('.',$file['filename']));
@@ -293,11 +292,14 @@ function _filefield_widget_prepare($node, $field, &$node_field) {
     
     // let extended validation from other module happen so we get all error messages.
     // if you implement hook_filefield_file() return FALSE to stop the upload.
-    $valid = in_array(module_invoke_all('filefield_file', 'validate', $node, $field, $node_field), 'FALSE');
+    if (in_array(FALSE, module_invoke_all('filefield_file', 'validate', $node, $field, $node_field))) {
+      $valid = FALSE;
+    }
     
     if (!$valid) {
       return FALSE;
     }
+
 
     // let modules massage act on the file.
     module_invoke_all('filefield_file', 'prepare', $node, $field, $node_field);
@@ -372,36 +374,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
     foreach($node_field as $delta => $file) {
       // @todo: split into its own form and theme functions per file like imagefield
       if ($file['filepath'] && !$file['remove']) {
-
-        $form[$fieldname][$delta]['icon'] = array(
-          '#type' => 'markup',
-          '#value' => theme('filefield_icon', $file),
-        );
-
-        $filepath = $file['fid'] == 'upload' ? file_create_filename($file['filename'], file_create_path()) : $file['filepath'];      
-
-        $description = file_create_url($filepath);      
-        $description = "<small>". check_plain($description) ."</small>";
-        $form[$fieldname][$delta]['description'] = array('#type' => 'textfield', '#default_value' => (strlen($file['description'])) ? $file['description'] : $file['filename'], '#maxlength' => 256, '#description' => $description );
-        $form[$fieldname][$delta]['size'] = array('#type' => 'markup', '#value' => format_size($file['filesize']));
-        $form[$fieldname][$delta]['remove'] = array('#type' => 'checkbox', '#default_value' => $file['remove']);
-        $form[$fieldname][$delta]['list'] = array('#type' => 'checkbox',  '#default_value' => $file['list']);
-
-        $form[$fieldname][$delta]['filename'] = array('#type' => 'value',  '#value' => $file['filename']);
-        $form[$fieldname][$delta]['filepath'] = array('#type' => 'value',  '#value' => $file['filepath']);
-        $form[$fieldname][$delta]['filemime'] = array('#type' => 'value',  '#value' => $file['filemime']);
-        $form[$fieldname][$delta]['filesize'] = array('#type' => 'value',  '#value' => $file['filesize']);
-        $form[$fieldname][$delta]['fid'] = array('#type' => 'value',  '#value' => $file['fid']);
-    
-        // Special handling for single value fields
-        // mark original item for deletion.
-        if (!$field['multiple']) {
-          $form[$fieldname][$delta]['replace'] = array(
-            '#type' => 'markup',
-            '#value' => t('If a new file is uploaded, this file will be replaced upon submitting this form.'),
-          );
-        }
-        module_invoke_all('filefield_file', 'form', $node, $form, $form[$fieldname][$delta]);
+        $form[$fieldname][$delta] = _filefield_file_form($node, $field, $file);
       }
       elseif ($file['filepath'] && $file['remove']) {
         $form[$fieldname][$delta]['remove'] = array(
@@ -409,9 +382,67 @@ function _filefield_widget_form($node, $field, &$node_field) {
           '#value' => $file['remove'],
         );
       }
-     
     }
   }
+  return $form;
+}
+
+function _filefield_file_form($node, $field, $file) {
+  // Lets be a good boy an initialize our variables.
+  $form = array();
+  $form['#theme'] = 'filefield_file_row';
+  $form['icon'] = array(
+    '#type' => 'markup',
+    '#value' => theme('filefield_icon', $file),
+  );
+
+  $filepath = $file['fid'] == 'upload' ? file_create_filename($file['filename'], file_create_path()) : $file['filepath'];      
+
+  $url = file_create_url($filepath);      
+  $url = "<small>". check_plain($url) ."</small>";
+  $form['description'] = array(
+      '#type' => 'textfield', 
+      '#default_value' => (strlen($file['description'])) ? $file['description'] : $file['filename'], '#maxlength' => 256, 
+      '#title' => t('Description'),
+  );
+  $form['url'] = array(
+    '#type' => 'markup',
+    '#value' => t('URL') .': '. $url,
+    '#prefix' => '<div class="filefield-edit-file-url">',
+    '#suffix' => '</div>',
+  );
+  $form['size'] = array(
+    '#type' => 'markup', 
+    '#value' => t('File Size') .': '. format_size($file['filesize']),
+    '#prefix' => '<div class="filefield-edit-file-size">',
+    '#suffix' => '</div>',
+  );
+  $form['remove'] = array(
+    '#type' => 'checkbox', 
+    '#default_value' => $file['remove'],
+    '#title' => t('Remove'),
+  );
+  $form['list'] = array(
+    '#type' => 'checkbox', 
+    '#default_value' => $file['list'],
+    '#title' => t('List'),
+  );
+
+  $form['filename'] = array('#type' => 'value',  '#value' => $file['filename']);
+  $form['filepath'] = array('#type' => 'value',  '#value' => $file['filepath']);
+  $form['filemime'] = array('#type' => 'value',  '#value' => $file['filemime']);
+  $form['filesize'] = array('#type' => 'value',  '#value' => $file['filesize']);
+  $form['fid'] = array('#type' => 'value',  '#value' => $file['fid']);
+    
+  // Special handling for single value fields
+  // mark original item for deletion.
+  if (!$field['multiple']) {
+    $form['replace'] = array(
+      '#type' => 'markup',
+      '#value' => t('If a new file is uploaded, this file will be replaced upon submitting this form.'),
+    );
+  }
+  module_invoke_all('filefield_file', 'form', $node, $field, $form);
   return $form;
 }
 
@@ -421,30 +452,6 @@ function _filefield_widget_validate($node, $field, $node_field) {
       form_set_error($fieldname, $field['widget']['label'] .' is required.');
     }
   }
-}
-
-function theme_filefield_current(&$form) {
-  $header = array(t('Type'), t('Description'), t('Size'),  t('List'), t('Delete'));
-
-  foreach (element_children($form) as $key) {
-    //drupal_set_message($key);
-    //only display numerically keyed fields in form.
-    //numeric key == $delta
-    if (is_numeric($key) && !$form[$key]['remove']['#value']) {
-      $row = array();
-      $row[] = drupal_render($form[$key]['icon']);
-      $row[] = drupal_render($form[$key]['description']);
-      $row[] = drupal_render($form[$key]['size']);
-      $row[] = drupal_render($form[$key]['list']);
-      $row[] = drupal_render($form[$key]['remove']);
-      $rows[] = $row;
-    }
-  }
-  if (count($rows)) {
-    $output = theme('table', $header, $rows);
-  }
-  $output .= drupal_render($form);
-  return $output;
 }
 
 
