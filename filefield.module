@@ -94,12 +94,12 @@ function filefield_field_settings($op, $field) {
 function filefield_file_insert($node, $field, &$file) {
   $fieldname = $field['field_name'];
   if ($file = file_save_upload((object)$file, file_directory_path() . '/'.$file['filename'])) {
-    module_invoke_all('filefield', 'file_save', $node, $field, $file);
     $file = (array)$file;
     $file['fid'] = db_next_id('{files}_fid');
     db_query('INSERT into {files} (fid, nid, filename, filepath, filemime, filesize)  
              VALUES (%d, %d, "%s","%s","%s",%d)',
             $file['fid'], $node->nid, $file['filename'], $file['filepath'], $file['filemime'], $file['filesize']);
+    module_invoke_all('filefield', 'file_save', $node, $field, $file);
     return (array)$file;
   }
   else {
@@ -120,7 +120,7 @@ function filefield_file_update($node, $field, &$file) {
   $file = (array)$file; 
   if ($file['remove'] == TRUE) {
      module_invoke_all('filefield', 'file_delete', $node, $field, $file);
-     _filefield_file_delete($file, $field['field_name']);
+     _filefield_file_delete($node, $field, $file);
      // should I return an array here instead as imagefield does, or is that a bug in 
      // in imagefield. I remember I was working on a content.module patch that would
      // delete multivalue fields whose value was NULL. Maybe a leftover.
@@ -151,7 +151,7 @@ function filefield_field($op, $node, $field, &$node_field, $teaser, $page) {
             //$node_field[$delta] = array_merge($node_field[$delta], _filefield_file_load($file['fid']));
             $node_field[$delta] += _filefield_file_load($file['fid']);
             // let modules load extended attributes.
-            $node_field[$delta] += module_invoke_all('filefield_file', 'file', $node, $field, $node_field[$delta]);
+            $node_field[$delta] += module_invoke_all('filefield', 'file', $node, $field, $node_field[$delta]);
           }
           $output = array($fieldname => $node_field);
         }
@@ -246,7 +246,7 @@ function _filefield_file_delete($node, $field, $file) {
   else {
     unset($_SESSION['filefield'][$field['field_name']][$file['sessionid']]);
   }
-  module_invoke_all('filefield_file', 'delete', $node, $field, $file);
+  module_invoke_all('filefield', 'delete', $node, $field, $file);
   return file_delete($file['filepath']);
 }
 
@@ -292,7 +292,7 @@ function _filefield_widget_prepare($node, $field, &$node_field) {
     
     // let extended validation from other module happen so we get all error messages.
     // if you implement hook_filefield_file() return FALSE to stop the upload.
-    if (in_array(FALSE, module_invoke_all('filefield_file', 'validate', $node, $field, $node_field))) {
+    if (in_array(FALSE, module_invoke_all('filefield', 'file_validate', $node, $field, $file))) {
       $valid = FALSE;
     }
     
@@ -302,7 +302,7 @@ function _filefield_widget_prepare($node, $field, &$node_field) {
 
 
     // let modules massage act on the file.
-    module_invoke_all('filefield_file', 'prepare', $node, $field, $node_field);
+    module_invoke_all('filefield', 'file_prepare', $node, $field, $file);
 
     $filepath = file_create_filename($file['filename'], file_create_path());
     if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
@@ -442,7 +442,7 @@ function _filefield_file_form($node, $field, $file) {
       '#value' => t('If a new file is uploaded, this file will be replaced upon submitting this form.'),
     );
   }
-  module_invoke_all('filefield_file', 'form', $node, $field, $form);
+  $form = module_invoke_all('filefield', 'file_form', $node, $field, $file, $form);
   return $form;
 }
 
