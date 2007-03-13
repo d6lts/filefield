@@ -148,10 +148,7 @@ function filefield_field($op, $node, $field, &$node_field, $teaser, $page) {
         $values = array();
         foreach ($node_field as $delta => $file) {
           if (!empty($file)) {
-            //$node_field[$delta] = array_merge($node_field[$delta], _filefield_file_load($file['fid']));
             $node_field[$delta] += _filefield_file_load($file['fid']);
-            // let modules load extended attributes.
-            $node_field[$delta] += module_invoke_all('filefield', 'file', $node, $field, $node_field[$delta]);
           }
           $output = array($fieldname => $node_field);
         }
@@ -482,6 +479,8 @@ function _filefield_file_load($fid = NULL) {
     if (is_numeric($fid)) {
       $result = db_query('SELECT * FROM {files} WHERE fid = %d', $fid);
       $file = db_fetch_array($result);
+      // let modules load extended attributes.
+      $file += module_invoke_all('filefield', 'file_load', $node, $field, $node_field[$delta]);
       return ($file) ? $file : array();
     }
   }
