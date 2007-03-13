@@ -479,11 +479,14 @@ function _filefield_file_load($fid = NULL) {
     if (is_numeric($fid)) {
       $result = db_query('SELECT * FROM {files} WHERE fid = %d', $fid);
       $file = db_fetch_array($result);
-      // let modules load extended attributes.
-      $file += module_invoke_all('filefield', 'file_load', $node, $field, $node_field[$delta]);
-      return ($file) ? $file : array();
+      if ($file) {
+        // let modules load extended attributes.
+        $file += module_invoke_all('filefield', 'file_load', $node, $field, $file);
+        return $file;
+      }
     }
   }
+  // return an empty array if nothing was found.
   return array();
 }
 
