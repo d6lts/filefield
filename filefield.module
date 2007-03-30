@@ -93,7 +93,19 @@ function filefield_field_settings($op, $field) {
  */
 function filefield_file_insert($node, $field, &$file) {
   $fieldname = $field['field_name'];
-  if ($file = file_save_upload((object)$file, file_directory_path() . '/'.$file['filename'])) {
+  
+  // allow tokenized paths.
+  if (function_exists('token_replace')) {
+    global $user;
+    $widget_file_path = token_replace($field['widget']['file_path'], 'user', $user);
+  }
+  else {
+    $widget_file_path = $field['widget']['file_path'];
+  }
+ 
+  $filepath = file_create_path($widget_file_path) . '/' . $file['filename'];
+  
+  if (filefield_check_directory($widget_file_path) && $file = file_save_upload((object)$file, $filepath)) {
     $file = (array)$file;
     $file['fid'] = db_next_id('{files}_fid');
     db_query('INSERT into {files} (fid, nid, filename, filepath, filemime, filesize)  
@@ -205,11 +217,21 @@ function filefield_widget_settings($op, $widget) {
         '#maxlength' => 64, 
         '#description' => t('Extensions a user can upload to this field. Seperate extensions with a space and do not include the leading dot.')
       );
+      $form['file_path'] = array(
+        '#type' => 'textfield', 
+        '#title' => t('File path'), 
+        '#default_value' => $widget['file_path'] ? $widget['file_path'] : '', 
+        '#description' => t('Optional subdirectory within the "%dir" directory where files will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))), 
+        '#after_build' => array('filefield_form_check_directory'),
+      );
+      if (function_exists('token_replace')) {
+        $form['file_path']['#description'] .= theme('token_help', 'all');        
+      }
       return $form;
     case 'validate':
       break;
     case 'save':
-      return array('file_extensions');
+      return array('file_extensions', 'file_path');
   }
 }
 
@@ -557,3 +579,35 @@ if (!function_exists('upload_file_download')) {
 
 }
 
+/**
+ * Wrapper function for filefield_check_directory that accepts a form element
+ * to validate - if user specified one. Won't allow form submit unless the
+ * directory exists & is writable
+ * 
+ * @param $form_element
+ *   The form element containing the name of the directory to check.
+ */
+function filefield_form_check_directory($form_element) {
+  if(!empty($form_element['#value'])) {
+    filefield_check_directory($form_element['#value'], $form_element);
+  }
+  return $form_element;
+}
+
+/**
+ * Create the file directory relative to the 'files' dir recursively for every
+ * directory in the path.
+ * 
+ * @param $directory
+ *   The directory path under files to check, such as 'photo/path/here'
+ * @param $form_element
+ *   A form element to throw an error on if the directory is not writable
+ */ 
+function filefield_check_directory($directory, $form_element = array()) {
+  foreach(explode('/', $directory) as $dir) {
+    $dirs[] = $dir;
+    $path = file_create_path(implode($dirs,'/'));
+    file_check_directory($path, FILE_CREATE_DIRECTORY, $form_element['#parents'][0]);
+  }
+  return true;
+}
