@@ -439,7 +439,11 @@ function _filefield_file_form($node, $field, $file) {
       '#value' => t('If a new file is uploaded, this file will be replaced upon submitting this form.'),
     );
   }
-  $form = module_invoke_all('filefield', 'file_form', $node, $field, $file, $form);
+
+  foreach (module_implements('filefield') as $module) {
+    $function = $module .'_filefield';
+    $function('file_form', $node, $field, $file, $form);
+  } 
   return $form;
 }
 
