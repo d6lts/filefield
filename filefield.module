@@ -49,6 +49,10 @@ function _filefield_preview() {
   }
 }
 
+function filefield_perm() {
+  return array('view filefield uploads');
+}
+
 /**
  * Implementation of hook_field_info().
  */
@@ -588,7 +592,7 @@ if (!function_exists('upload_file_download')) {
     $file = file_create_path($file);
     $result = db_query("SELECT f.* FROM {files} f WHERE filepath = '%s'", $file);
     if ($file = db_fetch_object($result)) {
-      if (user_access('view uploaded files')) {
+      if (user_access('view filefield uploads')) {
         $node = node_load($file->nid);
         if (node_access('view', $node)) {
           $name = mime_header_encode($file->filename);
