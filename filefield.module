@@ -247,11 +247,9 @@ function filefield_clear_session() {
 
 function filefield_clear_field_session($fieldname) {
   if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
-    foreach ($_SESSION['filefield'][$fieldname] as $files) {
-      foreach ($files as $delta => $file) {
-        if (is_file($file['filepath'])) {
-          file_delete($file['filepath']);
-        }
+    foreach ($_SESSION['filefield'][$fieldname] as $delta => $file) {
+      if (is_file($file['filepath'])) {
+        file_delete($file['filepath']);
       }
     }
     unset($_SESSION['filefield'][$fieldname]);
