@@ -215,12 +215,14 @@ function filefield_field($op, $node, $field, &$node_field, $teaser, $page) {
         }
       }
       $node_field = array_values($node_field); // compact deltas
+      filefield_clear_field_session($fieldname);
       break;
 
     case 'delete':
       foreach ($node_field as $delta => $item) {
         _filefield_file_delete($node, $field, $item); 
       }
+      filefield_clear_field_session($fieldname);
       break;
   }
 }
