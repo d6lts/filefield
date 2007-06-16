@@ -83,6 +83,14 @@ function filefield_field_settings($op, $field) {
   }
 }
 
+function filefield_default_item() {
+  return array(
+    'fid' => 0,
+    'description' => '',
+    'list' => 0,
+  );
+}
+
 /**
  * insert a file into the database.
  * @param $node
@@ -133,10 +141,7 @@ function filefield_file_update($node, $field, &$file) {
   if ($file['remove'] == TRUE) {
      module_invoke_all('filefield', 'file_delete', $node, $field, $file);
      _filefield_file_delete($node, $field, $file);
-     // should I return an array here instead as imagefield does, or is that a bug in 
-     // in imagefield. I remember I was working on a content.module patch that would
-     // delete multivalue fields whose value was NULL. Maybe a leftover.
-     return NULL;
+     return array();
   }
   if ($file['fid'] == 'upload') {  
     return filefield_file_insert($node, $field, $file);
@@ -154,31 +159,62 @@ function filefield_file_update($node, $field, &$file) {
 function filefield_field($op, $node, $field, &$node_field, $teaser, $page) {
   $fieldname = $field['field_name'];
   switch ($op) {
+    // called after content.module loads default data.
     case 'load':
-      $output = array();
       if (count($node_field)) {
-        $values = array();
         foreach ($node_field as $delta => $file) {
           if (!empty($file)) {
-            $node_field[$delta] += _filefield_file_load($file['fid']);
+            $file = _filefield_file_load($file['fid']);
+
+            // In certain cases, content.module calls this function with
+            // $node_field[$delta] set, even if the field has not yet been
+            // stored at all or has already been deleted. In that case,
+            // $file['fid'] == 0 and file_load() returns an empty array.
+            // When that happens, unset() the delta so that subsequent hooks
+            // are not bothered.
+            if (empty($file)) {
+              unset($node_field[$delta]);
+            }
+            else { // otherwise, merge our info with CCK's, and all is fine.
+              $node_field[$delta] = array_merge((array)$node_field[$delta], $file);
+            }
           }
-          $output = array($fieldname => $node_field);
         }
+        $node_field = array_values($node_field); // compact deltas
+        return array($fieldname => $node_field);
       }
-      break; 
+      return array();
 
     // called before content.module defaults.
     case 'insert':
-      foreach ($node_field as  $delta => $item) {
-        $node_field[$delta] = filefield_file_insert($node, $field, $item); 
+      foreach ($node_field as $delta => $item) {
+        $node_field[$delta] = filefield_file_insert($node, $field, $item);
+        // Remove non-existant files from node_field
+        if (empty($node_field[$delta])) {
+          unset($node_field[$delta]);
+        }
       }
+      $node_field = array_values($node_field); // compact deltas
       break;
 
     // called before content.module defaults.
     case 'update':
       foreach ($node_field as $delta => $item) {
-        $node_field[$delta] = filefield_file_update($node, $field, $item); 
+        $node_field[$delta] = filefield_file_update($node, $field, $item);
+
+        // If the file has been deleted, unset the file entry so that it's
+        // actually deleted from the database, or at least set it to a
+        // default item if CCK won't delete it.
+        if (empty($node_field[$delta])) {
+          if ($field['multiple']) {
+            unset($node_field[$delta]);
+          }
+          else {
+            $node_field[$delta] = filefield_default_item();
+          }
+        }
       }
+      $node_field = array_values($node_field); // compact deltas
       break;
 
     case 'delete':
@@ -187,7 +223,6 @@ function filefield_field($op, $node, $field, &$node_field, $teaser, $page) {
       }
       break;
   }
-  return $output;
 }
 
 /**
@@ -499,15 +534,14 @@ function filefield_field_formatter($field, $item, $formatter) {
 }
 
 function _filefield_file_load($fid = NULL) {
-  if (isset($fid)) { 
-    if (is_numeric($fid)) {
-      $result = db_query('SELECT * FROM {files} WHERE fid = %d', $fid);
-      $file = db_fetch_array($result);
-      if ($file) {
-        // let modules load extended attributes.
-        $file += module_invoke_all('filefield', 'file_load', $node, $field, $file);
-        return $file;
-      }
+  // Don't bother if we weren't passed and fid.
+  if (!empty($fid) && is_numeric($fid)) {
+    $result = db_query('SELECT * FROM {files} WHERE fid = %d', $fid);
+    $file = db_fetch_array($result);
+    if ($file) {
+      // let modules load extended attributes.
+      $file += module_invoke_all('filefield', 'file_load', $node, $field, $file);
+      return $file;
     }
   }
   // return an empty array if nothing was found.
@@ -544,6 +578,7 @@ function theme_filefield($file) {
     $desc = $file['description'];
     return '<a href="'. check_url($url) .'">'.check_plain($name).'</a>';
   }
+  return '';
 }
 
 if (!function_exists('upload_file_download')) {
