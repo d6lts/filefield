@@ -414,7 +414,8 @@ function _filefield_widget_form($node, $field, &$node_field) {
   
   $form[$fieldname][$fieldname .'_upload'] = array(
     '#type'  => 'file',
-    '#description' => $field['widget']['description'] . t('<br />allowed extensions(%ext)', array('%ext' => $field['widget']['file_extensions'])),
+    '#title' => t('Attach new file'),
+    '#description' => $field['widget']['description'] . t('<br />Allowed extensions: %ext', array('%ext' => $field['widget']['file_extensions'])),
     '#weight' => 9,
     '#tree' => FALSE,
   );
@@ -429,13 +430,17 @@ function _filefield_widget_form($node, $field, &$node_field) {
   );
 
   if (is_array($node_field) && count($node_field)) {
+    $form[$fieldname]['files'] = array(
+      '#parents' => array($fieldname),
+      '#theme' => 'filefield_form_current',
+    );
     foreach($node_field as $delta => $file) {
       // @todo: split into its own form and theme functions per file like imagefield
       if ($file['filepath'] && !$file['remove']) {
-        $form[$fieldname][$delta] = _filefield_file_form($node, $field, $file);
+        $form[$fieldname]['files'][$delta] = _filefield_file_form($node, $field, $file);
       }
       elseif ($file['filepath'] && $file['remove']) {
-        $form[$fieldname][$delta]['remove'] = array(
+        $form[$fieldname]['files'][$delta]['remove'] = array(
           '#type' => 'hidden',
           '#value' => $file['remove'],
         );
@@ -461,7 +466,6 @@ function _filefield_file_form($node, $field, $file) {
   $form['description'] = array(
       '#type' => 'textfield', 
       '#default_value' => (strlen($file['description'])) ? $file['description'] : $file['filename'], '#maxlength' => 256, 
-      '#title' => t('Description'),
   );
   $form['url'] = array(
     '#type' => 'markup',
@@ -471,19 +475,17 @@ function _filefield_file_form($node, $field, $file) {
   );
   $form['size'] = array(
     '#type' => 'markup', 
-    '#value' => t('File Size') .': '. format_size($file['filesize']),
+    '#value' => format_size($file['filesize']),
     '#prefix' => '<div class="filefield-edit-file-size">',
     '#suffix' => '</div>',
   );
   $form['remove'] = array(
     '#type' => 'checkbox', 
     '#default_value' => $file['remove'],
-    '#title' => t('Remove'),
   );
   $form['list'] = array(
     '#type' => 'checkbox', 
     '#default_value' => $file['list'],
-    '#title' => t('List'),
   );
 
   $form['filename'] = array('#type' => 'value',  '#value' => $file['filename']);
@@ -552,6 +554,24 @@ function _filefield_file_load($fid = NULL) {
   }
   // return an empty array if nothing was found.
   return array();
+}
+
+function theme_filefield_form_current($form) {
+  $header = array(t('Delete'), t('List'), t('Description'), t('Size'));
+
+  foreach (element_children($form) as $key) {
+    $row = array();
+    $row[] = drupal_render($form[$key]['remove']);
+    $row[] = drupal_render($form[$key]['list']);
+    $row[] = drupal_render($form[$key]['icon']).
+             drupal_render($form[$key]['description']).
+             drupal_render($form[$key]['url']);
+    $row[] = drupal_render($form[$key]['size']);
+    $rows[] = $row;
+  }
+  $output = theme('table', $header, $rows);
+  $output .= drupal_render($form);
+  return $output;
 }
 
 function theme_filefield_icon($file) {
