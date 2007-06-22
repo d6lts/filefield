@@ -489,12 +489,19 @@ function _filefield_file_form($node, $field, $file) {
     '#type' => 'checkbox',
     '#default_value' => $file['delete'],
   );
-  $form['list'] = array(
-    '#type' => 'checkbox', 
-    '#default_value' => $file['list'],
-  );
+
+  // Only show the list checkbox if the corresponding widget option is enabled.
   if (isset($field['widget']['show_list']) && !$field['widget']['show_list']) {
-    $form['list']['#type'] = 'value';
+    $form['list'] = array(
+      '#type' => 'value',
+      '#value' => isset($file['list']) ? $file['list'] : 1,
+    );
+  }
+  else {
+    $form['list'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $file['list'],
+    );
   }
 
   $form['filename'] = array('#type' => 'value',  '#value' => $file['filename']);
