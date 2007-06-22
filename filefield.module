@@ -128,7 +128,7 @@ function filefield_file_insert($node, $field, &$file) {
   }
   else {
     // Include file name in upload error.
-    form_set_error(NULL, t('file upload was unsuccessful.'));
+    form_set_error(NULL, t('File upload was unsuccessful.'));
     return FALSE;
   }
 }
