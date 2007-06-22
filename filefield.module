@@ -650,7 +650,7 @@ function theme_filefield($file) {
 if (!function_exists('upload_file_download')) {
   function filefield_file_download($file) {
     $file = file_create_path($file);
-    $result = db_query("SELECT f.* FROM {files} f WHERE filepath = '%s'", $file);
+    $result = db_query("SELECT * FROM {files} WHERE filepath = '%s'", $file);
     if ($file = db_fetch_object($result)) {
       if (user_access('view filefield uploads')) {
         $node = node_load($file->nid);
