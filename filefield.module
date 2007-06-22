@@ -142,7 +142,7 @@ function filefield_file_insert($node, $field, &$file) {
  */
 function filefield_file_update($node, $field, &$file) {
   $file = (array)$file; 
-  if ($file['remove'] == TRUE) {
+  if ($file['delete'] == TRUE) {
      module_invoke_all('filefield', 'file_delete', $node, $field, $file);
      _filefield_file_delete($node, $field, $file);
      return array();
@@ -378,7 +378,7 @@ function _filefield_widget_prepare($node, $field, &$node_field) {
     if (!$field['multiple']) {
       if (is_array($node_field)) {
         foreach($node_field as $delta => $session_file) {
-          $node_field[$delta]['remove'] = TRUE;
+          $node_field[$delta]['delete'] = TRUE;
         }
       }
       // Remove old temporary file from session.
@@ -436,13 +436,13 @@ function _filefield_widget_form($node, $field, &$node_field) {
     );
     foreach($node_field as $delta => $file) {
       // @todo: split into its own form and theme functions per file like imagefield
-      if ($file['filepath'] && !$file['remove']) {
+      if ($file['filepath'] && !$file['delete']) {
         $form[$fieldname]['files'][$delta] = _filefield_file_form($node, $field, $file);
       }
-      elseif ($file['filepath'] && $file['remove']) {
-        $form[$fieldname]['files'][$delta]['remove'] = array(
+      else if ($file['filepath'] && $file['delete']) {
+        $form[$fieldname]['files'][$delta]['delete'] = array(
           '#type' => 'hidden',
-          '#value' => $file['remove'],
+          '#value' => $file['delete'],
         );
       }
     }
@@ -479,9 +479,9 @@ function _filefield_file_form($node, $field, $file) {
     '#prefix' => '<div class="filefield-edit-file-size">',
     '#suffix' => '</div>',
   );
-  $form['remove'] = array(
-    '#type' => 'checkbox', 
-    '#default_value' => $file['remove'],
+  $form['delete'] = array(
+    '#type' => 'checkbox',
+    '#default_value' => $file['delete'],
   );
   $form['list'] = array(
     '#type' => 'checkbox', 
@@ -510,10 +510,26 @@ function _filefield_file_form($node, $field, $file) {
   return $form;
 }
 
+
+/**
+ * Validate the form widget.
+ */
 function _filefield_widget_validate($node, $field, $node_field) {
   if ($field['required']) {
+    // Sum all the items marked for deletion, so we can make sure the end user
+    // isn't deleting all of the files.
+    $count_deleted = 0;
+    foreach($node_field as $item) {
+      if ($item['delete']) {
+        $count_deleted++;
+      }
+    }
+
     if (!count($node_field)) {
-      form_set_error($fieldname, $field['widget']['label'] .' is required.');
+      form_set_error($field['field_name'], $field['widget']['label'] .' is required. Please upload a file.');
+    }
+    else if (count($node_field) == $count_deleted) {
+      form_set_error($field['field_name'], $field['widget']['label'] .' is required. Please keep at least one file or upload a new one.');
     }
   }
 }
@@ -561,7 +577,7 @@ function theme_filefield_form_current($form) {
 
   foreach (element_children($form) as $key) {
     $row = array();
-    $row[] = drupal_render($form[$key]['remove']);
+    $row[] = drupal_render($form[$key]['delete']);
     $row[] = drupal_render($form[$key]['list']);
     $row[] = drupal_render($form[$key]['icon']).
              drupal_render($form[$key]['description']).
