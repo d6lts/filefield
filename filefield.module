@@ -268,11 +268,17 @@ function filefield_widget_settings($op, $widget) {
       if (function_exists('token_replace')) {
         $form['file_path']['#description'] .= theme('token_help', 'all');        
       }
+      $form['show_list'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Show "List" option'),
+        '#default_value' => isset($widget['show_list']) ? $widget['show_list'] : 1,
+        '#description' => t('If enabled, the user can choose for each file whether it should be listed or not. If disabled, the "List" checkbox will be hidden and files are always listed.'),
+      );
       return $form;
     case 'validate':
       break;
     case 'save':
-      return array('file_extensions', 'file_path');
+      return array('file_extensions', 'file_path', 'show_list');
   }
 }
 
@@ -487,6 +493,9 @@ function _filefield_file_form($node, $field, $file) {
     '#type' => 'checkbox', 
     '#default_value' => $file['list'],
   );
+  if (isset($field['widget']['show_list']) && !$field['widget']['show_list']) {
+    $form['list']['#type'] = 'value';
+  }
 
   $form['filename'] = array('#type' => 'value',  '#value' => $file['filename']);
   $form['filepath'] = array('#type' => 'value',  '#value' => $file['filepath']);
@@ -573,12 +582,19 @@ function _filefield_file_load($fid = NULL) {
 }
 
 function theme_filefield_form_current($form) {
-  $header = array(t('Delete'), t('List'), t('Description'), t('Size'));
+  // If the "List" option hasn't been hidden as 'value', show it.
+  $show_list = ($form[0]['list']['#type'] == 'checkbox');
+
+  $header = $show_list
+            ? array(t('Delete'), t('List'), t('Description'), t('Size'))
+            : array(t('Delete'), t('Description'), t('Size'));
 
   foreach (element_children($form) as $key) {
     $row = array();
     $row[] = drupal_render($form[$key]['delete']);
-    $row[] = drupal_render($form[$key]['list']);
+    if ($show_list) {
+      $row[] = drupal_render($form[$key]['list']);
+    }
     $row[] = drupal_render($form[$key]['icon']).
              drupal_render($form[$key]['description']).
              drupal_render($form[$key]['url']);
