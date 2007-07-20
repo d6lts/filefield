@@ -439,6 +439,8 @@ function _filefield_widget_form($node, $field, &$node_field) {
     $form[$fieldname]['files'] = array(
       '#parents' => array($fieldname),
       '#theme' => 'filefield_form_current',
+      // remember the show_list setting so that the theme function knows
+      '#show_list' => _filefield_is_show_list($field['widget']),
     );
     foreach($node_field as $delta => $file) {
       // @todo: split into its own form and theme functions per file like imagefield
@@ -491,16 +493,16 @@ function _filefield_file_form($node, $field, $file) {
   );
 
   // Only show the list checkbox if the corresponding widget option is enabled.
-  if (isset($field['widget']['show_list']) && !$field['widget']['show_list']) {
+  if (_filefield_is_show_list($field['widget'])) {
     $form['list'] = array(
-      '#type' => 'value',
-      '#value' => isset($file['list']) ? $file['list'] : 1,
+      '#type' => 'checkbox',
+      '#default_value' => $file['list'],
     );
   }
   else {
     $form['list'] = array(
-      '#type' => 'checkbox',
-      '#default_value' => $file['list'],
+      '#type' => 'value',
+      '#value' => isset($file['list']) ? $file['list'] : 1,
     );
   }
 
@@ -550,6 +552,16 @@ function _filefield_widget_validate($node, $field, $node_field) {
   }
 }
 
+/**
+ * Determine whether to show the 'List' checkbox or not.
+ */
+function _filefield_is_show_list($widget) {
+  if (isset($widget['show_list']) && !$widget['show_list']) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
 
 /**
  * Implementation of hook_field formatter.
@@ -590,17 +602,19 @@ function _filefield_file_load($fid = NULL) {
 }
 
 function theme_filefield_form_current($form) {
-  // If the "List" option hasn't been hidden as 'value', show it.
-  $show_list = ($form[0]['list']['#type'] == 'checkbox');
-
-  $header = $show_list
+  $header = $form['#show_list']
             ? array(t('Delete'), t('List'), t('Description'), t('Size'))
             : array(t('Delete'), t('Description'), t('Size'));
 
   foreach (element_children($form) as $key) {
+    // Don't display (hidden) replaced items.
+    if ($form[$key]['delete']['#type'] == 'hidden') {
+      continue;
+    }
+
     $row = array();
     $row[] = drupal_render($form[$key]['delete']);
-    if ($show_list) {
+    if ($form['#show_list']) {
       $row[] = drupal_render($form[$key]['list']);
     }
     $row[] = drupal_render($form[$key]['icon']).
