@@ -10,7 +10,7 @@
  */
 
 
-function filefield_menu($maycache) {
+function filefield_menu($may_cache) {
   $items = array();
 
   if (!$may_cache && $_SESSION['filefield']) {
