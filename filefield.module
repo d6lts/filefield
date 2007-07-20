@@ -590,7 +590,7 @@ function filefield_field_formatter($field, $item, $formatter) {
     $file = _filefield_file_load($item['fid']);
   }
   if (!empty($file['filepath'])) {
-    return theme('filefield', $file, $item);
+    return theme('filefield', array_merge($file, $item));
   }
 }
 
@@ -653,8 +653,7 @@ function theme_filefield_view_file($file) {
 }
 
 function theme_filefield($file) {
-  $file = (array)$file;
-  if (is_file($file['filepath'])) {
+  if (is_file($file['filepath']) && $file['list']) {
     if ($file['fid'] == 'upload') {
       $path = file_create_filename($file['filename'], file_create_path());
     }
@@ -664,7 +663,7 @@ function theme_filefield($file) {
     $url = file_create_url($path);
     $name = $file['filename'];
     $desc = $file['description'];
-    return '<a href="'. check_url($url) .'">'.check_plain($name).'</a>';
+    return '<a href="'. check_url($url) .'">'. check_plain($desc) .'</a>';
   }
   return '';
 }
