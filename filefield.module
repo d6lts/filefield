@@ -434,7 +434,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
     '#tree' => FALSE,
   );
 
-  $form[$fieldname]['update'] = array(
+  $form[$fieldname]['upload'] = array(
     '#type' => 'button',
     '#value' => t('Upload'),
     '#name' => 'cck_filefield_'.$fieldname.'_op',
