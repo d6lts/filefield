@@ -388,7 +388,7 @@ function _filefield_widget_prepare($node, $field, &$node_field) {
     $file['fid'] = 'upload';
     $file['preview'] = $filepath;
 
-    // if this is a single value filefield mark any other images for deletion.
+    // if this is a single value filefield mark any other files for deletion.
     if (!$field['multiple']) {
       if (is_array($node_field)) {
         foreach($node_field as $delta => $session_file) {
