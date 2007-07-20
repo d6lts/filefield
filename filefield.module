@@ -199,6 +199,7 @@ function filefield_field($op, $node, $field, &$node_field, $teaser, $page) {
         }
       }
       $node_field = array_values($node_field); // compact deltas
+      filefield_clear_field_session($fieldname);
       break;
 
     // called before content.module defaults.
