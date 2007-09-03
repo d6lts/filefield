@@ -248,6 +248,9 @@ function filefield_widget_info() {
  */
 function filefield_widget_settings($op, $widget) {
   switch ($op) {
+    case 'callbacks':
+      return array('default value' => CONTENT_CALLBACK_CUSTOM);
+
     case 'form':
       $form = array();
       $form['file_extensions'] = array (
@@ -266,7 +269,7 @@ function filefield_widget_settings($op, $widget) {
         '#after_build' => array('filefield_form_check_directory'),
       );
       if (function_exists('token_replace')) {
-        $form['file_path']['#description'] .= theme('token_help', 'all');        
+        $form['file_path']['#description'] .= theme('token_help', 'user');        
       }
       $form['show_list'] = array(
         '#type' => 'checkbox',
@@ -320,6 +323,9 @@ function _filefield_file_delete($node, $field, $file) {
 function filefield_widget($op, $node, $field, &$node_field) {
   $fieldname = $field['field_name'];
   switch ($op) {
+    case 'default value':
+      return array();
+
     case 'prepare form values':
       _filefield_widget_prepare($node, $field, $node_field);
       break;
