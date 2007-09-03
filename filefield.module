@@ -390,7 +390,7 @@ function _filefield_widget_prepare_form_values($node, $field, &$node_field) {
     // let modules massage act on the file.
     module_invoke_all('filefield', 'file_prepare', $node, $field, $file);
 
-    $filepath = file_create_filename($file['filename'], file_create_path());
+    $filepath = file_create_filename($file['filename'], file_create_path($field['widget']['file_path']));
     if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
       if (strpos($filepath, file_directory_path()) !== FALSE) {
         $filepath = trim(substr($filepath, strlen(file_directory_path())), '\\/');
@@ -536,10 +536,13 @@ function _filefield_file_form($node, $field, $file) {
     '#value' => theme('filefield_icon', $file),
   );
 
-  $filepath = $file['fid'] == 'upload' ? file_create_filename($file['filename'], file_create_path()) : $file['filepath'];      
+  $filepath = ($file['fid'] == 'upload')
+              ? file_create_filename($file['filename'], file_create_path($field['widget']['file_path']))
+              : $file['filepath'];
 
-  $url = file_create_url($filepath);      
+  $url = file_create_url($filepath);
   $url = "<small>". check_plain($url) ."</small>";
+
   $form['description'] = array(
       '#type' => 'textfield', 
       '#default_value' => (strlen($file['description'])) ? $file['description'] : $file['filename'], '#maxlength' => 256, 
@@ -706,12 +709,10 @@ function theme_filefield_view_file($file) {
 
 function theme_filefield($file) {
   if (is_file($file['filepath']) && $file['list']) {
-    if ($file['fid'] == 'upload') {
-      $path = file_create_filename($file['filename'], file_create_path());
-    }
-    else {
-      $path = $file['filepath'];
-    }
+    $path = ($file['fid'] == 'upload')
+            ? file_create_filename($file['filename'], file_create_path($field['widget']['file_path']))
+            : $file['filepath'];
+
     $url = file_create_url($path);
     $name = $file['filename'];
     $desc = $file['description'];
