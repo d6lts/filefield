@@ -695,10 +695,10 @@ function theme_filefield_icon($file) {
   $ext = array_pop(explode('.',$file['filename']));
   $known_extensions = array('0','ace','aif','ai','ani','asf','asp','avi','bak','bat','bin','bmp','bz2','bz','cab','cdr','cfg','com','conf','cpt','css','cur','dat','db','dcr','dic','diff','dir','dll','dmg','doc','dwg','edir','eml','eps','exe','fla','flv','fon','gif','gz','hqx','html','htm','ico','inc','ini','iso','jpeg','jpg','js','lnk','log','m3u','mdb','midi','mid','mov','mp3','mpeg','mpg','nfo','odb','odc','odf','odg','odm','odp','ods','odt','ogg','otg','oth','otp','ots','ott','patch','pdf','php3','php','phtml','pl','png','pps','ppt','psd','pwl','qt','ram','ra','rar','reg','rpm','rtf','sh','shtml','sit','sql','svg','swf','sxc','sxi','sxw','sys','tar','tgz','tiff','tif','tmp','tpl','ttf','txt','wav','wma','wmv','wp','xls','xml','zip');
   if (!in_array($ext, $known_extensions))  {
-    $ext = 0; 
+    $ext = 0;
   }
-  $imagepath = drupal_get_path('module','filefield') .'/ico/'. $ext .'.png';
-  
+  $imagepath = base_path() . drupal_get_path('module','filefield') .'/ico/'. $ext .'.png';
+
   return '<div class="filefield-icon-container"><div class="filefield-icon field-icon-'. $ext .'"><img src="'. $imagepath .'" /></div></div>';
   //return '<div class="filefield-icon-container"><div class="filefield-icon field-icon-'. $ext .'">&nbsp;</div></div>'."\n";
 }
