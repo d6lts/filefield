@@ -13,8 +13,6 @@ function filefield_update_1() {
   include_once(drupal_get_path('module', 'content') .'/content.module');
   include_once(drupal_get_path('module', 'content') .'/content_admin.inc');
 
-
-
   $fields = content_fields();
 
   foreach ($fields as $field) {
@@ -29,5 +27,9 @@ function filefield_update_1() {
   }
   db_query('DELETE FROM {cache}');
   return $ret;
+}
 
+function filefield_update_2() {
+  cache_clear_all('*', 'cache_menu', TRUE);
+  return array();
 }
