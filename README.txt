@@ -1,11 +1,11 @@
-filefield provides a image field type to cck.
+filefield provides a file field type to CCK.
 
+In order to make files show up on a page, you need to do three things:
 
-if you are running drupal 4.7.3 you should update the .htaccess 
-file in you files directory to make previews work...
-better yet upgrade to 4.7.4.
+-> Enable the "view filefield uploads" permission for all users that
+   should be able to view these files.
 
-  comment out RewriteEngine off
-  add +FollowSymlinks to the Options stanza.
+-> Add a CCK field of the type "File" to any content type.
 
-
+-> Create a node of this content type, upload some file(s),
+   and set the "List" option for those files that should show up on the node.
