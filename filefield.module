@@ -641,6 +641,9 @@ function filefield_field_formatter_info() {
 }
 
 function filefield_field_formatter($field, $item, $formatter) {
+  if (!user_access('view filefield uploads')) {
+    return '';
+  }
   if(!empty($item['fid']) && $item['list']) {
     $file = _filefield_file_load($item['fid']);
   }
