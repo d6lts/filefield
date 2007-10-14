@@ -641,7 +641,10 @@ function filefield_field_formatter_info() {
 }
 
 function filefield_field_formatter($field, $item, $formatter) {
-  if(!empty($item['fid']) && $item['list']) {
+  if(_filefield_is_show_list($field['widget']) == FALSE) {
+    $item['list'] = 1; // always show the files if "List" is not shown
+  }
+  if(!empty($item['fid'])) {
     $file = _filefield_file_load($item['fid']);
   }
   if (!empty($file['filepath'])) {
