@@ -549,7 +549,7 @@ function _filefield_file_form($node, $field, $file) {
   );
   $form['url'] = array(
     '#type' => 'markup',
-    '#value' => t('URL') .': '. $url,
+    '#value' => t('URL: !url', array('!url' => $url)),
     '#prefix' => '<div class="filefield-edit-file-url">',
     '#suffix' => '</div>',
   );
