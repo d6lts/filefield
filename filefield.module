@@ -549,7 +549,7 @@ function _filefield_file_form($node, $field, $file) {
   );
   $form['url'] = array(
     '#type' => 'markup',
-    '#value' => t('URL') .': '. $url,
+    '#value' => t('URL: !url', array('!url' => $url)),
     '#prefix' => '<div class="filefield-edit-file-url">',
     '#suffix' => '</div>',
   );
@@ -717,9 +717,8 @@ function theme_filefield($file) {
             : $file['filepath'];
 
     $url = file_create_url($path);
-    $name = $file['filename'];
     $desc = $file['description'];
-    return '<a href="'. check_url($url) .'">'. check_plain($desc) .'</a>';
+    return l($desc, $url);
   }
   return '';
 }
