@@ -719,7 +719,7 @@ function theme_filefield($file) {
     $url = file_create_url($path);
     $name = $file['filename'];
     $desc = $file['description'];
-    return '<a href="'. check_url($url) .'">'. check_plain($desc) .'</a>';
+    return l($desc, $url);
   }
   return '';
 }
