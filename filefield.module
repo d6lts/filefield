@@ -78,13 +78,19 @@ function filefield_field_settings($op, $field) {
   switch ($op) {
     case 'form':
       $form = array();
+      $form['force_list'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Always list files'),
+        '#default_value' => isset($field['force_list']) ? $field['force_list'] : 0,
+        '#description' => t('If enabled, the "List" checkbox will be hidden and files are always shown. Otherwise, the user can choose for each file whether it should be listed or not.'),
+      );
       return $form;
 
     case 'validate':
       break;
 
     case 'save':
-      return array();
+      return array('force_list');
 
     case 'database columns':
       $columns = array(
@@ -279,17 +285,11 @@ function filefield_widget_settings($op, $widget) {
       if (function_exists('token_replace')) {
         $form['file_path']['#description'] .= theme('token_help', 'user');        
       }
-      $form['show_list'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Show "List" option'),
-        '#default_value' => isset($widget['show_list']) ? $widget['show_list'] : 1,
-        '#description' => t('If enabled, the user can choose for each file whether it should be listed or not. If disabled, the "List" checkbox will be hidden and files are always listed.'),
-      );
       return $form;
     case 'validate':
       break;
     case 'save':
-      return array('file_extensions', 'file_path', 'show_list');
+      return array('file_extensions', 'file_path');
   }
 }
 
@@ -475,8 +475,8 @@ function _filefield_widget_form($node, $field, &$node_field) {
     $form[$fieldname]['files'] = array(
       '#parents' => array($fieldname),
       '#theme' => 'filefield_form_current',
-      // remember the show_list setting so that the theme function knows
-      '#show_list' => _filefield_is_show_list($field['widget']),
+      // remember the force_list setting so that the theme function knows
+      '#force_list' => $field['force_list'],
     );
     foreach($node_field as $delta => $file) {
       // @todo: split into its own form and theme functions per file like imagefield
@@ -564,8 +564,8 @@ function _filefield_file_form($node, $field, $file) {
     '#default_value' => $file['delete'],
   );
 
-  // Only show the list checkbox if the corresponding widget option is enabled.
-  if (_filefield_is_show_list($field['widget'])) {
+  // Only show the list checkbox if files are not forced to be listed.
+  if (!$field['force_list']) {
     $form['list'] = array(
       '#type' => 'checkbox',
       '#default_value' => $file['list'],
@@ -615,16 +615,6 @@ function _filefield_widget_validate($node, $field, $node_field) {
   }
 }
 
-/**
- * Determine whether to show the 'List' checkbox or not.
- */
-function _filefield_is_show_list($widget) {
-  if (isset($widget['show_list']) && !$widget['show_list']) {
-    return FALSE;
-  }
-  return TRUE;
-}
-
 
 /**
  * Implementation of hook_field formatter.
@@ -641,8 +631,8 @@ function filefield_field_formatter_info() {
 }
 
 function filefield_field_formatter($field, $item, $formatter) {
-  if(_filefield_is_show_list($field['widget']) == FALSE) {
-    $item['list'] = 1; // always show the files if "List" is not shown
+  if($field['force_list']) {
+    $item['list'] = 1; // always show the files if that option is enabled
   }
   if(!empty($item['fid'])) {
     $file = _filefield_file_load($item['fid']);
@@ -668,9 +658,9 @@ function _filefield_file_load($fid = NULL) {
 }
 
 function theme_filefield_form_current($form) {
-  $header = $form['#show_list']
-            ? array(t('Delete'), t('List'), t('Description'), t('Size'))
-            : array(t('Delete'), t('Description'), t('Size'));
+  $header = $form['#force_list']
+            ? array(t('Delete'), t('Description'), t('Size'))
+            : array(t('Delete'), t('List'), t('Description'), t('Size'));
 
   foreach (element_children($form) as $key) {
     // Don't display (hidden) replaced items.
@@ -680,7 +670,7 @@ function theme_filefield_form_current($form) {
 
     $row = array();
     $row[] = drupal_render($form[$key]['delete']);
-    if ($form['#show_list']) {
+    if (!$form['#force_list']) {
       $row[] = drupal_render($form[$key]['list']);
     }
     $row[] = drupal_render($form[$key]['icon']).
