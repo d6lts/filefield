@@ -272,6 +272,7 @@ function filefield_widget_settings($op, $widget) {
         '#type' => 'textfield',
         '#title' => t('Permitted upload file extensions'),
         '#default_value' => $widget['file_extensions'] ? $widget['file_extensions'] : 'txt',
+        '#required' => TRUE,
         '#size' => 64,
         '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot.'),
       );
