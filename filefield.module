@@ -433,6 +433,8 @@ function _filefield_widget_prepare_form_values($node, $field, &$node_field) {
 function _filefield_widget_form($node, $field, &$node_field) {
   drupal_add_js('misc/progress.js');
   drupal_add_js('misc/upload.js');
+  drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
+
 
   $fieldname = $field['field_name'];
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
@@ -465,6 +467,7 @@ function _filefield_widget_form($node, $field, &$node_field) {
     '#description' => $field['widget']['description'] . t('<br />Allowed extensions: %ext', array('%ext' => $field['widget']['file_extensions'])),
     '#weight' => 9,
     '#tree' => FALSE,
+    '#attributes' => array('accept' => str_replace(' ', '|', trim($field['widget']['file_extensions']))),
   );
 
   $form[$fieldname]['new']['upload'] = array(
