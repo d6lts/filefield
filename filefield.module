@@ -135,6 +135,7 @@ function filefield_file_insert($node, $field, &$file) {
   if (filefield_check_directory($widget_file_path) && $file = file_save_upload((object)$file, $filepath)) {
     $file = (array)$file;
     $file['fid'] = db_next_id('{files}_fid');
+    $file['filemime'] = mimedetect_mime($file);
     db_query('INSERT into {files} (fid, nid, filename, filepath, filemime, filesize)  
              VALUES (%d, %d, "%s","%s","%s",%d)',
             $file['fid'], $node->nid, $file['filename'], $file['filepath'], $file['filemime'], $file['filesize']);
@@ -389,7 +390,10 @@ function _filefield_widget_prepare_form_values($node, $field, &$node_field) {
 
 
     // let modules massage act on the file.
-    module_invoke_all('filefield', 'file_prepare', $node, $field, $file);
+    foreach(module_implements('filefield') as $module) {
+      $function =  $module .'_filefield';
+      $function('file_prepare', $node, $field, $file);
+    }
 
     $filepath = file_create_filename($file['filename'], file_create_path($field['widget']['file_path']));
     if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
@@ -532,10 +536,13 @@ function _filefield_widget_form($node, $field, &$node_field) {
 function _filefield_file_form($node, $field, $file) {
   // Lets be a good boy and initialize our variables.
   $form = array();
+  
   $form['icon'] = array(
     '#type' => 'markup',
     '#value' => theme('filefield_icon', $file),
   );
+
+  $form['file_preview'] = array();
 
   $filepath = ($file['fid'] == 'upload')
               ? file_create_filename($file['filename'], file_create_path($field['widget']['file_path']))
@@ -660,8 +667,8 @@ function _filefield_file_load($fid = NULL) {
 
 function theme_filefield_form_current($form) {
   $header = $form['#force_list']
-            ? array(t('Delete'), t('Description'), t('Size'))
-            : array(t('Delete'), t('List'), t('Description'), t('Size'));
+            ? array('', t('Delete'), t('Description'), t('Size'))
+            : array('', t('Delete'), t('List'), t('Description'), t('Size'));
 
   foreach (element_children($form) as $key) {
     // Don't display (hidden) replaced items.
@@ -670,6 +677,8 @@ function theme_filefield_form_current($form) {
     }
 
     $row = array();
+    // we just going to lose this for now until we figure out how to handle it... 
+    $row[] = drupal_render($form[$key]['file_preview']);  
     $row[] = drupal_render($form[$key]['delete']);
     if (!$form['#force_list']) {
       $row[] = drupal_render($form[$key]['list']);
