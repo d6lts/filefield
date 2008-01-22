@@ -1,0 +1,5 @@
+; $Id$
+name = FileField - Meta
+description = Add metadata gathering and storage to filefield.
+dependencies = content filefield getid3
+package = CCK

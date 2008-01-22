@@ -1,0 +1,75 @@
+<?php // $Id$
+
+/**
+ * Add Video Support to File Field.
+ */
+
+/**
+ * Implementation of hook_filefield
+ *
+ * @param op
+ *  - file_save
+ *  - file_delete
+ *  - file_prepare
+ *  - file_validate
+ *  - file_load
+ *  - file_form
+ *  - delete 
+ *
+ * @param node
+ * @param field
+ * @param file
+ * @param form
+ */
+
+function filefield_meta_filefield($op, &$node, $field, &$file, &$form = NULL) {
+  $args = func_get_args();
+
+
+  switch($op) {
+    case 'file_form':
+      $form['file_preview']['#value'] = '';
+      $form['url']['#value'] .= '<br />width: '. $file['width'] .'; height: '. $file['height'] .'; duration: '. $file['duration'];
+      $form['width'] = array('#type' => 'hidden',  '#value' => $file['width']);
+      $form['height'] = array('#type' => 'hidden',  '#value' => $file['height']);
+      $form['duration'] = array('#type' => 'hidden',  '#value' => $file['duration']);
+      break;
+
+    case 'file_prepare':
+      filefield_meta($file);
+      return $file;
+      break;    
+
+    case 'file_save':
+      db_query('INSERT INTO {filefield_meta} (fid, width, height, duration) VALUES (%d, %d, %d, %d)', $file['fid'], $file['width'], $file['height'], $file['duration']);
+      break;
+
+    case 'file_delete':
+      db_query('DELETE FROM {filefield_meta} WHERE fid = %d', $file['fid']);
+      break;
+
+    case 'file_load':
+      $meta = db_fetch_array(db_query('SELECT * FROM {filefield_meta} WHERE fid = %d', $file['fid']));
+      if ($meta) {
+        return $meta;
+      }
+      break;
+  }
+}
+
+function filefield_meta(&$file) {
+  $info = getid3_analyze($file['filepath']);
+  $file['width'] = $file['height'] = $file['duration'] = 0;
+  if (isset($info['video']['resolution_x'])) {
+    $file['width'] = $info['video']['resolution_x'];
+    $file['height'] = $info['video']['resolution_y'];
+  } 
+  else if (isset($info['video']['streams'])) {
+    foreach($info['video']['streams'] as $stream) {
+      $file['width'] = max($file['width'], $stream['resolution_x']);
+      $file['height'] = max($file['height'], $stream['resolution_y']);
+    }
+  }
+  $file['duration'] = $info['playtime_seconds'];
+};
+ 
