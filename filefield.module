@@ -272,10 +272,9 @@ function filefield_widget_settings($op, $widget) {
       $form['file_extensions'] = array (
         '#type' => 'textfield',
         '#title' => t('Permitted upload file extensions'),
-        '#default_value' => $widget['file_extensions'] ? $widget['file_extensions'] : 'txt',
-        '#required' => TRUE,
+        '#default_value' => isset($widget['file_extensions']) ? $widget['file_extensions'] : 'txt',
         '#size' => 64,
-        '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot.'),
+        '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
       );
       $form['file_path'] = array(
         '#type' => 'textfield', 
@@ -610,21 +609,24 @@ function _filefield_file_form($node, $field, $file) {
 /**
  * Validate the form widget.
  */
-function _filefield_widget_validate($node, $field, $node_field) {
-  if ($field['required']) {
+function _filefield_widget_validate($node, $field, $items) {
+  
+  if (!$field['required']) {
+    return;
+  }
+  
+  // if there aren't any items.. throw an error.
+  if (!count($items)) {
+    form_set_error($field['field_name'], t('@field is required. Please upload a file.', array('@field' => $field['widget']['label'])));
+  }
+  else {
     // Sum all the items marked for deletion, so we can make sure the end user
     // isn't deleting all of the files.
     $count_deleted = 0;
-    foreach($node_field as $item) {
-      if ($item['delete']) {
-        $count_deleted++;
-      }
+    foreach($items as $item) {
+      $count_deleted += isset($item['delete']) && $item['delete'];
     }
-
-    if (!count($node_field)) {
-      form_set_error($field['field_name'], t('@field is required. Please upload a file.', array('@field' => $field['widget']['label'])));
-    }
-    else if (count($node_field) == $count_deleted) {
+    if (count($items) == $count_deleted) {
       form_set_error($field['field_name'], t('@field is required. Please keep at least one file or upload a new one.', array('@field' => $field['widget']['label'])));
     }
   }
