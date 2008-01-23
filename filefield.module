@@ -176,71 +176,44 @@ function filefield_file_update($node, $field, &$file) {
 /**
  * Implementation of hook_field().
  */
-function filefield_field($op, $node, $field, &$node_field, $teaser, $page) {
+function filefield_field($op, $node, $field, &$items, $teaser, $page) {
   $fieldname = $field['field_name'];
   switch ($op) {
     // called after content.module loads default data.
     case 'load':
-      if (count($node_field)) {
-        foreach ($node_field as $delta => $file) {
-          if (!empty($file)) {
-            $file = _filefield_file_load($file['fid']);
-
-            // In certain cases, content.module calls this function with
-            // $node_field[$delta] set, even if the field has not yet been
-            // stored at all or has already been deleted. In that case,
-            // $file['fid'] == 0 and file_load() returns an empty array.
-            // When that happens, unset() the delta so that subsequent hooks
-            // are not bothered.
-            if (empty($file)) {
-              unset($node_field[$delta]);
-            }
-            else { // otherwise, merge our info with CCK's, and all is fine.
-              $node_field[$delta] = array_merge((array)$node_field[$delta], $file);
-            }
-          }
-        }
-        $node_field = array_values($node_field); // compact deltas
-        return array($fieldname => $node_field);
+      $items = array_filter($items); // drop empty deltas, cuz cck sends 'em some times.
+      if (empty($items)) {
+        return array();
       }
-      return array();
+      foreach ($items as $delta => $item) {
+        if (!empty($item['fid'])) { // otherwise, merge our info with CCK's, and all is fine.
+          $items[$delta] = array_merge($item, _filefield_file_load($item['fid']));
+        }
+      }
+      $items = array_values($items); // compact deltas
+      return array($fieldname => $items);
 
     // called before content.module defaults.
     case 'insert':
-      foreach ($node_field as $delta => $item) {
-        $node_field[$delta] = filefield_file_insert($node, $field, $item);
-        // Remove non-existant files from node_field
-        if (empty($node_field[$delta])) {
-          unset($node_field[$delta]);
-        }
+      foreach ($items as $delta => $item) {
+        $items[$delta] = filefield_file_insert($node, $field, $item);
       }
-      $node_field = array_values($node_field); // compact deltas
+      $items = array_values($items); // compact deltas
       filefield_clear_field_session($fieldname);
       break;
 
     // called before content.module defaults.
     case 'update':
-      foreach ($node_field as $delta => $item) {
-        $node_field[$delta] = filefield_file_update($node, $field, $item);
-
-        // If the file has been deleted, unset the file entry so that it's
-        // actually deleted from the database, or at least set it to a
-        // default item if CCK won't delete it.
-        if (empty($node_field[$delta])) {
-          if ($field['multiple']) {
-            unset($node_field[$delta]);
-          }
-          else {
-            $node_field[$delta] = filefield_default_item();
-          }
-        }
+      foreach ($items as $delta => $item) {
+        $items[$delta] = filefield_file_update($node, $field, $item);
       }
-      $node_field = array_values($node_field); // compact deltas
+      $items = array_filter($items); // unset empty items.
+      $items = array_values($items); // compact deltas
       filefield_clear_field_session($fieldname);
       break;
 
     case 'delete':
-      foreach ($node_field as $delta => $item) {
+      foreach ($items as $delta => $item) {
         _filefield_file_delete($node, $field, $item); 
       }
       break;
@@ -329,26 +302,26 @@ function _filefield_file_delete($node, $field, $file) {
 /**
  * Implementation of hook_widget().
  */
-function filefield_widget($op, $node, $field, &$node_field) {
+function filefield_widget($op, $node, $field, &$items) {
   $fieldname = $field['field_name'];
   switch ($op) {
     case 'default value':
       return array();
 
     case 'prepare form values':
-      _filefield_widget_prepare_form_values($node, $field, $node_field);
+      _filefield_widget_prepare_form_values($node, $field, $items);
       break;
 
     case 'form':
-      return  _filefield_widget_form($node, $field, $node_field);
+      return  _filefield_widget_form($node, $field, $items);
 
     case 'validate':
-      _filefield_widget_validate($node, $field, $node_field);
+      _filefield_widget_validate($node, $field, $items);
       break;
   }
 }
 
-function _filefield_widget_prepare_form_values($node, $field, &$node_field) {
+function _filefield_widget_prepare_form_values($node, $field, &$items) {
   $fieldname = $field['field_name'];
 
   // @todo split this into its own function. determine if we can make it a form element.
@@ -412,28 +385,28 @@ function _filefield_widget_prepare_form_values($node, $field, &$node_field) {
 
     // if this is a single value filefield mark any other files for deletion.
     if (!$field['multiple']) {
-      if (is_array($node_field)) {
-        foreach($node_field as $delta => $session_file) {
-          $node_field[$delta]['delete'] = TRUE;
+      if (is_array($items)) {
+        foreach($items as $delta => $session_file) {
+          $items[$delta]['delete'] = TRUE;
         }
       }
       // Remove old temporary file from session.
       filefield_clear_field_session($fieldname);
     }
         
-    $file_id = count($node_field) + count($_SESSION['filefield'][$fieldname]);
+    $file_id = count($items) + count($_SESSION['filefield'][$fieldname]);
     $_SESSION['filefield'][$fieldname][$file_id] = $file;
   }
       
   // Load files from preview state. before committing actions.
   if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
     foreach($_SESSION['filefield'][$fieldname] as $delta => $file) {
-      $node_field[] = $file;
+      $items[] = $file;
     }
   }
 }
 
-function _filefield_widget_form($node, $field, &$node_field) {
+function _filefield_widget_form($node, $field, &$items) {
   drupal_add_js('misc/progress.js');
   drupal_add_js('misc/upload.js');
   drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
@@ -482,14 +455,14 @@ function _filefield_widget_form($node, $field, &$node_field) {
     '#weight' => 10,
   );
 
-  if (is_array($node_field) && count($node_field)) {
+  if (is_array($items) && count($items)) {
     $form[$fieldname]['files'] = array(
       '#parents' => array($fieldname),
       '#theme' => 'filefield_form_current',
       // remember the force_list setting so that the theme function knows
       '#force_list' => $field['force_list'],
     );
-    foreach($node_field as $delta => $file) {
+    foreach($items as $delta => $file) {
       // @todo: split into its own form and theme functions per file like imagefield
       if ($file['filepath'] && !$file['delete']) {
         $form[$fieldname]['files'][$delta] = _filefield_file_form($node, $field, $file);
@@ -822,19 +795,19 @@ function filefield_js() {
   $field = content_fields($fieldname, $node->type); // load field data
 
   // Load fids stored by content.module.
-  $node_field = array();
-  $values = content_field('load', $node, $field, $node_field, FALSE, FALSE);
-  $node_field = $values[$fieldname];
+  $items = array();
+  $values = content_field('load', $node, $field, $items, FALSE, FALSE);
+  $items = $values[$fieldname];
 
   // Load additional field data.
-  filefield_field('load', $node, $field, $node_field, FALSE, FALSE);
+  filefield_field('load', $node, $field, $items, FALSE, FALSE);
 
   // Handle uploads and validation.
-  _filefield_widget_prepare_form_values($node, $field, $node_field);
-  _filefield_widget_validate($node, $field, $node_field);
+  _filefield_widget_prepare_form_values($node, $field, $items);
+  _filefield_widget_validate($node, $field, $items);
 
   // Get our new form baby, yeah tiger, get em!
-  $form = _filefield_widget_form($node, $field, $node_field);
+  $form = _filefield_widget_form($node, $field, $items);
 
   foreach (module_implements('form_alter') as $module) {
     $function = $module .'_form_alter';
