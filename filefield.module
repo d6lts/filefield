@@ -323,7 +323,6 @@ function filefield_widget($op, $node, $field, &$items) {
 
 function _filefield_widget_prepare_form_values($node, $field, &$items) {
   $fieldname = $field['field_name'];
-
   // @todo split this into its own function. determine if we can make it a form element.
   if (!count($_POST)) {
     filefield_clear_session();
@@ -336,35 +335,20 @@ function _filefield_widget_prepare_form_values($node, $field, &$items) {
     $last_ext = array_pop(explode('.', $file['filename']));
     $valid = TRUE;
     // only check extensions if there extensions to check.
+    // @todo: trim & strtolower file_extenstions with a formapi validate callback.
     if (strlen(trim($field['widget']['file_extensions']))) {
-      $allowed_extensions = array_unique(explode(' ', trim($field['widget']['file_extensions'])));
-      $valid = FALSE;
-
-      foreach ($allowed_extensions as $allowed_ext) {
-        $allowed_ext = '.'. $allowed_ext;
-        $file_ext = substr($file['filename'], strlen($file['filename']) - strlen($allowed_ext));
-        if (strtolower($file_ext) == strtolower($allowed_ext)) {
-          $valid = TRUE;
-          break;
-        }
+      $allowed_extensions = array_unique(explode(' ', strtolower(trim($field['widget']['file_extensions']))));
+      $ext = array_pop(explode('.', strtolower($file['filename'])));
+      if (!in_array($ext, $allowed_extensions)) {
+        $valid = FALSE;
+        form_set_error($field['field_name'] .'_upload', t('Files with the extension %ext are not allowed. Please upload a file with an extension from the following list: %allowed_extensions', array('%ext' => $last_ext, '%allowed_extensions' => $field['widget']['file_extensions'])));
       }
     }
-    if (!$valid) {
-      // set base validation error message.
-      form_set_error($field['field_name'] .'_upload', t('Files with the extension %ext are not allowed. Please upload a file with an extension from the following list: %allowed_extensions', array('%ext' => $last_ext, '%allowed_extensions' => $field['widget']['file_extensions'])));
-    }
-    
     // let extended validation from other module happen so we get all error messages.
     // if you implement hook_filefield_file() return FALSE to stop the upload.
-    if (in_array(FALSE, module_invoke_all('filefield', 'file_validate', $node, $field, $file))) {
-      $valid = FALSE;
-    }
-    
-    if (!$valid) {
+    if (!$valid || in_array(FALSE, module_invoke_all('filefield', 'file_validate', $node, $field, $file))) {
       return FALSE;
     }
-
-
     // let modules massage act on the file.
     foreach(module_implements('filefield') as $module) {
       $function =  $module .'_filefield';
@@ -393,13 +377,12 @@ function _filefield_widget_prepare_form_values($node, $field, &$items) {
       // Remove old temporary file from session.
       filefield_clear_field_session($fieldname);
     }
-        
     $file_id = count($items) + count($_SESSION['filefield'][$fieldname]);
     $_SESSION['filefield'][$fieldname][$file_id] = $file;
   }
       
   // Load files from preview state. before committing actions.
-  if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
+  if (!empty($_SESSION['filefield'][$fieldname])) {
     foreach($_SESSION['filefield'][$fieldname] as $delta => $file) {
       $items[] = $file;
     }
@@ -625,10 +608,10 @@ function filefield_field_formatter($field, $item, $formatter) {
     $item['list'] = 1; // always show the files if that option is enabled
   }
   if(!empty($item['fid'])) {
-    $file = _filefield_file_load($item['fid']);
+    $item  =  array_merge($item, _filefield_file_load($item['fid']));
   }
-  if (!empty($file['filepath'])) {
-    return theme('filefield', array_merge($file, $item));
+  if (!empty($item['filepath'])) {
+    return theme('filefield', $item);
   }
 }
 
