@@ -726,36 +726,41 @@ function theme_filefield($file) {
   return '';
 }
 
-if (!function_exists('upload_file_download')) {
-  function filefield_file_download($file) {
-    $file = file_create_path($file);
-    $result = db_query("SELECT * FROM {files} WHERE filepath = '%s'", $file);
-    if ($file = db_fetch_object($result)) {
-      if (user_access('view filefield uploads')) {
-        $node = node_load($file->nid);
-        if (node_access('view', $node)) {
-          $name = mime_header_encode($file->filename);
-          $type = mime_header_encode($file->filemime);
-          // Serve images and text inline for the browser to display rather than download.
-          $disposition = ereg('^(text/|image/)', $file->filemime) ? 'inline' : 'attachment';
-          return array(
-            'Content-Type: '. $type .'; name='. $name,
-            'Content-Length: '. $file->filesize,
-            'Content-Disposition: '. $disposition .'; filename='. $name,
-            'Cache-Control: private'
-          );
-        }
-        else {
-          return -1; 
-        }
-      }   
-      else {
-        return -1; 
-      }   
-    }   
+function filefield_file_download($file) {
+  $file = file_create_path($file);
+
+  $result = db_query("SELECT * FROM {files} WHERE filepath = '%s'", $file);
+  if (!$file = db_fetch_object($result)) {
+    // We don't really care about this file.
+    return;
   }
 
+  if (!user_access('view filefield uploads')) {
+    // sorry you do not have the proper permissions to view
+    // filefield uploads.
+    return -1;
+  }
+
+  $node = node_load($file->nid);
+  if (!node_access('view', $node)) {
+    // You don't have permission to view the node
+    // this file is attached to.
+    return -1;
+  }
+
+  // Well I guess you can see this file.
+  $name = mime_header_encode($file->filename);
+  $type = mime_header_encode($file->filemime);
+  // Serve images and text inline for the browser to display rather than download.
+  $disposition = ereg('^(text/|image/)', $file->filemime) ? 'inline' : 'attachment';
+  return array(
+    'Content-Type: '. $type .'; name='. $name,
+    'Content-Length: '. $file->filesize,
+    'Content-Disposition: '. $disposition .'; filename='. $name,
+    'Cache-Control: private'
+  );
 }
+
 
 /**
  * Wrapper function for filefield_check_directory that accepts a form element
