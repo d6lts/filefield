@@ -362,15 +362,19 @@ function _filefield_widget_prepare_form_values($node, $field, &$node_field) {
     // test allowed extensions. We do this when the file is uploaded, rather than waiting for the
     // field itseld to reach op==validate.
     $last_ext = array_pop(explode('.', $file['filename']));
-    $allowed_extensions = array_unique(explode(' ', trim($field['widget']['file_extensions'])));
-    $valid = FALSE;
+    $valid = TRUE;
+    // only check extensions if there extensions to check.
+    if (strlen(trim($field['widget']['file_extensions']))) {
+      $allowed_extensions = array_unique(explode(' ', trim($field['widget']['file_extensions'])));
+      $valid = FALSE;
 
-    foreach ($allowed_extensions as $allowed_ext) {
-      $allowed_ext = '.'. $allowed_ext;
-      $file_ext = substr($file['filename'], strlen($file['filename']) - strlen($allowed_ext));
-      if (strtolower($file_ext) == strtolower($allowed_ext)) {
-        $valid = TRUE;
-        break;
+      foreach ($allowed_extensions as $allowed_ext) {
+        $allowed_ext = '.'. $allowed_ext;
+        $file_ext = substr($file['filename'], strlen($file['filename']) - strlen($allowed_ext));
+        if (strtolower($file_ext) == strtolower($allowed_ext)) {
+          $valid = TRUE;
+          break;
+        }
       }
     }
     if (!$valid) {
