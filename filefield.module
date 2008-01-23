@@ -703,10 +703,12 @@ function theme_filefield_icon($file) {
   if (!in_array($ext, $known_extensions))  {
     $ext = 0;
   }
-  $imagepath = base_path() . drupal_get_path('module','filefield') .'/ico/'. $ext .'.png';
-
-  return '<div class="filefield-icon-container"><div class="filefield-icon field-icon-'. $ext .'"><img src="'. $imagepath .'" /></div></div>';
-  //return '<div class="filefield-icon-container"><div class="filefield-icon field-icon-'. $ext .'">&nbsp;</div></div>'."\n";
+  $icon = '';
+  $iconpath = base_path() .'/'. drupal_get_path('module','filefield') .'/ico/'. $ext .'.png';
+  if (file_exists($iconpath)) {
+    $icon = '<img class="field-icon-'. $ext .'" src="'. $imagepath .'" />';
+  }
+  return '<div class="filefield-icon field-icon-'. $ext .'">'. $icon .'</div>';
 }
 
 function theme_filefield_view_file($file) {
@@ -741,7 +743,7 @@ function filefield_file_download($file) {
     // this file is attached to.
     return -1;
   }
-  
+ 
   // @todo: check the node for this file to be referenced in a field 
   // to determine if it is managed by filefield. and do the access denied part here.
   if (!user_access('view filefield uploads')) {
