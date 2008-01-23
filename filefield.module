@@ -254,7 +254,6 @@ function filefield_widget_settings($op, $widget) {
         '#title' => t('File path'), 
         '#default_value' => $widget['file_path'] ? $widget['file_path'] : '', 
         '#description' => t('Optional subdirectory within the "%dir" directory where files will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))), 
-        '#after_build' => array('filefield_form_check_directory'),
       );
       if (function_exists('token_replace')) {
         $form['file_path']['#description'] .= theme('token_help', 'user');        
@@ -725,22 +724,6 @@ function filefield_file_download($file) {
     'Content-Disposition: '. $disposition .'; filename='. $name,
     'Cache-Control: private',
   );
-}
-
-
-/**
- * Wrapper function for filefield_check_directory that accepts a form element
- * to validate - if user specified one. Won't allow form submit unless the
- * directory exists & is writable
- * 
- * @param $form_element
- *   The form element containing the name of the directory to check.
- */
-function filefield_form_check_directory($form_element) {
-  if(!empty($form_element['#value'])) {
-    filefield_check_directory($form_element['#value'], $form_element);
-  }
-  return $form_element;
 }
 
 /**
