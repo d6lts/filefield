@@ -735,16 +735,18 @@ function filefield_file_download($file) {
     return;
   }
 
-  if (!user_access('view filefield uploads')) {
-    // sorry you do not have the proper permissions to view
-    // filefield uploads.
-    return -1;
-  }
-
   $node = node_load($file->nid);
   if (!node_access('view', $node)) {
     // You don't have permission to view the node
     // this file is attached to.
+    return -1;
+  }
+  
+  // @todo: check the node for this file to be referenced in a field 
+  // to determine if it is managed by filefield. and do the access denied part here.
+  if (!user_access('view filefield uploads')) {
+    // sorry you do not have the proper permissions to view
+    // filefield uploads.
     return -1;
   }
 
@@ -757,7 +759,7 @@ function filefield_file_download($file) {
     'Content-Type: '. $type .'; name='. $name,
     'Content-Length: '. $file->filesize,
     'Content-Disposition: '. $disposition .'; filename='. $name,
-    'Cache-Control: private'
+    'Cache-Control: private',
   );
 }
 
