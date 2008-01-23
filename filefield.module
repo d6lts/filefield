@@ -622,10 +622,10 @@ function _filefield_widget_validate($node, $field, $node_field) {
     }
 
     if (!count($node_field)) {
-      form_set_error($field['field_name'], $field['widget']['label'] .' is required. Please upload a file.');
+      form_set_error($field['field_name'], t('@field is required. Please upload a file.', array('@field' => $field['widget']['label'])));
     }
     else if (count($node_field) == $count_deleted) {
-      form_set_error($field['field_name'], $field['widget']['label'] .' is required. Please keep at least one file or upload a new one.');
+      form_set_error($field['field_name'], t('@field is required. Please keep at least one file or upload a new one.', array('@field' => $field['widget']['label'])));
     }
   }
 }
