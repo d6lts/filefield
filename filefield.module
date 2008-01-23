@@ -99,6 +99,17 @@ function filefield_field_settings($op, $field) {
         'list' => array('type' => 'int', 'not null' => TRUE, 'default' => '0'),
       );
       return $columns;
+
+    case 'filters':
+      return array(
+        'not null' => array(
+          'operator' => array('=' => t('Has Image')),
+          'list' => 'views_handler_operator_yesno',
+          'list-type' => 'select',
+          'handler' => 'filefield_views_handler_filter_is_not_null',
+        ),
+      );  
+
   }
 }
 
@@ -176,12 +187,14 @@ function filefield_file_update($node, $field, &$file) {
 /**
  * Implementation of hook_field().
  */
-function filefield_field($op, $node, $field, &$items, $teaser, $page) {
+function filefield_field($op, $node, $field, &$items = array(), $teaser, $page) {
   $fieldname = $field['field_name'];
   switch ($op) {
     // called after content.module loads default data.
     case 'load':
-      $items = array_filter($items); // drop empty deltas, cuz cck sends 'em some times.
+      if (is_array($items)) {
+        $items = array_filter($items); // drop empty deltas, cuz cck sends 'em some times.
+      }
       if (empty($items)) {
         return array();
       }
@@ -818,3 +831,22 @@ function filefield_token_values($type, $object = NULL) {
     return $tokens;
   }
 }
+
+
+/**
+ * Custom filter for imagefield NOT NULL
+ */
+function filefield_views_handler_filter_is_not_null($op, $filter, $filterinfo, &$query) {
+  if ($op == 'handler') {
+    $query->ensure_table($filterinfo['table']);
+    if ($filter['value']) {
+      $qs = '%s.%s > 0';
+    }
+    else {
+      $qs = '%s.%s = 0 OR %s.%s IS NULL';
+    }
+    $query->add_where($qs, $filterinfo['table'], $filterinfo['field'], $filterinfo['table'], $filterinfo['field']);
+  }
+}
+
+
