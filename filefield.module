@@ -430,12 +430,16 @@ function _filefield_widget_form($node, $field, &$items) {
     '#weight' => 100,
   );
 
+  $extensions_description = empty($field['widget']['file_extensions'])
+    ? ''
+    : t('<br />Allowed extensions: %ext', array('%ext' => $field['widget']['file_extensions']));
+
   // Separate from tree becase of that silly things won't be displayed
   // if they are a child of '#type' = form issue
   $form[$fieldname]['new'][$fieldname .'_upload'] = array(
     '#type'  => 'file',
     '#title' => t('Attach new file'),
-    '#description' => $field['widget']['description'] . t('<br />Allowed extensions: %ext', array('%ext' => $field['widget']['file_extensions'])),
+    '#description' => $field['widget']['description'] . $extensions_description,
     '#weight' => 9,
     '#tree' => FALSE,
     '#attributes' => array('accept' => str_replace(' ', '|', trim($field['widget']['file_extensions']))),
