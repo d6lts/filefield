@@ -514,7 +514,8 @@ function _filefield_widget_form($node, $field, &$items) {
 function _filefield_file_form($node, $field, $file) {
   // Lets be a good boy and initialize our variables.
   $form = array();
-  
+  $form['#after_build'] = array('_filefield_file_form_description_reset');
+
   $form['icon'] = array(
     '#type' => 'markup',
     '#value' => theme('filefield_icon', $file),
@@ -570,10 +571,41 @@ function _filefield_file_form($node, $field, $file) {
   $form['filesize'] = array('#type' => 'value',  '#value' => $file['filesize']);
   $form['fid'] = array('#type' => 'value',  '#value' => $file['fid']);
 
+  // Remember the current filename for the check in
+  // _filefield_file_form_description_reset() that happens after submission.
+  $form['previous_filepath'] = array('#type' => 'hidden',  '#value' => $file['filepath']);
+
   foreach (module_implements('filefield') as $module) {
     $function = $module .'_filefield';
     $function('file_form', $node, $field, $file, $form);
   } 
+  return $form;
+}
+
+/**
+ * This after_build function is needed as fix for tricky Form API behaviour:
+ * When using filefield without AJAX uploading, the description field was not
+ * updated to a new '#default_value' because the textfield has been submitted,
+ * which causes Form API to override the '#default_value'.
+ *
+ * That bug is fixed with this function by comparing the previous filename
+ * to the new one, and resetting the description to the '#default_value'
+ * if the filename has changed.
+ */
+function _filefield_file_form_description_reset($form, $form_values) {
+  // Don't bother resetting the description of files that stay the same
+  if ($form['fid']['#value'] != 'upload') {
+    return $form;
+  }
+  // Get the previous filename for comparison with the current one.
+  $previous = $form['previous_filepath']['#post'];
+  foreach ($form['previous_filepath']['#parents'] as $parent) {
+    $previous = isset($previous[$parent]) ? $previous[$parent] : NULL;
+  }
+  // If a new file was uploaded (the file path changed), reset the description.
+  if ($previous != $form['filepath']['#value']) {
+    $form['description']['#value'] = $form['description']['#default_value'];
+  }
   return $form;
 }
 
