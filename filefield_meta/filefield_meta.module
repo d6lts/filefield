@@ -29,7 +29,9 @@ function filefield_meta_filefield($op, &$node, $field, &$file, &$form = NULL) {
   switch($op) {
     case 'file_form':
       $form['file_preview']['#value'] = '';
-      $form['url']['#value'] .= '<br />width: '. $file['width'] .'; height: '. $file['height'] .'; duration: '. $file['duration'];
+      $form['url']['#value'] .= '<br />'. t('width: !w; height: !h; duration: !d',
+        array('!w' => $file['width'], '!h' => $file['height'], '!d' => $file['duration'])
+      );
       $form['width'] = array('#type' => 'hidden',  '#value' => $file['width']);
       $form['height'] = array('#type' => 'hidden',  '#value' => $file['height']);
       $form['duration'] = array('#type' => 'hidden',  '#value' => $file['duration']);
