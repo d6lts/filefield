@@ -14,7 +14,7 @@
  *  - file_validate
  *  - file_load
  *  - file_form
- *  - delete 
+ *  - delete
  *
  * @param node
  * @param field
@@ -24,7 +24,6 @@
 
 function filefield_meta_filefield($op, &$node, $field, &$file, &$form = NULL) {
   $args = func_get_args();
-
 
   switch($op) {
     case 'file_form':
@@ -40,7 +39,7 @@ function filefield_meta_filefield($op, &$node, $field, &$file, &$form = NULL) {
     case 'file_prepare':
       filefield_meta($file);
       return $file;
-      break;    
+      break;
 
     case 'file_save':
       db_query('INSERT INTO {filefield_meta} (fid, width, height, duration) VALUES (%d, %d, %d, %d)', $file['fid'], $file['width'], $file['height'], $file['duration']);
@@ -65,7 +64,7 @@ function filefield_meta(&$file) {
   if (isset($info['video']['resolution_x'])) {
     $file['width'] = $info['video']['resolution_x'];
     $file['height'] = $info['video']['resolution_y'];
-  } 
+  }
   else if (isset($info['video']['streams'])) {
     foreach($info['video']['streams'] as $stream) {
       $file['width'] = max($file['width'], $stream['resolution_x']);
@@ -74,4 +73,3 @@ function filefield_meta(&$file) {
   }
   $file['duration'] = $info['playtime_seconds'];
 };
- 
