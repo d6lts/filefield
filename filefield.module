@@ -843,28 +843,27 @@ function filefield_js() {
 function filefield_token_list($type = 'all') {
   if ($type == 'field' || $type == 'all') {
     $tokens = array();
-    $tokens['file']['fid']       = t("File ID");
-    $tokens['file']['title']     = t("File title");
-    $tokens['file']['filename']  = t("File name");
-    $tokens['file']['filepath']  = t("File path");
-    $tokens['file']['filemime']  = t("File MIME type");
-    $tokens['file']['filesize']  = t("File size");
-    $tokens['file']['view']      = t("Fully formatted HTML file tag");
-
+    $tokens['file']['fid']         = t("File ID");
+    $tokens['file']['description'] = t("File description");
+    $tokens['file']['filename']    = t("File name");
+    $tokens['file']['filepath']    = t("File path");
+    $tokens['file']['filemime']    = t("File MIME type");
+    $tokens['file']['filesize']    = t("File size");
+    $tokens['file']['view']        = t("Fully formatted HTML file tag");
     return $tokens;
-   }
+  }
 }
- 
+
 function filefield_token_values($type, $object = NULL) {
   if ($type == 'field') {
     $item = $object[0];
-    $tokens['fid']      = $item['fid'];
-    $tokens['title']    = $item['title'];
-    $tokens['filename'] = $item['filename'];
-    $tokens['filepath'] = $item['filepath'];
-    $tokens['filemime'] = $item['filemime'];
-    $tokens['filesize'] = $item['filesize'];
-    $tokens['view']     = $item['view'];
+    $tokens['fid']         = $item['fid'];
+    $tokens['description'] = $item['description'];
+    $tokens['filename']    = $item['filename'];
+    $tokens['filepath']    = $item['filepath'];
+    $tokens['filemime']    = $item['filemime'];
+    $tokens['filesize']    = $item['filesize'];
+    $tokens['view']        = $item['view'];
     return $tokens;
   }
 }
