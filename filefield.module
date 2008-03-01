@@ -870,7 +870,7 @@ function filefield_token_values($type, $object = NULL) {
 
 
 /**
- * Custom filter for imagefield NOT NULL
+ * Custom filter for filefield NOT NULL
  */
 function filefield_views_handler_filter_is_not_null($op, $filter, $filterinfo, &$query) {
   if ($op == 'handler') {
