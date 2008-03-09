@@ -208,7 +208,7 @@ function filefield_file_update($node, $field, &$file) {
 /**
  * Implementation of hook_field().
  */
-function filefield_field($op, &$node, $field, &$items, $teaser, $page) {
+function filefield_field($op, &$node, $field, &$items = array()) {
   $fieldname = $field['field_name'];
   switch ($op) {
     // called after content.module loads default data.
