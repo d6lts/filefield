@@ -549,15 +549,16 @@ function _filefield_file_form($node, $field, $file) {
               : $file['filepath'];
 
   $url = file_create_url($filepath);
-  $url = "<small>". check_plain($url) ."</small>";
 
   $form['description'] = array(
       '#type' => 'textfield', 
       '#default_value' => (strlen($file['description'])) ? $file['description'] : $file['filename'], '#maxlength' => 256, 
+      '#size' => 40,
+      '#attributes' => array('class' => 'filefield-description', 'size' => '40'),
   );
   $form['url'] = array(
     '#type' => 'markup',
-    '#value' => t('URL: !url', array('!url' => $url)),
+    '#value' => l($url, $url),
     '#prefix' => '<div class="filefield-edit-file-url">',
     '#suffix' => '</div>',
   );
@@ -701,8 +702,8 @@ function _filefield_file_load($fid = NULL) {
 
 function theme_filefield_form_current($form) {
   $header = $form['#force_list']
-            ? array('', t('Delete'), t('Description'), t('Size'))
-            : array('', t('Delete'), t('List'), t('Description'), t('Size'));
+            ? array('', t('Delete'), '',  t('Description'), t('Size'))
+            : array('', t('Delete'), t('List'), '',  t('Description'), t('Size'));
 
   foreach (element_children($form) as $key) {
     // Don't display (hidden) replaced items.
@@ -717,27 +718,28 @@ function theme_filefield_form_current($form) {
     if (!$form['#force_list']) {
       $row[] = drupal_render($form[$key]['list']);
     }
-    $row[] = drupal_render($form[$key]['icon']).
-             drupal_render($form[$key]['description']).
+    $row[] = drupal_render($form[$key]['icon']);
+    $row[] = drupal_render($form[$key]['description']).
              drupal_render($form[$key]['url']);
     $row[] = drupal_render($form[$key]['size']);
     $rows[] = $row;
   }
-  $output = theme('table', $header, $rows);
+  $output = theme('table', $header, $rows, array('class' => 'filefield-filebrowser'));
   $output .= drupal_render($form);
   return $output;
 }
 
 function theme_filefield_icon($file) {
+  global $base_url;
   $ext = array_pop(explode('.',$file['filename']));
   $known_extensions = array('0','ace','aif','ai','ani','asf','asp','avi','bak','bat','bin','bmp','bz2','bz','cab','cdr','cfg','com','conf','cpt','css','cur','dat','db','dcr','dic','diff','dir','dll','dmg','doc','dwg','edir','eml','eps','exe','fla','flv','fon','gif','gz','hqx','html','htm','ico','inc','ini','iso','jpeg','jpg','js','lnk','log','m3u','mdb','midi','mid','mov','mp3','mpeg','mpg','nfo','odb','odc','odf','odg','odm','odp','ods','odt','ogg','otg','oth','otp','ots','ott','patch','pdf','php3','php','phtml','pl','png','pps','ppt','psd','pwl','qt','ram','ra','rar','reg','rpm','rtf','sh','shtml','sit','sql','svg','swf','sxc','sxi','sxw','sys','tar','tgz','tiff','tif','tmp','tpl','ttf','txt','wav','wma','wmv','wp','xls','xml','zip');
   if (!in_array($ext, $known_extensions))  {
     $ext = 0;
   }
-  $icon = '';
-  $iconpath = base_path() .'/'. drupal_get_path('module','filefield') .'/ico/'. $ext .'.png';
+
+  $iconpath =  drupal_get_path('module','filefield') .'/ico/'. $ext .'.png';
   if (file_exists($iconpath)) {
-    $icon = '<img class="field-icon-'. $ext .'" src="'. $imagepath .'" />';
+    $icon = '<img class="field-icon-'. $ext .'" src="'. $base_url .'/'. $iconpath .'" />';
   }
   return '<div class="filefield-icon field-icon-'. $ext .'">'. $icon .'</div>';
 }
