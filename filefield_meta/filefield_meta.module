@@ -22,6 +22,27 @@
  * @param form
  */
 
+define('FILEFIELD_META_MINIMUM_PHP', '5.2');
+
+/**
+ *  Implementation of hook_requirements().
+ */
+function filefield_meta_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time
+  $t = get_t();
+
+  if (version_compare(phpversion(), FILEFIELD_META_MINIMUM_PHP) < 0) {
+    $requirements['filefield_meta_php'] = array(
+      'title' => $t('FileField Meta PHP'),
+      'description' => $t('FileField Meta requires at least PHP %version.', array('%version' => FILEFIELD_META_MINIMUM_PHP)),
+      'severity' => REQUIREMENT_ERROR
+    );
+  }
+
+  return $requirements;
+}
+
 function filefield_meta_filefield($op, &$node, $field, &$file, &$form = NULL) {
   $args = func_get_args();
 
