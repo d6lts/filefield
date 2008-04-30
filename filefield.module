@@ -855,6 +855,10 @@ function filefield_js() {
 
   $output = theme('status_messages') . drupal_render($form);
 
+  // Silence the obnoxious devel module which wants to append its JavaScript.
+  if (module_exists('devel')) {
+    $GLOBALS['devel_shutdown'] = FALSE;
+  }
   // Send the updated file attachments form.
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit();
