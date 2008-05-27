@@ -292,11 +292,21 @@ function filefield_widget_settings($op, $widget) {
       if (function_exists('token_replace')) {
         $form['file_path']['#description'] .= theme('token_help', 'user');        
       }
+      // Let extension modules add their settings to the form.
+      foreach (module_implements('filefield_widget_settings') as $module) {
+        $function = $module .'_filefield_widget_settings';
+        $function('form_alter', $widget, $form);
+      }
       return $form;
     case 'validate':
+      module_invoke_all('filefield_widget_settings', $op, $widget, NULL);
       break;
     case 'save':
-      return array('file_extensions', 'file_path');
+      $core_settings = array('file_extensions', 'file_path');
+      $additional_settings = module_invoke_all(
+        'filefield_widget_settings', $op, $widget, NULL
+      );
+      return array_merge($core_settings, $additional_settings);
   }
 }
 
