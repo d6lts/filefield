@@ -191,9 +191,15 @@ function filefield_file_insert($node, $field, &$file) {
 function filefield_file_update($node, $field, &$file) {
   $file = (array)$file; 
   if ($file['delete'] == TRUE) {
-     module_invoke_all('filefield', 'file_delete', $node, $field, $file);
-     _filefield_file_delete($node, $field, $file);
-     return array();
+    // don't delete files if we're creating new revisions,
+    // but still return an empty array...
+    if ($node->old_vid) {
+      return array();
+    }
+    module_invoke_all('filefield', 'file_delete', $node, $field, $file);
+    if (_filefield_file_delete($node, $field, $file)) {
+      return array();
+    }
   }
   if ($file['fid'] == 'upload') {  
     return filefield_file_insert($node, $field, $file);
@@ -244,6 +250,22 @@ function filefield_field($op, &$node, $field, &$items = array()) {
       $items = array_filter($items); // unset empty items.
       $items = array_values($items); // compact deltas
       filefield_clear_field_session($fieldname);
+      break;
+
+    case 'delete revision':
+      $db_info = content_database_info($field);
+      foreach ($items as $delta => $item) {
+        $references = db_result(db_query(
+          "SELECT COUNT(vid) FROM {" . $db_info['table'] . "}
+            WHERE nid = %d AND vid != %d
+            AND " . $db_info['columns']['fid']['column'] . " = %d",
+          $node->nid, $node->vid, $item['fid']
+        ));
+        if ($references || _filefield_file_delete($node, $field, $item)) {
+          $items[$delta] = array();
+        }
+      }
+      $items = array_values($items); // compact deltas
       break;
 
     case 'delete':
