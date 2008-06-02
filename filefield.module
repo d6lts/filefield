@@ -196,7 +196,6 @@ function filefield_file_update($node, $field, &$file) {
     if ($node->old_vid) {
       return array();
     }
-    module_invoke_all('filefield', 'file_delete', $node, $field, $file);
     if (_filefield_file_delete($node, $field, $file)) {
       return array();
     }
@@ -360,7 +359,7 @@ function _filefield_file_delete($node, $field, $file) {
   else {
     unset($_SESSION['filefield'][$field['field_name']][$file['sessionid']]);
   }
-  module_invoke_all('filefield', 'delete', $node, $field, $file);
+  module_invoke_all('filefield', 'file_delete', $node, $field, $file);
   return file_delete($file['filepath']);
 }
 
