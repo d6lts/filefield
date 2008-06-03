@@ -59,9 +59,13 @@ msgstr "Les modifications apportées à ces pièces jointes ne sont pas validée
 msgid "Attach new file"
 msgstr "Attacher un nouveau fichier"
 
+#: filefield.module:490
+msgid "Maximum file size: !size."
+msgstr "Taille maximale du fichier: !size."
+
 #: filefield.module:460
-msgid "<br />Allowed extensions: %ext"
-msgstr "<br />Extensions autorisées: %ext"
+msgid "Allowed extensions: %ext."
+msgstr "Extensions autorisées: %ext."
 
 #: filefield.module:467
 msgid "Upload"

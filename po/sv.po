@@ -59,9 +59,13 @@ msgstr "Ändringar för bilagor är inte permanenta före posten är sparad."
 msgid "Attach new file"
 msgstr "Bifoga en fil"
 
+#: filefield.module:490
+msgid "Maximum file size: !size."
+msgstr "Maximal filstorlek: !size."
+
 #: filefield.module:460
-msgid "<br />Allowed extensions: %ext"
-msgstr "<br />Tillåtna filändelser är: %ext"
+msgid "Allowed extensions: %ext."
+msgstr "Tillåtna filändelser är: %ext."
 
 #: filefield.module:467
 msgid "Upload"
