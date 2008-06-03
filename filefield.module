@@ -487,12 +487,8 @@ function _filefield_widget_form($node, $field, &$items) {
   $upload_description = empty($field['widget']['description'])
     ? '' : ($field['widget']['description'] . '<br/>');
 
-  $max_post_size = _filefield_bytes(ini_get('post_max_size'));
-  $max_upload_size = _filefield_bytes(ini_get('upload_max_filesize'));
-  $max_file_size = min($max_post_size, $max_upload_size) / (1024 * 1024);
-
-  $upload_description .= t('Maximum file size: !size MiB.', array(
-    '!size' => number_format($max_file_size, 1),
+  $upload_description .= t('Maximum file size: !size.', array(
+    '!size' => format_size(file_upload_max_size()),
   ));
 
   if (!empty($field['widget']['file_extensions'])) {
@@ -861,27 +857,6 @@ function filefield_check_directory($directory, $form_element = array()) {
   }
   return TRUE;
 }
-
-/**
- * Helper function for retrieving the size of PHP's 'post_max_size'
- * and 'upload_max_filesize' ini values. Plain copy from the php.net example
- * of ini_get().
- */
-function _filefield_bytes($val) {
-  $val = trim($val);
-  $last = strtolower($val{strlen($val)-1});
-  switch($last) {
-    // The 'G' modifier is available since PHP 5.1.0
-    case 'g':
-      $val *= 1024;
-    case 'm':
-      $val *= 1024;
-    case 'k':
-      $val *= 1024;
-  }
-  return $val;
-}
-
 
 /**
  * Menu callback for JavaScript-based uploads.
