@@ -723,6 +723,7 @@ function filefield_field_formatter($field, $item, $formatter) {
     $item  =  array_merge($item, _filefield_file_load($item['fid']));
   }
   if (!empty($item['filepath'])) {
+    drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
     return theme('filefield', $item);
   }
 }
@@ -772,18 +773,12 @@ function theme_filefield_form_current($form) {
 }
 
 function theme_filefield_icon($file) {
-  global $base_url;
-  $ext = strtolower(array_pop(explode('.', $file['filename'])));
-  $known_extensions = array('0','ace','aif','ai','ani','asf','asp','avi','bak','bat','bin','bmp','bz2','bz','cab','cdr','cfg','com','conf','cpt','css','cur','dat','db','dcr','dic','diff','dir','dll','dmg','doc','dwg','edir','eml','eps','exe','fla','flv','fon','gif','gz','hqx','html','htm','ico','inc','ini','iso','jpeg','jpg','js','lnk','log','m3u','mdb','midi','mid','mov','mp3','mpeg','mpg','nfo','odb','odc','odf','odg','odm','odp','ods','odt','ogg','otg','oth','otp','ots','ott','patch','pdf','php3','php','phtml','pl','png','pps','ppt','psd','pwl','qt','ram','ra','rar','reg','rpm','rtf','sh','shtml','sit','sql','svg','swf','sxc','sxi','sxw','sys','tar','tgz','tiff','tif','tmp','tpl','ttf','txt','wav','wma','wmv','wp','xls','xml','zip');
-  if (!in_array($ext, $known_extensions))  {
-    $ext = 0;
-  }
+  $dashed_mime = check_plain(strtr($file['filemime'], array('/' => '-')));
 
-  $iconpath =  drupal_get_path('module','filefield') .'/ico/'. $ext .'.png';
-  if (file_exists($iconpath)) {
-    $icon = '<img class="field-icon-'. $ext .'" src="'. $base_url .'/'. $iconpath .'" />';
+  if ($icon_url = filefield_icon_url($file)) {
+    $icon = '<img class="field-icon-'. $dashed_mime .'" src="'. $icon_url .'" />';
   }
-  return '<div class="filefield-icon field-icon-'. $ext .'">'. $icon .'</div>';
+  return '<div class="filefield-icon field-icon-'. $dashed_mime .'">'. $icon .'</div>';
 }
 
 function theme_filefield_view_file($file) {
@@ -796,9 +791,10 @@ function theme_filefield($file) {
             ? file_create_filename($file['filename'], file_create_path($field['widget']['file_path']))
             : $file['filepath'];
 
+    $icon = theme('filefield_icon', $file);
     $url = file_create_url($path);
     $desc = $file['description'];
-    return l($desc, $url);
+    return '<div class="filefield-item">'. $icon . l($desc, $url) .'</div>';
   }
   return '';
 }
@@ -950,3 +946,171 @@ function filefield_views_handler_filter_is_not_null($op, $filter, $filterinfo, &
 }
 
 
+/**
+ * Determine the most appropriate icon for the given file's mimetype.
+ *
+ * @return The URL of the icon image file, or FALSE if no icon could be found.
+ */
+function filefield_icon_url($file) {
+  global $base_url;
+  $theme = variable_get('filefield_icon_theme', 'protocons');
+
+  if ($iconpath = _filefield_icon_path($file, $theme)) {
+    return $base_url .'/'. $iconpath;
+  }
+  return FALSE;
+}
+
+function _filefield_icon_path($file, $theme = 'protocons') {
+  // If there's an icon matching the exact mimetype, go for it.
+  $dashed_mime = strtr($file['filemime'], array('/' => '-'));
+  if ($iconpath = _filefield_create_icon_path($dashed_mime, $theme)) {
+    return $iconpath;
+  }
+  // For a couple of mimetypes, we can "manually" tell a generic icon.
+  if ($generic_name = _filefield_generic_icon_map($file)) {
+    if ($iconpath = _filefield_create_icon_path($generic_name, $theme)) {
+      return $iconpath;
+    }
+  }
+  // Use generic icons for each category that provides such icons.
+  foreach (array('audio', 'image', 'text', 'video') as $category) {
+    if (strpos($file['filemime'], $category .'/') === 0) {
+      if ($iconpath = _filefield_create_icon_path($category .'-x-generic', $theme)) {
+        return $iconpath;
+      }
+    }
+  }
+  // Try application-octet-stream as last fallback.
+  if ($iconpath = _filefield_create_icon_path('application-octet-stream', $theme)) {
+    return $iconpath;
+  }
+  // Sorry, no icon can be found...
+  return FALSE;
+}
+
+function _filefield_create_icon_path($iconname, $theme = 'protocons') {
+  $iconpath = drupal_get_path('module', 'filefield')
+    .'/icons/'. $theme .'/16x16/mimetypes/'. $iconname .'.png';
+  if (file_exists($iconpath)) {
+    return $iconpath;
+  }
+  return FALSE;
+}
+
+function _filefield_generic_icon_map($file) {
+  switch ($file['filemime']) {
+    // Word document types.
+    case 'application/msword':
+    case 'application/vnd.ms-word.document.macroEnabled.12':
+    case 'application/vnd.oasis.opendocument.text':
+    case 'application/vnd.oasis.opendocument.text-template':
+    case 'application/vnd.oasis.opendocument.text-master':
+    case 'application/vnd.oasis.opendocument.text-web':
+    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+    case 'application/vnd.stardivision.writer':
+    case 'application/vnd.sun.xml.writer':
+    case 'application/vnd.sun.xml.writer.template':
+    case 'application/vnd.sun.xml.writer.global':
+    case 'application/vnd.wordperfect':
+    case 'application/x-abiword':
+    case 'application/x-applix-word':
+    case 'application/x-kword':
+    case 'application/x-kword-crypt':
+      return 'x-office-document';
+
+    // Spreadsheet document types.
+    case 'application/vnd.ms-excel':
+    case 'application/vnd.ms-excel.sheet.macroEnabled.12':
+    case 'application/vnd.oasis.opendocument.spreadsheet':
+    case 'application/vnd.oasis.opendocument.spreadsheet-template':
+    case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+    case 'application/vnd.stardivision.calc':
+    case 'application/vnd.sun.xml.calc':
+    case 'application/vnd.sun.xml.calc.template':
+    case 'application/vnd.lotus-1-2-3':
+    case 'application/x-applix-spreadsheet':
+    case 'application/x-gnumeric':
+    case 'application/x-kspread':
+    case 'application/x-kspread-crypt':
+      return 'x-office-spreadsheet';
+
+    // Presentation document types.
+    case 'application/vnd.ms-powerpoint':
+    case 'application/vnd.ms-powerpoint.presentation.macroEnabled.12':
+    case 'application/vnd.oasis.opendocument.presentation':
+    case 'application/vnd.oasis.opendocument.presentation-template':
+    case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+    case 'application/vnd.stardivision.impress':
+    case 'application/vnd.sun.xml.impress':
+    case 'application/vnd.sun.xml.impress.template':
+    case 'application/x-kpresenter':
+      return 'x-office-presentation';
+
+    // Compressed archive types.
+    case 'application/zip':
+    case 'application/x-zip':
+    case 'application/stuffit':
+    case 'application/x-stuffit':
+    case 'application/x-7z-compressed':
+    case 'application/x-ace':
+    case 'application/x-arj':
+    case 'application/x-bzip':
+    case 'application/x-bzip-compressed-tar':
+    case 'application/x-compress':
+    case 'application/x-compressed-tar':
+    case 'application/x-cpio-compressed':
+    case 'application/x-deb':
+    case 'application/x-gzip':
+    case 'application/x-java-archive':
+    case 'application/x-lha':
+    case 'application/x-lhz':
+    case 'application/x-lzop':
+    case 'application/x-rar':
+    case 'application/x-rpm':
+    case 'application/x-tzo':
+    case 'application/x-tar':
+    case 'application/x-tarz':
+    case 'application/x-tgz':
+      return 'package-x-generic';
+
+    // Script file types.
+    case 'application/ecmascript':
+    case 'application/javascript':
+    case 'application/mathematica':
+    case 'application/vnd.mozilla.xul+xml':
+    case 'application/x-asp':
+    case 'application/x-awk':
+    case 'application/x-cgi':
+    case 'application/x-csh':
+    case 'application/x-m4':
+    case 'application/x-perl':
+    case 'application/x-php':
+    case 'application/x-ruby':
+    case 'application/x-shellscript':
+    case 'text/vnd.wap.wmlscript':
+    case 'text/x-emacs-lisp':
+    case 'text/x-haskell':
+    case 'text/x-literate-haskell':
+    case 'text/x-lua':
+    case 'text/x-makefile':
+    case 'text/x-matlab':
+    case 'text/x-python':
+    case 'text/x-sql':
+    case 'text/x-tcl':
+      return 'text-x-script';
+
+    // HTML aliases.
+    case 'application/xhtml+xml':
+      return 'text-html';
+
+    // Executable types.
+    case 'application/x-macbinary':
+    case 'application/x-ms-dos-executable':
+    case 'application/x-pef-executable':
+      return 'application-x-executable';
+
+    default:
+      return FALSE;
+  }
+}

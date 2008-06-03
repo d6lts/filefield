@@ -2,18 +2,15 @@ table.filefield-filebrowser tbody tr td div.form-item {
   display: inline;
 }
 
-div.filefield-icon {
+.filefield-icon {
   float: left;
+  margin-right: 0.4em;
 }
 
-img.filefield-icon {
+.filefield-icon img {
   display: inline;
 }
 
-
-
-
-
-
-
-
+.filefield-item {
+  clear: both;
+}
