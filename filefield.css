@@ -1,34 +1,16 @@
-div.filefield-edit-image-replace { 
-  font-weight: bold;
-  color: red;
-}
-div.filefield-row {
-  position: relative;
-  width: 100%;
-}
-.filefield-row .form-item {
-  float: left;
-  height: 32px;
-  vertical-align: top;
-}
-
-.filefield-row .form-text {
-  width: 300px;
-}
-
-div.filefield-icon-container {
+table.filefield-filebrowser tbody tr td div.form-item {
   display: inline;
 }
 
-div.filefield-icon {
-  width: 32px;
-  height: 32px;
-  /* background-image: url(ico/0.png); */
+.filefield-icon {
   float: left;
+  margin-right: 0.4em;
 }
 
+.filefield-icon img {
+  display: inline;
+}
 
-
-
-
-
+.filefield-item {
+  clear: both;
+}
