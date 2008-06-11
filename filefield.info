@@ -1,5 +1,7 @@
 ; $Id$
 name = File Field
 description = Defines a file field type.
-dependencies = content mimedetect
+dependencies[] = content
 package = CCK
+core = 6.x
+php = 5.2

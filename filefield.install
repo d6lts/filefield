@@ -1,11 +1,37 @@
 <?php
 // $Id$
 
+include_once(drupal_get_path('module', 'filefield') .'/field_file.inc');
+
 /**
  * Implementation of hook_install().
  */
 function filefield_install() {
+  content_notify('install', 'filefield');
 }
+
+/**
+* Implementation of hook_uninstall().
+*/
+function filefield_uninstall() {
+  content_notify('uninstall', 'filefield');
+}
+
+/**
+* Implementation of hook_enable().
+*/
+function filefield_enable() {
+  content_notify('enable', 'filefield');
+}
+
+/**
+* Implementation of hook_disable().
+*/
+function filefield_disable() {
+  content_notify('disable', 'filefield');
+}
+
+// Update procedures.
 
 function filefield_update_1() {
   $ret = array();
