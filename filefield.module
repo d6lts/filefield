@@ -174,18 +174,17 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
     case 'update':
       foreach ($items as $delta => $item) {
         $items[$delta] = field_file_save($node, $item);
+
+        // Remove items from the array if they have been deleted.
+        if (empty($items[$delta])) {
+          unset($items[$delta]);
+        }
       }
       $items = array_values($items); // compact deltas
       break;
 
     case 'presave':
-      // When saving a file for the first time, if there is no description set,
-      // default it to the file name. Same for being listed by default.
-      foreach ($items as $delta => $item) {
-        if ($item['status'] == FILE_STATUS_TEMPORARY && empty($item['description'])) {
-          $items[$delta]['description'] = $items[$delta]['filename'];
-        }
-      }
+      filefield_presave($field, $items);
       break;
 
     case 'delete revision':
@@ -223,6 +222,44 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
 }
 
 /**
+ * hook_field($op='presave') isn't necessarily called when the items are
+ * updated, as Preview or Upload only invoke $op='validate'.
+ * So, in order to keep the $items array in a good state at all times while
+ * editing the node, this function guarantees a workable & storable state.
+ */
+function filefield_presave($field, &$items) {
+  // Don't take plain upload widgets (fid == 0) into account.
+  foreach ($items as $delta => $item) {
+    if (empty($item['fid'])) {
+      unset($items[$delta]);
+    }
+  }
+  $items = array_values($items); // compact deltas
+
+  // When saving a file for the first time, if there is no description set,
+  // default it to the file name.
+  foreach ($items as $delta => $item) {
+    if ($item['status'] == FILE_STATUS_TEMPORARY && empty($item['description'])) {
+      $items[$delta]['description'] = $items[$delta]['filename'];
+    }
+  }
+
+  // For single-value fields, another file can be uploaded as replacement
+  // without manually deleting the previous one (or previous ones, if a file
+  // is replaced multiple times in one go). The yet missing "delete" flag
+  // is set here.
+  if (!$field['multiple']) {
+    $max_delta = count($items) - 1;
+
+    foreach ($items as $delta => $item) {
+      if ($delta != $max_delta) {
+        $items[$delta]['delete'] = 1;
+      }
+    }
+  }
+}
+
+/**
  * Implementation of hook_widget_info().
  */
 function filefield_widget_info() {
@@ -230,7 +267,7 @@ function filefield_widget_info() {
     'filefield_combo' => array(
       'label' => 'File',
       'field types' => array('file'),
-      'multiple values' => CONTENT_HANDLE_CORE,
+      'multiple values' => CONTENT_HANDLE_MODULE,
       'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
     ),
   );
@@ -287,77 +324,137 @@ function _filefield_widget_settings_file_path_validate($element, &$form_state) {
 
 /**
  * Implementation of hook_widget().
+ * We're doing ('multiple values' => CONTENT_HANDLE_MODULE) because the logic
+ * for when to show the upload widget is too complex for CCK's built-in
+ * multiple widget form.
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  filefield_presave($field, $items);
+  return filefield_multiple_value_form($form, $form_state, $field, $items);
+}
+
+function filefield_multiple_value_form(&$form, &$form_state, $field, $items) {
+  $widget = array(
+    '#title' => t($field['widget']['label']),
+    '#description' => t($field['widget']['description']),
+  );
+  $filecount = 0;
+
+  // Show an edit form for each file that we've got already.
+  foreach ($items as $delta => $item) {
+    $file = FALSE;
+
+    if (empty($item['fid'])) {
+      continue;
+    }
+    if (!$file = field_file_load($item['fid'])) {
+      continue;
+    }
+    $file = array_merge($item, $file);
+    $widget[$delta] = $file['delete']
+      ? filefield_file_deleted_form($form, $form_state, $field, $file, $delta)
+      : filefield_file_edit_form($form, $form_state, $field, $file, $delta);
+
+    // For multiple value handling, remember the number of non-deleted files.
+    if (!isset($file['delete']) || !$file['delete']) {
+      $filecount++;
+    }
+  }
+
+  // Multiple values: may we still upload another file?
+  if ($field['multiple'] == 1) { // 1 means unlimited (0 is single-value)
+    $show_upload = TRUE;
+  }
+  else {
+    $max_files = ($field['multiple'] != 0) ? $field['multiple'] : 1;
+    if ($filecount < $max_files) {
+      $show_upload = TRUE;
+    }
+    // Must be able to replace a single file, even if no more files are allowed.
+    if ($max_files == 1 && $filecount == 1) {
+      $show_upload = TRUE;
+    }
+  }
+  // If we should indeed show the upload widget, place it at the next delta.
+  if ($show_upload) {
+    $delta = count($items); // == max($delta) + 1, or 0 if empty($items)
+    $widget[$delta] = filefield_file_upload_form(&$form, &$form_state, $field, $delta);
+  }
+
+  $widget['help'] = array(
+    '#type' => 'markup',
+    '#value' => t('Changes made to the attachments are not permanent until you save this post.'),
+  );
+
+  return $widget;
+}
+
+function filefield_file_upload_form(&$form, &$form_state, $field, $delta) {
   $form['#attributes']['enctype'] = 'multipart/form-data';
-  $item = $items[$delta];
-  $file = FALSE;
 
-  if (!empty($item['fid'])) {
-    if ($file = field_file_load($item['fid'])) {
-      $file = array_merge($item, $file);
-    }
+  $fieldname = $field['field_name'];
+
+  //drupal_add_js('misc/progress.js');
+  //drupal_add_js('misc/upload.js');
+  //drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
+
+  $widget['fid'] = array(
+    '#type' => 'filefield_upload',
+    '#title' => t('Upload file'),
+    '#description' => $field['widget']['description'],
+    '#field' => $field,
+    '#delta' => $delta,
+  );
+  $widget['list'] = array('#type' => 'value', '#value' => 1);
+
+  $widget[$fieldname .'_'. $delta .'_upload'] = array(
+    '#type' => 'submit',
+    '#value' => t('Upload'),
+    '#submit' => array('node_form_submit_build_node'),
+    '#tree' => FALSE,
+  );
+  return $widget;
+}
+
+function filefield_file_deleted_form(&$form, &$form_state, $field, $file, $delta) {
+  foreach ($file as $property => $value) {
+    $widget[$property] = array('#type' => 'value', '#value' => $file[$property]);
   }
-  if ($file) {
-    $widget_info = filefield_widget_for_file($field, $file);
-    $form_callback = $widget_info['form callback'];
-    $widget = $form_callback($field, $file, $delta);
+  return $widget;
+}
 
-    $widget['delete'] = array(
+function filefield_file_edit_form(&$form, &$form_state, $field, $file, $delta) {
+  $widget_info = filefield_widget_for_file($field, $file);
+  $form_callback = $widget_info['form callback'];
+  $widget = $form_callback($field, $file, $delta);
+
+  $widget['delete'] = array(
+    '#type' => 'checkbox',
+    '#default_value' => 0,
+    '#title' => t('Delete'),
+  );
+
+  // Only show the list checkbox if files are not forced to be listed.
+  if (!$field['force_list']) {
+    $widget['list'] = array(
       '#type' => 'checkbox',
-      '#default_value' => 0,
-      '#title' => t('Delete'),
-    );
-
-    // Only show the list checkbox if files are not forced to be listed.
-    if (!$field['force_list']) {
-      $widget['list'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('List'),
-        '#default_value' => $file['list'],
-      );
-    }
-    else {
-      $widget['list'] = array(
-        '#type' => 'value',
-        '#value' => isset($file['list']) ? $file['list'] : 1,
-      );
-    }
-
-    $widget['help'] = array(
-      '#type' => 'markup',
-      '#value' => t('Changes made to the attachments are not permanent until you save this post.'),
-    );
-
-    $widget['filename'] = array('#type' => 'value',  '#value' => $file['filename']);
-    $widget['filepath'] = array('#type' => 'value',  '#value' => $file['filepath']);
-    $widget['filemime'] = array('#type' => 'value',  '#value' => $file['filemime']);
-    $widget['filesize'] = array('#type' => 'value',  '#value' => $file['filesize']);
-    $widget['fid']      = array('#type' => 'value',  '#value' => $file['fid']);
-  }
-  else { // If there is no file, provide an upload element.
-    $fieldname = $field['field_name'];
-
-    //drupal_add_js('misc/progress.js');
-    //drupal_add_js('misc/upload.js');
-    //drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
-
-    $widget['fid'] = array(
-      '#type' => 'filefield_upload',
-      '#title' => t('Upload file'),
-      '#description' => $field['widget']['description'],
-      '#field' => $field,
-      '#delta' => $delta,
-    );
-    $widget['list'] = array('#type' => 'value',  '#value' => 1);
-
-    $widget[$fieldname .'_'. $delta .'_upload'] = array(
-      '#type' => 'submit',
-      '#value' => t('Upload'),
-      '#submit' => array('node_form_submit_build_node'),
-      '#tree' => FALSE,
+      '#title' => t('List'),
+      '#default_value' => $file['list'],
     );
   }
+  else {
+    $widget['list'] = array(
+      '#type' => 'value',
+      '#value' => isset($file['list']) ? $file['list'] : 1,
+    );
+  }
+
+  $widget['filename'] = array('#type' => 'value', '#value' => $file['filename']);
+  $widget['filepath'] = array('#type' => 'value', '#value' => $file['filepath']);
+  $widget['filemime'] = array('#type' => 'value', '#value' => $file['filemime']);
+  $widget['filesize'] = array('#type' => 'value', '#value' => $file['filesize']);
+  $widget['fid']      = array('#type' => 'value', '#value' => $file['fid']);
+
   return $widget;
 }
 
@@ -737,7 +834,7 @@ function _filefield_widget_validate($node, $field, $items) {
     // isn't deleting all of the files.
     $count_deleted = 0;
     foreach($items as $item) {
-      if (isset($item['delete']) && $item['delete']) {
+      if (!empty($item['delete'])) {
         ++$count_deleted;
       }
     }
