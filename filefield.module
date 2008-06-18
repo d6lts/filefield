@@ -182,12 +182,13 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
       // When saving a file for the first time, if there is no description set,
       // default it to the file name. Same for being listed by default.
       foreach ($items as $delta => $item) {
-        if ($item['status'] == FILE_STATUS_TEMPORARY && !$item['description']) {
+        if ($item['status'] == FILE_STATUS_TEMPORARY && empty($item['description'])) {
           $items[$delta]['description'] = $items[$delta]['filename'];
           $items[$delta]['list'] = 1;
         }
       }
       break;
+
     case 'delete revision':
       foreach ($items as $delta => $item) {
         if (field_file_delete($item)) {
