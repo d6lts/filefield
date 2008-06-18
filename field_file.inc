@@ -12,6 +12,10 @@
 function field_file_load($fid, $reset = NULL) {
   static $files = array();
 
+  if (empty($fid)) {
+    return FALSE;
+  }
+
   // Reset internal cache.
   if ($reset) {
     $files = array();
@@ -27,6 +31,10 @@ function field_file_load($fid, $reset = NULL) {
   }
   else {
     $file = db_fetch_object(db_query("SELECT f.* FROM {files} f WHERE f.filepath = '%s'", $fid));
+  }
+
+  if (!$file) {
+    return FALSE;
   }
 
   module_invoke_all('file', 'load', $file);
@@ -110,7 +118,6 @@ function field_file_delete($file, $force = FALSE) {
  *
  * Check that the directory exists and is writable. Directories need to
  * have execute permissions to be considered a directory by FTP servers, etc.
- * 
  *
  * @param $directory A string containing the name of a directory path.
  * @param $mode A Boolean value to indicate if the directory should be created
@@ -166,4 +173,14 @@ function field_file_check_directory(&$directory, $mode = 0, $form_item = NULL) {
   return TRUE;
 }
 
-
+/**
+ * Remove a possible leading file directory path from the given path.
+ */
+function field_file_strip_path($path) {
+  $dirpath = file_directory_path();
+  $dirlen = strlen($dirpath);
+  if (substr($path, 0, $dirlen + 1) == $dirpath .'/') {
+    $path = substr($path, $dirlen + 1);
+  }
+  return $path;
+}
