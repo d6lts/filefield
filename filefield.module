@@ -237,6 +237,55 @@ function filefield_widget_info() {
 }
 
 /**
+ * Implementation of hook_widget_settings().
+ */
+function filefield_widget_settings($op, $widget) {
+  switch ($op) {
+    case 'form':
+      $form = array();
+      $form['file_extensions'] = array (
+        '#type' => 'textfield',
+        '#title' => t('Permitted upload file extensions'),
+        '#default_value' => is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt',
+        '#size' => 64,
+        '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
+      );
+      $form['file_path'] = array(
+        '#type' => 'textfield',
+        '#title' => t('File path'),
+        '#default_value' => is_string($widget['file_path']) ? $widget['file_path'] : '',
+        '#description' => t('Optional subdirectory within the "%dir" directory where files will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))),
+        '#element_validate' => array('_filefield_widget_settings_file_path_validate'),
+      );
+      if (module_exists('token')) {
+        $form['file_path']['#suffix'] = theme('token_help', 'user');
+      }
+      // Let extension modules add their settings to the form.
+      foreach (module_implements('filefield_widget_settings') as $module) {
+        $function = $module .'_filefield_widget_settings';
+        $function('form_alter', $widget, $form);
+      }
+      return $form;
+
+    case 'validate':
+      module_invoke_all('filefield_widget_settings', $op, $widget, NULL);
+      break;
+
+    case 'save':
+      $core_settings = array('file_extensions', 'file_path');
+      $additional_settings = module_invoke_all(
+        'filefield_widget_settings', $op, $widget, NULL
+      );
+      return array_merge($core_settings, $additional_settings);
+  }
+}
+
+function _filefield_widget_settings_file_path_validate($element, &$form_state) {
+  // Strip slashes from the beginning and end of $widget['file_path']
+  $form_state['values']['file_path'] = trim($form_state['values']['file_path'], '\\/');
+}
+
+/**
  * Implementation of hook_widget().
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
@@ -370,55 +419,6 @@ function filefield_generic_form($field, $file, $delta) {
     '#suffix' => '</div>',
   );
   return $form;
-}
-
-/**
- * Implementation of hook_widget_settings().
- */
-function filefield_widget_settings($op, $widget) {
-  switch ($op) {
-    case 'form':
-      $form = array();
-      $form['file_extensions'] = array (
-        '#type' => 'textfield',
-        '#title' => t('Permitted upload file extensions'),
-        '#default_value' => is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt',
-        '#size' => 64,
-        '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
-      );
-      $form['file_path'] = array(
-        '#type' => 'textfield', 
-        '#title' => t('File path'), 
-        '#default_value' => is_string($widget['file_path']) ? $widget['file_path'] : '',
-        '#description' => t('Optional subdirectory within the "%dir" directory where files will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))), 
-        '#element_validate' => array('_filefield_widget_settings_file_path_validate'),
-      );
-      if (module_exists('token')) {
-        $form['file_path']['#suffix'] = theme('token_help', 'user');
-      }
-      // Let extension modules add their settings to the form.
-      foreach (module_implements('filefield_widget_settings') as $module) {
-        $function = $module .'_filefield_widget_settings';
-        $function('form_alter', $widget, $form);
-      }
-      return $form;
-
-    case 'validate':
-      module_invoke_all('filefield_widget_settings', $op, $widget, NULL);
-      break;
-
-    case 'save':
-      $core_settings = array('file_extensions', 'file_path');
-      $additional_settings = module_invoke_all(
-        'filefield_widget_settings', $op, $widget, NULL
-      );
-      return array_merge($core_settings, $additional_settings);
-  }
-}
-
-function _filefield_widget_settings_file_path_validate($element, &$form_state) {
-  // Strip slashes from the beginning and end of $widget['file_path']
-  $form_state['values']['file_path'] = trim($form_state['values']['file_path'], '\\/');
 }
 
 /**
