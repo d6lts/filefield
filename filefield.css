@@ -2,6 +2,10 @@ table.filefield-filebrowser tbody tr td div.form-item {
   display: inline;
 }
 
+.filefield-file-flags div {
+  display: inline;
+}
+
 .filefield-icon {
   float: left;
   margin-right: 0.4em;
