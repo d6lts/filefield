@@ -43,6 +43,12 @@ function filefield_theme() {
     'filefield_file_edit_container' => array(
       'arguments' => array('element' => NULL),
     ),
+    'filefield_file_upload_container' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'filefield_container_item' => array(
+      'arguments' => array('element' => NULL),
+    ),
     'filefield_formatter_default' => array(
       'arguments' => array('element' => NULL),
     ),
@@ -267,6 +273,8 @@ function _filefield_widget_settings_file_path_validate($element, &$form_state) {
  * Implementation of hook_widget().
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
+
   if (!$file = field_file_load($items[$delta]['fid'])) {
     $replaced_file = isset($items[$delta]['replaced_file'])
                       ? $items[$delta]['replaced_file']
@@ -300,9 +308,13 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $repla
     ));
   }
 
+  $widget = array(
+    '#type'   => 'filefield_file_upload_container',
+    '#field' => $field,
+  );
   $widget['fid'] = array(
     '#type' => 'filefield_upload',
-    '#title' => t('Upload file'),
+    '#title' => t('Attach new file'),
     '#description' => $upload_description,
     '#field' => $field,
     '#delta' => $delta,
@@ -327,11 +339,8 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $file, $delta) {
   $widget = array(
     '#type' => 'filefield_file_edit_container',
     '#default_value' => $file,
+    '#field' => $field,
   );
-
-  $widget_info = filefield_widget_for_file($field, $file);
-  $form_callback = $widget_info['form callback'];
-  $widget['edit'] = $form_callback($field, $file, $delta);
 
   $widget['flags'] = array(
     '#type' => 'markup',
@@ -366,15 +375,45 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $file, $delta) {
     );
   }
 
+  $widget_info = filefield_widget_for_file($field, $file);
+  $form_callback = $widget_info['form callback'];
+  $widget['edit'] = $form_callback($field, $file, $delta);
+
   return $widget;
 }
 
 /**
- * Theme function for the file edit container. It only needs to display
- * its children, so this function is pretty empty.
+ * Theme function for the file edit container element.
  */
 function theme_filefield_file_edit_container($element) {
-  return isset($element['#children']) ? $element['#children'] : '';
+  return theme('filefield_container_item', $element);
+}
+
+/**
+ * Theme function for the file upload container element.
+ */
+function theme_filefield_file_upload_container($element) {
+  return theme('filefield_container_item', $element);
+}
+
+/**
+ * Render either an upload or edit container item so that the children elements
+ * always appear inside a nice table, whatever $field['multiple'] might be.
+ */
+function theme_filefield_container_item($element) {
+  $field = $element['#field'];
+  $children = !empty($element['#children']) ? $element['#children'] : '';
+
+  // CCK renders a nice table for multiple-value fields, that's just fine as is.
+  if ($field['multiple']) {
+    return theme('form_element', $element, $children);
+  }
+  // If the field is single-value, we still want to have a table, for the looks.
+  $header = array();
+  $rows = array(array($children));
+  $attributes = array('class' => 'filefield-file-container-table');
+  $table = theme('table', $header, $rows, $attributes);
+  return theme('form_element', $element, $table);
 }
 
 /**
@@ -483,9 +522,14 @@ function filefield_generic_priority($field, $file) {
  * Simply display an icon and a text field for editing the file description.
  */
 function filefield_generic_form($field, $file, $delta) {
-  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
   $url = file_create_url($file['filepath']);
 
+  $form = array(
+    '#type'   => 'markup',
+    '#value'  => '',
+    '#prefix' => '<div class="filefield-generic-description">',
+    '#suffix' => '</div>',
+  );
   $form['icon'] = array(
     '#type' => 'item',
     '#value' => theme('filefield_icon', $file),
@@ -515,7 +559,11 @@ function filefield_elements() {
   $elements['filefield_file_edit_container'] = array(
     '#input' => TRUE,
     '#value_callback' => 'filefield_file_edit_container_value',
-    '#theme' => 'filefield_file_edit',
+    '#tree' => TRUE,
+  );
+  $elements['filefield_file_upload_container'] = array(
+    '#input' => TRUE,
+    '#theme' => 'filefield_file_upload',
     '#tree' => TRUE,
   );
   return $elements;

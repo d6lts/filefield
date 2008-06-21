@@ -1,18 +1,23 @@
-.filefield-file-flags div {
-  display: inline;
-}
+/**
+ * Overall styles
+ */
 
 .filefield-icon {
   float: left;
-  margin-right: 0.4em;
 }
 
 .filefield-icon img {
   display: inline;
 }
 
-.form-item .filefield-icon {
-  margin-top: 0.6em;
+/* End overall styles */
+
+/**
+ * Formatter styles
+ */
+
+.filefield-item .filefield-icon {
+  margin-right: 0.4em;
 }
 
 /**
@@ -29,3 +34,40 @@
 /* Hides from IE-mac \*/
 * html .filefield-item {height: 1%;}
 /* End hide from IE-mac */
+
+/* End formatter styles */
+
+/**
+ * Widget form styles
+ */
+
+.filefield-file-flags {
+  float: right;
+  text-align: right;
+  width: 10%;
+}
+
+.form-item .filefield-icon {
+  margin-top: 0.6em;
+  margin-right: 0.7em;
+}
+
+/* The text field is made unnecessarily long by node.css - shorten it */
+.filefield-generic-description .form-text {
+  width: 80%;
+}
+.filefield-generic-description .description {
+  width: 80%;
+  white-space: normal;
+  margin-bottom: 0;
+  overflow: auto; /* indent on line wraps */
+}
+
+/* Only applies to single-value fields, for which we provide our own table. */
+.filefield-file-container-table {
+  width: 90%;
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+
+/* End widget form styles */
