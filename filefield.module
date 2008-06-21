@@ -22,27 +22,6 @@ function filefield_menu() {
     'access arguments' => array('view content'),
     'type' => MENU_CALLBACK,
   );
-
-  /*
-  if ($_SESSION['filefield']) {
-    // Add handlers for previewing new uploads.
-    foreach ($_SESSION['filefield'] as $fieldname => $files) {
-      if (is_array($files)) {
-        foreach($files as $delta => $file) {
-          if ($file['preview']) {
-            $items[] = array(
-              'path' => $file['preview'],
-              'callback' => '_filefield_preview',
-              'access' => TRUE,
-              'type' => MENU_CALLBACK
-            );
-          }
-        }
-      }
-    }
-  }
-  */
-
   return $items;
 }
 
@@ -74,22 +53,6 @@ function filefield_theme() {
       'arguments' => array('file' => NULL),
     ),
   );
-}
-
-/**
- * Transfer a file that is in a 'preview' state.
- * @todo  multiple support
- */
-function _filefield_preview() {
-  foreach ($_SESSION['filefield'] as $fieldname => $files) {
-    foreach ($files as $delta => $file) {
-      if ($file['preview'] == $_GET['q']) {
-        file_transfer($file['filepath'], array('Content-Type: '. mime_header_encode($file['filemime']),
-                                           'Content-Length: '. $file['filesize']));
-        exit();
-      }
-    }
-  }
 }
 
 /**
@@ -326,10 +289,21 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $repla
   //drupal_add_js('misc/upload.js');
   //drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
 
+  // Construct the upload description out of user supplied text,
+  // maximum upload file size, and (optionally) allowed extensions.
+  $upload_description = t('Maximum file size: !size.', array(
+    '!size' => format_size(file_upload_max_size()),
+  ));
+  if (!empty($field['widget']['file_extensions'])) {
+    $upload_description .= ' ' . t('Allowed extensions: %ext.', array(
+      '%ext' => $field['widget']['file_extensions']
+    ));
+  }
+
   $widget['fid'] = array(
     '#type' => 'filefield_upload',
     '#title' => t('Upload file'),
-    '#description' => $field['widget']['description'],
+    '#description' => $upload_description,
     '#field' => $field,
     '#delta' => $delta,
   );
@@ -496,10 +470,18 @@ function filefield_file_widget_info() {
   );
 }
 
+/**
+ * Priority callback for the 'filefield_generic' widget:
+ * Really low priority for all files, as this is the most basic fallback.
+ */
 function filefield_generic_priority($field, $file) {
   return -1;
 }
 
+/**
+ * Form callback for the 'filefield_generic' widget:
+ * Simply display an icon and a text field for editing the file description.
+ */
 function filefield_generic_form($field, $file, $delta) {
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
   $url = file_create_url($file['filepath']);
@@ -571,8 +553,9 @@ function theme_filefield_upload($element) {
 }
 
 /**
- * The 'value' callback for 'filefield_upload' form elements.
- * Transforms the original widget value into a file array.
+ * Value callback for 'filefield_upload' form elements.
+ * Uploads and validates a file if one has been specified,
+ * and returns the fid of that file as result value.
  */
 function filefield_upload_value($element, $edit = FALSE) {
   $default_value = empty($element['#value']) ? 0 : $element['#value'];
@@ -611,43 +594,12 @@ function filefield_upload_value($element, $edit = FALSE) {
   return $file->fid;
 }
 
-function filefield_clear_session() {
-  if (is_array($_SESSION['filefield']) && count($_SESSION['filefield'])) {
-    foreach (array_keys($_SESSION['filefield']) as $fieldname) {
-      filefield_clear_field_session($fieldname);
-    }
-    unset($_SESSION['filefield']);
-  }
-}
-
-function filefield_clear_field_session($fieldname) {
-  if (is_array($_SESSION['filefield'][$fieldname]) && count($_SESSION['filefield'][$fieldname])) {
-    foreach ($_SESSION['filefield'][$fieldname] as $delta => $file) {
-      if (is_file($file['filepath'])) {
-        file_delete($file['filepath']);
-      }
-    }
-    unset($_SESSION['filefield'][$fieldname]);
-  }
-}
-
-
+/*
 function _filefield_widget_prepare_form_values($node, $field, &$items) {
   $fieldname = $field['field_name'];
 
-  // @todo split this into its own function. determine if we can make it a form element.
-  if (empty($_POST)) {
-    filefield_clear_session();
-  }
-
   // Attach new files.
   if ($file = file_check_upload($fieldname .'_upload')) {
-    // test allowed extensions. We do this when the file is uploaded,
-    // rather than waiting for the field itseld to reach op==validate.
-    // Only check extensions if specific extensions are actually required.
-    if (strlen(trim($field['widget']['file_extensions']))) {
-      $errors = file_validate_extensions($file, $field['widget']['file_extensions']);
-    }
     $file = (array)$file;
 
     // let extended validation from other module happen so we get all error messages.
@@ -655,52 +607,14 @@ function _filefield_widget_prepare_form_values($node, $field, &$items) {
     if (empty($errors)) {
       $errors = module_invoke_all('filefield', 'file_validate', $node, $field, $file);
     }
-    if (!empty($errors)) {
-      foreach ($errors as $error) {
-        form_set_error($fieldname .'_upload', $error);
-      }
-    }
 
     // let modules massage act on the file.
     foreach(module_implements('filefield') as $module) {
       $function =  $module .'_filefield';
       $function('file_prepare', $node, $field, $file);
     }
-
-    $filepath = file_create_filename($file['filename'], file_create_path($field['widget']['file_path']));
-    if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
-      if (strpos($filepath, file_directory_path()) !== FALSE) {
-        $filepath = trim(substr($filepath, strlen(file_directory_path())), '\\/');
-      }
-      $filepath = 'system/files/'. $filepath;
-    };
-
-    // prepare file array. 
-    $file['fid'] = 'upload';
-    $file['preview'] = $filepath;
-
-    // if this is a single value filefield mark any other files for deletion.
-    if (!$field['multiple']) {
-      if (is_array($items)) {
-        foreach($items as $delta => $session_file) {
-          $items[$delta]['delete'] = TRUE;
-        }
-      }
-      // Remove old temporary file from session.
-      filefield_clear_field_session($fieldname);
-    }
-
-    $file_id = count($items) + count($_SESSION['filefield'][$fieldname]);
-    $_SESSION['filefield'][$fieldname][$file_id] = $file;
   }
-
-  // Load files from preview state. before committing actions.
-  if (!empty($_SESSION['filefield'][$fieldname])) {
-    foreach($_SESSION['filefield'][$fieldname] as $delta => $file) {
-      $items[] = $file;
-    }
-  }
-}
+}*/
 
 /*
 function _filefield_widget_form($node, $field, &$items) {
@@ -729,32 +643,6 @@ function _filefield_widget_form($node, $field, &$items) {
     '#prefix' => '<div id="'. form_clean_id($fieldname .'-attach-hide') .'">',
     '#suffix' => '</div>',
     '#weight' => 100,
-  );
-
-  // Construct the upload description out of user supplied text,
-  // maximum upload file size, and (optionally) allowed extensions.
-  $upload_description = empty($field['widget']['description'])
-    ? '' : ($field['widget']['description'] . '<br/>');
-
-  $upload_description .= t('Maximum file size: !size.', array(
-    '!size' => format_size(file_upload_max_size()),
-  ));
-
-  if (!empty($field['widget']['file_extensions'])) {
-    $upload_description .= ' ' . t('Allowed extensions: %ext.', array(
-      '%ext' => $field['widget']['file_extensions']
-    ));
-  }
-
-  // Separate from tree becase of that silly things won't be displayed
-  // if they are a child of '#type' = form issue
-  $form[$fieldname]['new'][$fieldname .'_upload'] = array(
-    '#type'  => 'file',
-    '#title' => t('Attach new file'),
-    '#description' => $upload_description,
-    '#weight' => 9,
-    '#tree' => FALSE,
-    '#attributes' => array('accept' => str_replace(' ', '|', trim($field['widget']['file_extensions']))),
   );
 
   $form[$fieldname]['new']['upload'] = array(
@@ -826,34 +714,6 @@ function _filefield_widget_form($node, $field, &$items) {
 
 
 /**
- * Validate the form widget.
- */
-function _filefield_widget_validate($node, $field, $items) {
-  if (!$field['required']) {
-    return;
-  }
-
-  // if there aren't any items.. throw an error.
-  if (!count($items)) {
-    form_set_error($field['field_name'], t('@field is required. Please upload a file.', array('@field' => $field['widget']['label'])));
-  }
-  else {
-    // Sum all the items marked for deletion, so we can make sure the end user
-    // isn't deleting all of the files.
-    $count_deleted = 0;
-    foreach($items as $item) {
-      if (!empty($item['delete'])) {
-        ++$count_deleted;
-      }
-    }
-    if (count($items) == $count_deleted) {
-      form_set_error($field['field_name'], t('@field is required. Please keep at least one file or upload a new one.', array('@field' => $field['widget']['label'])));
-    }
-  }
-}
-
-
-/**
  * Implementation of hook_field_formatter_info().
  */
 function filefield_field_formatter_info() {
@@ -882,37 +742,6 @@ function theme_filefield_formatter_default($element) {
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
   return theme('filefield', $file);
 }
-
-/* @todo: remove, and transform into a single-element widget
-          (or steer away from CONTENT_HANDLE_CORE for 'multiple values')
-function theme_filefield_form_current($form) {
-  $header = $form['#force_list']
-            ? array('', t('Delete'), '',  t('Description'), t('Size'))
-            : array('', t('Delete'), t('List'), '',  t('Description'), t('Size'));
-
-  foreach (element_children($form) as $key) {
-    // Don't display (hidden) replaced items.
-    if ($form[$key]['delete']['#type'] == 'hidden') {
-      continue;
-    }
-
-    $row = array();
-    // we just going to lose this for now until we figure out how to handle it... 
-    $row[] = drupal_render($form[$key]['file_preview']);  
-    $row[] = drupal_render($form[$key]['delete']);
-    if (!$form['#force_list']) {
-      $row[] = drupal_render($form[$key]['list']);
-    }
-    $row[] = drupal_render($form[$key]['icon']);
-    $row[] = drupal_render($form[$key]['description']).
-             drupal_render($form[$key]['url']);
-    $row[] = drupal_render($form[$key]['size']);
-    $rows[] = $row;
-  }
-  $output = theme('table', $header, $rows, array('class' => 'filefield-filebrowser'));
-  $output .= drupal_render($form);
-  return $output;
-}*/
 
 function theme_filefield_icon($file) {
   $dashed_mime = check_plain(strtr($file['filemime'], array('/' => '-')));
@@ -1003,6 +832,7 @@ function filefield_check_directory($directory, $form_item = NULL) {
 /**
  * Menu callback for JavaScript-based uploads.
  */
+/* @todo: port to Drupal 6
 function filefield_js() {
   // Parse fieldname from submit button.
   $matches = array();
@@ -1042,20 +872,21 @@ function filefield_js() {
   // Send the updated file attachments form.
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit();
-}
+}*/
 
 
 
 function filefield_token_list($type = 'all') {
   if ($type == 'field' || $type == 'all') {
     $tokens = array();
-    $tokens['file']['fid']         = t("File ID");
-    $tokens['file']['description'] = t("File description");
-    $tokens['file']['filename']    = t("File name");
-    $tokens['file']['filepath']    = t("File path");
-    $tokens['file']['filemime']    = t("File MIME type");
-    $tokens['file']['filesize']    = t("File size");
-    $tokens['file']['view']        = t("Fully formatted HTML file tag");
+    $tokens['file']['fid']                = t("File ID");
+    $tokens['file']['description']        = t("File description");
+    $tokens['file']['filename']           = t("File name");
+    $tokens['file']['filepath']           = t("File path");
+    $tokens['file']['filemime']           = t("File MIME type");
+    $tokens['file']['filesize']           = t("File size (in bytes)");
+    $tokens['file']['filesize_formatted'] = t("File size (pretty printed)");
+    $tokens['file']['view']               = t("Fully formatted HTML file tag");
     return $tokens;
   }
 }
@@ -1063,13 +894,14 @@ function filefield_token_list($type = 'all') {
 function filefield_token_values($type, $object = NULL) {
   if ($type == 'field') {
     $item = $object[0];
-    $tokens['fid']         = $item['fid'];
-    $tokens['description'] = $item['description'];
-    $tokens['filename']    = $item['filename'];
-    $tokens['filepath']    = $item['filepath'];
-    $tokens['filemime']    = $item['filemime'];
-    $tokens['filesize']    = $item['filesize'];
-    $tokens['view']        = $item['view'];
+    $tokens['fid']                = $item['fid'];
+    $tokens['description']        = $item['description'];
+    $tokens['filename']           = $item['filename'];
+    $tokens['filepath']           = $item['filepath'];
+    $tokens['filemime']           = $item['filemime'];
+    $tokens['filesize']           = $item['filesize'];
+    $tokens['filesize_formatted'] = format_size($item['filesize']);
+    $tokens['view']               = $item['view'];
     return $tokens;
   }
 }
