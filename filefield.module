@@ -368,12 +368,6 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $file, $delta) {
       '#default_value' => $file['list'],
     );
   }
-  else {
-    $widget['flags']['list'] = array(
-      '#type' => 'value',
-      '#value' => is_numeric($file['list']) ? $file['list'] : 1,
-    );
-  }
 
   $widget_info = filefield_widget_for_file($field, $file);
   $form_callback = $widget_info['form callback'];
@@ -428,7 +422,9 @@ function filefield_file_edit_container_value($element, $edit = FALSE) {
   }
 
   $file_fixed_properties = array(
-    'list'      => $edit['flags']['list'],
+    'list'      => isset($edit['flags']['list'])
+                    ? $edit['flags']['list']
+                    : $file['list'],
     'delete'    => 0,
     'fid'       => $file['fid'],
     'uid'       => $file['uid'],
