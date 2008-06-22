@@ -666,14 +666,6 @@ function _filefield_widget_prepare_form_values($node, $field, &$items) {
 
 /*
 function _filefield_widget_form($node, $field, &$items) {
-  drupal_add_js('misc/progress.js');
-  drupal_add_js('misc/upload.js');
-  drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
-  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
-
-  $fieldname = $field['field_name'];
-
-  $form = array();
   $form[$fieldname] = array(
     '#type' => 'fieldset',
     '#title' => t($field['widget']['label']),
@@ -703,24 +695,6 @@ function _filefield_widget_form($node, $field, &$items) {
   );
 
   if (is_array($items) && count($items)) {
-    $form[$fieldname]['files'] = array(
-      '#parents' => array($fieldname),
-      '#theme' => 'filefield_form_current',
-      // remember the force_list setting so that the theme function knows
-      '#force_list' => $field['force_list'],
-    );
-    foreach($items as $delta => $file) {
-      // @todo: split into its own form and theme functions per file like imagefield
-      if ($file['filepath'] && !$file['delete']) {
-        $form[$fieldname]['files'][$delta] = _filefield_file_form($node, $field, $file);
-      }
-      else if ($file['filepath'] && $file['delete']) {
-        $form[$fieldname]['files'][$delta]['delete'] = array(
-          '#type' => 'hidden',
-          '#value' => $file['delete'],
-        );
-      }
-    }
     // Special handling for single value fields.
     if (!$field['multiple']) {
       $form[$fieldname]['replace'] = array(
@@ -782,8 +756,8 @@ function theme_filefield_formatter_default($element) {
   if (!$file['fid']) {
     return '';
   }
+  $field = content_fields($element['#field_name'], $element['#type_name']);
 
-  // @todo: retrieve the $field.
   if($field['force_list']) {
     $file['list'] = 1; // always show the files if that option is enabled
   }
