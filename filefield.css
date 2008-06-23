@@ -10,6 +10,23 @@
   display: inline;
 }
 
+/**
+ * Clear the filefield-icon float, or any other floats
+ * that custom widgets might have inserted but not cleared.
+ * Stolen from "How To Clear Floats Without Structural Markup",
+ * http://www.positioniseverything.net/easyclearing.html
+ */
+.filefield-item:after, .filefield-file-edit:after {
+    content: "";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+}
+/* Hides from IE-mac \*/
+* html .filefield-item, .filefield-file-edit {height: 1%;}
+/* End hide from IE-mac */
+
 /* End overall styles */
 
 /**
@@ -19,21 +36,6 @@
 .filefield-item .filefield-icon {
   margin-right: 0.4em;
 }
-
-/**
- * Stolen from "How To Clear Floats Without Structural Markup",
- * http://www.positioniseverything.net/easyclearing.html
- */
-.filefield-item:after {
-    content: ".";
-    display: block;
-    height: 0;
-    clear: both;
-    visibility: hidden;
-}
-/* Hides from IE-mac \*/
-* html .filefield-item {height: 1%;}
-/* End hide from IE-mac */
 
 /* End formatter styles */
 
@@ -47,16 +49,16 @@
   width: 10%;
 }
 
-.form-item .filefield-icon {
+.filefield-generic-edit .filefield-icon {
   margin-top: 0.6em;
   margin-right: 0.7em;
 }
 
 /* The text field is made unnecessarily long by node.css - shorten it */
-.filefield-generic-description .form-text {
+.filefield-generic-edit .form-text {
   width: 80%;
 }
-.filefield-generic-description .description {
+.filefield-generic-edit .description {
   width: 80%;
   white-space: normal;
   margin-bottom: 0;

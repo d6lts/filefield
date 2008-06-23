@@ -358,6 +358,8 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $file, $delta) {
     '#type' => 'filefield_file_edit_container',
     '#default_value' => $file,
     '#field' => $field,
+    '#prefix' => '<div class="filefield-file-edit">',
+    '#suffix' => '</div>',
   );
 
   $widget['flags'] = array(
@@ -541,7 +543,7 @@ function filefield_generic_form($field, $file, $delta) {
   $form = array(
     '#type'   => 'markup',
     '#value'  => '',
-    '#prefix' => '<div class="filefield-generic-description">',
+    '#prefix' => '<div class="filefield-generic-edit">',
     '#suffix' => '</div>',
   );
   $form['icon'] = array(
