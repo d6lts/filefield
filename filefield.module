@@ -353,6 +353,7 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $repla
   // so we make the "Upload" button a regular child element and not a part
   // of the filefield_file_upload widget.
   $widget[$field['field_name'] .'_'. $delta .'_upload'] = array(
+    '#name' => $field['field_name'] .'_'. $delta .'_upload',
     '#type' => 'submit',
     '#value' => t('Upload'),
     '#submit' => array('filefield_file_upload_submit'),
@@ -444,11 +445,11 @@ function filefield_file_upload_submit($form, &$form_state) {
 
   if (!filefield_check_directory($widget_file_path, $upload_name)) {
     // @todo: watchdog.
-    return $default_value;
+    return array('fid' => 0, 'replaced_file' => $replaced_file);
   }
   if (!$file = file_save_upload($upload_name, $validators, $complete_file_path)) {
     // @todo: watchdog.
-    return $default_value;
+    return array('fid' => 0, 'replaced_file' => $replaced_file);
   }
 
   $file_default_properties = array(
@@ -456,10 +457,7 @@ function filefield_file_upload_submit($form, &$form_state) {
     'description' => $file->filename,
   );
   $file = array_merge($file_default_properties, (array) $file);
-
-  if (!empty($element['#replaced_file'])) {
-    $file['replaced_file'] = $replaced_file;
-  }
+  $file['replaced_file'] = $replaced_file;
 
   $form_state['values'][$field_name][$delta] = $file;
   node_form_submit_build_node($form, $form_state);
@@ -487,6 +485,7 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $file, $delta) {
     '#suffix' => '</div>',
   );
   $widget['flags'][$field['field_name'] .'_'. $delta .'_delete'] = array(
+    '#name' => $field['field_name'] .'_'. $delta .'_delete',
     '#type' => 'submit',
     '#value' => t('Delete'),
     '#submit' => array('filefield_file_edit_delete_submit'),
