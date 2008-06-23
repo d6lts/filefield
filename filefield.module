@@ -101,6 +101,24 @@ function filefield_field_settings($op, $field) {
         'list' => array('type' => 'int', 'size' => 'tiny', 'not null' => FALSE),
       );
       return $columns;
+
+    case 'views data':
+      $data = content_views_field_views_data($field);
+      $db_info = content_database_info($field);
+      $table_alias = content_views_tablename($field);
+
+      // By defining the relationship, we already have a "Has file" filter
+      // plus all the filters that Views already provides for files.
+      // No need for having a filter by ourselves.
+      unset($data[$table_alias][$field['field_name'] .'_fid']['filter']);
+
+      // Add a relationship for related file.
+      $data[$table_alias][$field['field_name'] .'_fid']['relationship'] = array(
+        'base' => 'files',
+        'field' => $db_info['columns']['fid']['column'],
+        'handler' => 'views_handler_relationship',
+      );
+      return $data;
   }
 }
 
@@ -923,24 +941,6 @@ function filefield_token_values($type, $object = NULL) {
     return $tokens;
   }
 }
-
-
-/**
- * Custom filter for filefield NOT NULL
- */
-/* @todo: port to views 2
-function filefield_views_handler_filter_is_not_null($op, $filter, $filterinfo, &$query) {
-  if ($op == 'handler') {
-    $query->ensure_table($filterinfo['table']);
-    if ($filter['value']) {
-      $qs = '%s.%s > 0';
-    }
-    else {
-      $qs = '%s.%s = 0 OR %s.%s IS NULL';
-    }
-    $query->add_where($qs, $filterinfo['table'], $filterinfo['field'], $filterinfo['table'], $filterinfo['field']);
-  }
-}*/
 
 
 /**
