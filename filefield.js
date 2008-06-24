@@ -13,13 +13,12 @@ Drupal.behaviors.filefieldValidateAutoAttach = function(context) {
     if(this.accept.length > 1){
       v = new RegExp('\\.(' + (this.accept ? this.accept : '') + ')$', 'gi');
       if (!v.test(this.value)) {
-        var error = Drupal.t("The file @filename is not supported. \nOnly the following file types are supported: \n@extensions",
-          { '@filename' : this.value, '@extensions': this.accept.replace(/\|/g, ' ') }
+        var error = Drupal.t("The selected file %filename cannot not be uploaded. Only files with the following extensions are allowed: %extensions.",
+          { '%filename' : this.value, '%extensions': this.accept.replace(/\|/g, ' ') }
         );
-        alert(error);
         // what do I prepend this to?
-        // .prepend($('<div class="filefield-js-error>"' + error + '</div>'));
-        this.value = '';
+        $(this).before('<div class="messages error filefield-js-error">' + error + '</div>');
+        this.files = '';
         return false;
       }
     }

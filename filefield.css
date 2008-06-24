@@ -68,6 +68,11 @@
   margin-bottom: 5px;
 }
 
+.filefield-js-error {
+  /* For some reason, the JS error message doesn't wrap by default. */
+  white-space: normal;
+}
+
 /* End general widget form styles */
 
 /**
