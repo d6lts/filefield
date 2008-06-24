@@ -1,10 +1,10 @@
 // $Id$
 
 /**
- *  Auto Attach standard client side file input validation
+ * Auto-attach standard client side file input validation.
  */
-Drupal.filefieldValidateAutoAttach = function() {
-  $("input[@type='file']").change( function() {
+Drupal.behaviors.filefieldValidateAutoAttach = function(context) {
+  $("input[@type='file']", context).change( function() {
     $('.filefield-js-error').remove();
 
     /**
@@ -13,8 +13,9 @@ Drupal.filefieldValidateAutoAttach = function() {
     if(this.accept.length > 1){
       v = new RegExp('\\.(' + (this.accept ? this.accept : '') + ')$', 'gi');
       if (!v.test(this.value)) {
-        var error = 'The file ' + this.value + " is not supported.\n";
-        error += "Only the following file types are supported: \n" + this.accept.replace(/\|/g, ' ');
+        var error = Drupal.t("The file @filename is not supported. \nOnly the following file types are supported: \n@extensions",
+          { '@filename' : this.value, '@extensions': this.accept.replace(/\|/g, ' ') }
+        );
         alert(error);
         // what do I prepend this to?
         // .prepend($('<div class="filefield-js-error>"' + error + '</div>'));
@@ -29,9 +30,3 @@ Drupal.filefieldValidateAutoAttach = function() {
     /* @todo */
   });
 }
-
-// Global killswitch
-if (Drupal.jsEnabled) {
-  $(document).ready(Drupal.filefieldValidateAutoAttach);
-}
-

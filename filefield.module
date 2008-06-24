@@ -349,9 +349,7 @@ function theme_filefield_container_item($element) {
 function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $item = NULL) {
   $form['#attributes']['enctype'] = 'multipart/form-data';
 
-  //drupal_add_js('misc/progress.js');
-  //drupal_add_js('misc/upload.js');
-  //drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
+  drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
 
   $id = 'filefield-'. $field_name_css .'-'. $delta .'-form';
 
@@ -402,7 +400,7 @@ function filefield_file_upload_process($element, $edit, &$form_state, $form) {
     '!size' => format_size(file_upload_max_size()),
   ));
   if (!empty($field['widget']['file_extensions'])) {
-    $upload_description .= ' ' . t('Allowed extensions: %ext.', array(
+    $upload_description .= ' ' . t('Allowed extensions: %ext', array(
       '%ext' => $field['widget']['file_extensions'],
     ));
   }
