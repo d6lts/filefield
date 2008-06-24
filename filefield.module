@@ -499,12 +499,12 @@ function filefield_file_upload(&$form_state, $field, $delta) {
   $complete_file_path = file_directory_path() .'/'. $widget_file_path;
 
   if (!filefield_check_directory($widget_file_path, $upload_name)) {
-    // @todo: watchdog.
+    watchdog('file', 'The upload directory %directory for the file field %field (content type %type) could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $widget_file_path, '%field' => $field_name, '%type' => $field['type_name']));
     $file = array('fid' => 0, 'replaced_file' => $replaced_file);
     return $file;
   }
   if (!$file = file_save_upload($upload_name, $validators, $complete_file_path)) {
-    // @todo: watchdog.
+    watchdog('file', 'The file %file could not be saved as addition to the file field %field (content type %type). This can be a consequence of the file failing validation, or if it can\'t be moved to the file directory, or whatever reason the file_save_upload() function comes up with. No further information is available to the filefield module, but if you\'re lucky then that function left one or more hints in the log as well (directly before this log entry).', array('%file' => $complete_file_path, '%field' => $field_name, '%type' => $field['type_name']));
     $file = array('fid' => 0, 'replaced_file' => $replaced_file);
     return $file;
   }
