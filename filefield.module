@@ -21,14 +21,14 @@ function filefield_menu() {
     'page callback' => 'filefield_js',
     'page arguments' => array(3, 4, 5, 'filefield_file_upload_js'),
     'access callback' => 'filefield_edit_access',
-    'access arguments' => array(3, 4),
+    'access arguments' => array(3),
     'type' => MENU_CALLBACK,
   );
   $items['filefield/js/delete/%/%/%'] = array(
     'page callback' => 'filefield_js',
     'page arguments' => array(3, 4, 5, 'filefield_file_edit_delete_js'),
     'access callback' => 'filefield_edit_access',
-    'access arguments' => array(3, 4),
+    'access arguments' => array(3),
     'type' => MENU_CALLBACK,
   );
   return $items;
@@ -39,9 +39,22 @@ function filefield_menu() {
  * The content_permissions module provides nice fine-grained permissions for
  * us to check, so we can make sure that the user may actually edit the file.
  */
-function filefield_edit_access($field_name, $type_name) {
+function filefield_edit_access($field_name) {
   if (module_exists('content_permissions')) {
     return user_access('edit '. $field_name);
+  }
+  // No content permissions to check, so let's fall back to a more general permission.
+  return user_access('access content');
+}
+
+/**
+ * Access callback for viewing a filefield. Not used in filefield itself,
+ * but might be beneficial for custom themers who want to properly check
+ * view access before displaying it to the user.
+ */
+function filefield_view_access($field_name) {
+  if (module_exists('content_permissions')) {
+    return user_access('view '. $field_name);
   }
   // No content permissions to check, so let's fall back to a more general permission.
   return user_access('access content');
