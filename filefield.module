@@ -55,6 +55,10 @@ function filefield_elements() {
     '#process' => array('filefield_file_edit_process'),
     '#value_callback' => 'filefield_file_edit_value',
   );
+  $elements['filefield_generic_edit'] = array(
+    '#input' => TRUE,
+    '#process' => array('filefield_generic_edit_process'),
+  );
   return $elements;
 }
 
@@ -63,13 +67,16 @@ function filefield_elements() {
  */
 function filefield_theme() {
   return array(
-    'filefield_file_edit' => array(
+    'filefield_container_item' => array(
       'arguments' => array('element' => NULL),
     ),
     'filefield_file_upload' => array(
       'arguments' => array('element' => NULL),
     ),
-    'filefield_container_item' => array(
+    'filefield_file_edit' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'filefield_generic_edit' => array(
       'arguments' => array('element' => NULL),
     ),
     'filefield_formatter_default' => array(
@@ -356,8 +363,8 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $item 
     '#field' => $field,
     '#delta' => $delta,
     '#replaced_file' => $replaced_file,
-    '#prefix' => '<div id="'. $id .'" class="filefield-file-form filefield-file-upload">',
-    '#suffix' => '</div>',
+    '#prefix' => '<div id="'. $id .'" class="filefield-file-form"><div class="filefield-file-upload">',
+    '#suffix' => '</div></div>',
   );
   // Buttons inside custom form elements are not registered by the Forms API,
   // so we make the "Upload" button a regular child element and not a part
@@ -508,14 +515,13 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $delta, $file) {
   $classes = array(
     'filefield-'. $field_name_css .'-form',
     'filefield-file-form',
-    'filefield-file-edit',
   );
   $widget = array(
     '#type' => 'filefield_file_edit',
     '#default_value' => $file,
     '#field' => $field,
-    '#prefix' => '<div id="'. $id .'" class="'. implode(' ', $classes) .'">',
-    '#suffix' => '</div>',
+    '#prefix' => '<div id="'. $id .'" class="'. implode(' ', $classes) .'"><div class="filefield-file-edit">',
+    '#suffix' => '</div></div>',
   );
 
   // Buttons inside custom form elements are not registered by the Forms API,
@@ -524,7 +530,7 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $delta, $file) {
   $widget['flags'] = array(
     '#type' => 'markup',
     '#value' => '',
-    '#prefix' => '<div class="filefield-file-flags">',
+    '#prefix' => '<div class="filefield-file-edit-flags">',
     '#suffix' => '</div>',
   );
   $widget['flags'][$field['field_name'] .'_'. $delta .'_delete'] = array(
@@ -542,50 +548,26 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $delta, $file) {
     '#delta' => $delta,
     '#file' => $file,
   );
-
-  return $widget;
-}
-
-/**
- * The 'process' callback for 'filefield_file_edit' form elements.
- * Called after defining the form and while building it, transforms the
- * barebone element array into a file editing widget.
- */
-function filefield_file_edit_process($element, $edit, &$form_state, $form) {
-  $field = $element['#field'];
-  $file = $element['#value'];
-
-  // We want the child elements to be included in the value array.
-  $element['#tree'] = TRUE;
-
-  // Slightly crufty code to share the same 'flags' element with the "Delete"
-  // button and still be an independent widget.
-  if (empty($element['flags'])) {
-    $element['flags'] = array();
-  }
-  if (empty($element['flags']['#type'])) {
-    $element['flags'] = array_merge($element['flags'], array(
-      '#type' => 'markup',
-      '#value' => '',
-      '#prefix' => '<div class="filefield-file-flags">',
-      '#suffix' => '</div>',
-    ));
-  }
-
   // Only show the list checkbox if files are not forced to be listed.
   if (!$field['force_list']) {
-    $element['flags']['list'] = array(
+    $widget['flags']['list'] = array(
       '#type' => 'checkbox',
       '#title' => t('List'),
       '#default_value' => $file['list'],
     );
   }
 
-  $widget_info = filefield_widget_for_file($field, $file);
-  $form_callback = $widget_info['form callback'];
-  $element['edit'] = $form_callback($field, $file, $delta);
+  $edit_widget_info = filefield_widget_for_file($field, $file);
+  $widget['edit'] = array(
+    '#type' => $edit_widget_info['form element'],
+    '#field' => $field,
+    '#delta' => $delta,
+    '#default_value' => $file,
+    '#prefix' => '<div class="filefield-file-edit-widget">',
+    '#suffix' => '</div>',
+  );
 
-  return $element;
+  return $widget;
 }
 
 /**
@@ -748,7 +730,8 @@ function filefield_widget_for_file($field, $file) {
   drupal_alter('file_widget_info', $file_widget_info);
 
   $compatible_widget_info = array();
-  foreach ($file_widget_info as $widget_name => $info) {
+  foreach ($file_widget_info as $element_name => $info) {
+    $info['form element'] = $element_name;
     $priority_callback = $info['priority callback'];
     $priority = $priority_callback($field, $file);
 
@@ -767,9 +750,8 @@ function filefield_widget_for_file($field, $file) {
  */
 function filefield_file_widget_info() {
   return array(
-    'file_generic' => array(
-      'priority callback' => 'filefield_generic_priority',
-      'form callback' => 'filefield_generic_form',
+    'filefield_generic_edit' => array(
+      'priority callback' => 'filefield_generic_edit_priority',
     ),
   );
 }
@@ -778,37 +760,53 @@ function filefield_file_widget_info() {
  * Priority callback for the 'filefield_generic' widget:
  * Really low priority for all files, as this is the most basic fallback.
  */
-function filefield_generic_priority($field, $file) {
+function filefield_generic_edit_priority($field, $file) {
   return -1;
 }
 
 /**
- * Form callback for the 'filefield_generic' widget:
- * Simply display an icon and a text field for editing the file description.
+ * The 'process' callback for 'filefield_generic_edit' form elements.
+ * Called after defining the form and while building it, transforms the
+ * barebone element array into an icon and and a text field for editing
+ * the file description.
  */
-function filefield_generic_form($field, $file, $delta) {
+function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
+  $field = $element['#field'];
+  $delta = $element['#delta'];
+  $file = $element['#value'];
   $url = file_create_url($file['filepath']);
 
-  $form = array(
-    '#type'   => 'markup',
-    '#value'  => '',
-    '#prefix' => '<div class="filefield-generic-edit">',
-    '#suffix' => '</div>',
-  );
-  $form['icon'] = array(
-    '#type' => 'item',
+  $prefix = isset($element['#prefix']) ? $element['#prefix'] : '';
+  $suffix = isset($element['#suffix']) ? $element['#suffix'] : '';
+  $element['#prefix'] = $prefix .'<div class="filefield-generic-edit">';
+  $element['#suffix'] = '</div>'. $suffix;
+
+  $element['icon'] = array(
+    '#type' => 'markup',
     '#value' => theme('filefield_icon', $file),
   );
-  $form['description'] = array(
+  $element['description'] = array(
     '#type' => 'textfield',
-    '#default_value' => (strlen($file['description'])) ? $file['description'] : $file['filename'],
+    '#default_value' => (strlen($file['description']))
+                        ? $file['description']
+                        : $file['filename'],
     '#maxlength' => 256,
     '#description' => t('Size: !size, URL: !url', array(
       '!size' => format_size($file['filesize']),
       '!url' => l($url, $url),
     )),
+    '#required' => TRUE,
+    '#prefix' => '<div class="filefield-generic-edit-description">',
+    '#suffix' => '</div>',
   );
-  return $form;
+  return $element;
+}
+
+/**
+ * Theme function for the 'filefield_generic_edit' form element.
+ */
+function theme_filefield_generic_edit($element) {
+  return theme('form_element', $element, $element['#children']);
 }
 
 /*
