@@ -17,8 +17,15 @@ include_once(drupal_get_path('module', 'filefield') .'/field_file.inc');
 function filefield_menu() {
   $items = array();
 
-  $items['filefield/js'] = array(
+  $items['filefield/js/upload/%/%/%'] = array(
     'page callback' => 'filefield_js',
+    'page arguments' => array(3, 4, 5, 'filefield_file_upload_js'),
+    'access arguments' => array('view content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['filefield/js/delete/%/%/%'] = array(
+    'page callback' => 'filefield_js',
+    'page arguments' => array(3, 4, 5, 'filefield_file_edit_delete_js'),
     'access arguments' => array('view content'),
     'type' => MENU_CALLBACK,
   );
@@ -47,7 +54,6 @@ function filefield_elements() {
     '#input' => TRUE,
     '#process' => array('filefield_file_edit_process'),
     '#value_callback' => 'filefield_file_edit_value',
-    '#tree' => TRUE,
   );
   return $elements;
 }
@@ -304,13 +310,10 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
   if (!$file = field_file_load($items[$delta]['fid'])) {
-    $replaced_file = isset($items[$delta]['replaced_file'])
-                      ? $items[$delta]['replaced_file']
-                      : NULL;
-    return filefield_file_upload_form($form, $form_state, $field, $delta, $replaced_file);
+    return filefield_file_upload_form($form, $form_state, $field, $delta, $items[$delta]);
   }
   $file = array_merge($items[$delta], $file);
-  return filefield_file_edit_form($form, $form_state, $field, $file, $delta);
+  return filefield_file_edit_form($form, $form_state, $field, $delta, $file);
 }
 
 /**
@@ -336,18 +339,25 @@ function theme_filefield_container_item($element) {
 /**
  * The filefield widget for not (yet) existing files.
  */
-function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $replaced_file = NULL) {
+function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $item = NULL) {
   $form['#attributes']['enctype'] = 'multipart/form-data';
 
   //drupal_add_js('misc/progress.js');
   //drupal_add_js('misc/upload.js');
   //drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
 
+  $id = 'filefield-'. $field_name_css .'-'. $delta .'-form';
+
+  $replaced_file = (isset($item) && isset($item['replaced_file']))
+                    ? $item['replaced_file'] : NULL;
+
   $widget = array(
     '#type'   => 'filefield_file_upload',
     '#field' => $field,
     '#delta' => $delta,
     '#replaced_file' => $replaced_file,
+    '#prefix' => '<div id="'. $id .'" class="filefield-file-form filefield-file-upload">',
+    '#suffix' => '</div>',
   );
   // Buttons inside custom form elements are not registered by the Forms API,
   // so we make the "Upload" button a regular child element and not a part
@@ -356,7 +366,13 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $repla
     '#name' => $field['field_name'] .'_'. $delta .'_upload',
     '#type' => 'submit',
     '#value' => t('Upload'),
-    '#submit' => array('filefield_file_upload_submit'),
+    '#submit' => array('filefield_file_upload_submit'), // without JavaScript
+    '#ahah' => array( // with JavaScript
+      'path' => 'filefield/js/upload/'. $field['field_name'] .'/'. $field['type_name'] .'/'. $delta,
+      'wrapper' => $id,
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
     '#weight' => 10,
     '#field' => $field,
     '#delta' => $delta,
@@ -423,11 +439,30 @@ function filefield_file_upload_value($element, $edit = FALSE) {
  */
 function filefield_file_upload_submit($form, &$form_state) {
   $field = $form_state['clicked_button']['#field'];
-  $field_name = $field['field_name'];
   $delta = $form_state['clicked_button']['#delta'];
+  filefield_file_upload($form_state, $field, $delta);
 
-  $replaced_file = $form_state['values'][$field_name][$delta]['replaced_file'];
-  $upload_name = $field_name .'_'. $delta;
+  // Rebuild the form with the new uploaded-file state (hopefully).
+  node_form_submit_build_node($form, $form_state);
+}
+
+/**
+ * Form callback for the "Upload" button with JavaScript enabled,
+ * invoked by filefield_js().
+ */
+function filefield_file_upload_js(&$form, &$form_state, $field, $delta) {
+  // Upload the file retrieve the replacement form element, an edit form.
+  $file = filefield_file_upload($form_state, $field, $delta);
+  if (empty($file['fid'])) {
+    return filefield_file_upload_form($form, $form_state, $field, $delta, $file);
+  }
+  return filefield_file_edit_form($form, $form_state, $field, $delta, $file);
+}
+
+function filefield_file_upload(&$form_state, $field, $delta) {
+  $field_name = $field['field_name'];
+  $file = &$form_state['values'][$field_name][$delta];
+  $replaced_file = $file['replaced_file'];
 
   if (module_exists('token')) {
     global $user;
@@ -440,16 +475,18 @@ function filefield_file_upload_submit($form, &$form_state) {
   $validators = array(
     'file_validate_extensions' => array($field['widget']['file_extensions']),
   );
-
+  $upload_name = $field_name .'_'. $delta;
   $complete_file_path = file_directory_path() .'/'. $widget_file_path;
 
   if (!filefield_check_directory($widget_file_path, $upload_name)) {
     // @todo: watchdog.
-    return array('fid' => 0, 'replaced_file' => $replaced_file);
+    $file = array('fid' => 0, 'replaced_file' => $replaced_file);
+    return $file;
   }
   if (!$file = file_save_upload($upload_name, $validators, $complete_file_path)) {
     // @todo: watchdog.
-    return array('fid' => 0, 'replaced_file' => $replaced_file);
+    $file = array('fid' => 0, 'replaced_file' => $replaced_file);
+    return $file;
   }
 
   $file_default_properties = array(
@@ -458,20 +495,26 @@ function filefield_file_upload_submit($form, &$form_state) {
   );
   $file = array_merge($file_default_properties, (array) $file);
   $file['replaced_file'] = $replaced_file;
-
-  $form_state['values'][$field_name][$delta] = $file;
-  node_form_submit_build_node($form, $form_state);
+  return $file;
 }
 
 /**
  * The filefield widget for previously uploaded files.
  */
-function filefield_file_edit_form(&$form, &$form_state, $field, $file, $delta) {
+function filefield_file_edit_form(&$form, &$form_state, $field, $delta, $file) {
+  $field_name_css = str_replace('_', '-', $field['field_name']);
+  $id = 'filefield-'. $field_name_css .'-'. $delta .'-form';
+
+  $classes = array(
+    'filefield-'. $field_name_css .'-form',
+    'filefield-file-form',
+    'filefield-file-edit',
+  );
   $widget = array(
     '#type' => 'filefield_file_edit',
     '#default_value' => $file,
     '#field' => $field,
-    '#prefix' => '<div class="filefield-file-edit">',
+    '#prefix' => '<div id="'. $id .'" class="'. implode(' ', $classes) .'">',
     '#suffix' => '</div>',
   );
 
@@ -488,7 +531,13 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $file, $delta) {
     '#name' => $field['field_name'] .'_'. $delta .'_delete',
     '#type' => 'submit',
     '#value' => t('Delete'),
-    '#submit' => array('filefield_file_edit_delete_submit'),
+    '#submit' => array('filefield_file_edit_delete_submit'), // without JavaScript
+    '#ahah' => array( // with JavaScript
+      'path' => 'filefield/js/delete/'. $field['field_name'] .'/'. $field['type_name'] .'/'. $delta,
+      'wrapper' => $id,
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
     '#field' => $field,
     '#delta' => $delta,
     '#file' => $file,
@@ -584,8 +633,31 @@ function filefield_file_edit_value($element, $edit = FALSE) {
  * Submit callback for the "Delete" button next to each file item.
  */
 function filefield_file_edit_delete_submit($form, &$form_state) {
-  $field_name = $form_state['clicked_button']['#field']['field_name'];
+  $field = $form_state['clicked_button']['#field'];
   $delta = $form_state['clicked_button']['#delta'];
+  filefield_file_edit_delete($form_state, $field, $delta);
+
+  // Rebuild the form with the new deleted-file state.
+  node_form_submit_build_node($form, $form_state);
+}
+
+/**
+ * Form callback for the "Delete" button with JavaScript enabled,
+ * invoked by filefield_js().
+ */
+function filefield_file_edit_delete_js(&$form, &$form_state, $field, $delta) {
+  // Mark the file as deleted and retrieve the replacement form element,
+  // an upload form.
+  $file = filefield_file_edit_delete($form_state, $field, $delta);
+  return filefield_file_upload_form($form, $form_state, $field, $delta, $file);
+}
+
+/**
+ * Update the form state so that the file for the given field and delta
+ * is marked as deleted.
+ */
+function filefield_file_edit_delete(&$form_state, $field, $delta) {
+  $field_name = $field['field_name'];
   $file = &$form_state['values'][$field_name][$delta];
 
   if (isset($file['status']) && $file['status'] == FILE_STATUS_PERMANENT) {
@@ -603,8 +675,69 @@ function filefield_file_edit_delete_submit($form, &$form_state) {
     field_file_delete($file);
     $file = $empty_file;
   }
-  node_form_submit_build_node($form, $form_state);
+  return $file;
 }
+
+/**
+ * Shared AHAH callback for uploads and deletions. It just differs in a few
+ * unimportant details (what happens to the file, and which form is used as
+ * a replacement) so these details are taken care of by a form callback.
+ */
+function filefield_js($field_name, $type_name, $delta, $form_callback) {
+  $field = content_fields($field_name, $type_name);
+
+  if (empty($field) || empty($_POST['form_build_id'])) {
+    // Invalid request.
+    print drupal_to_js(array('data' => ''));
+    exit;
+  }
+
+  // Build the new form.
+  $form_state = array('submitted' => FALSE);
+  $form_build_id = $_POST['form_build_id'];
+  $form = form_get_cache($form_build_id, $form_state);
+
+  if (!$form) {
+    // Invalid form_build_id.
+    print drupal_to_js(array('data' => ''));
+    exit;
+  }
+  // form_get_cache() doesn't yield the original $form_state,
+  // but form_builder() does. Needed for retrieving the file array.
+  $built_form = $form;
+  $built_form_state = $form_state;
+  $built_form = form_builder($_POST['form_id'], $built_form, $built_form_state);
+
+  $form_element = $form_callback($built_form, $built_form_state, $field, $delta);
+
+  // Add the new element at the right place in the form.
+  if (module_exists('fieldgroup') && ($group_name = _fieldgroup_field_get_group($type_name, $field_name))) {
+    $form[$group_name][$field_name][$delta] = $form_element;
+  }
+  else {
+    $form[$field_name][$delta] = $form_element;
+  }
+
+  // Write the (unbuilt, updated) form back to the form cache.
+  form_set_cache($form_build_id, $form, $form_state);
+
+  // Render the form for output.
+  $form += array(
+    '#post' => $_POST,
+    '#programmed' => FALSE,
+  );
+  drupal_alter('form', $form, array(), 'filefield_js');
+  $form_state = array('submitted' => FALSE);
+  $form = form_builder('filefield_js', $form, $form_state);
+  $field_form = empty($group_name) ? $form[$field_name] : $form[$group_name][$field_name];
+  $output = theme('status_messages') . drupal_render($field_form[$delta]);
+
+  // For some reason, file uploads don't like drupal_json() with its manual
+  // setting of the text/javascript HTTP header. So use this one instead.
+  print drupal_to_js(array('status' => TRUE, 'data' => $output));
+  exit;
+}
+
 
 /**
  * Determine which widget will be used for displaying the edit form
@@ -706,66 +839,7 @@ function _filefield_widget_form($node, $field, &$items) {
     '#type' => 'fieldset',
     '#title' => t($field['widget']['label']),
     '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
-    '#weight' => $field['widget']['weight'],
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#tree' => TRUE,
-    '#prefix' => '<div id="'. form_clean_id($field_name .'-attach-wrapper') .'">',
-    '#suffix' => '</div>',
   );
-
-  $form[$field_name]['new'] = array(
-    '#tree' => FALSE,
-    '#prefix' => '<div id="'. form_clean_id($field_name .'-attach-hide') .'">',
-    '#suffix' => '</div>',
-    '#weight' => 100,
-  );
-
-  $form[$field_name]['new']['upload'] = array(
-    '#type' => 'button',
-    '#value' => t('Upload'),
-    '#name' => 'cck_filefield_'. $field_name .'_op',
-    '#id' => form_clean_id($field_name .'-attach-button'),
-    '#tree' => FALSE,
-    '#weight' => 10,
-  );
-
-  if (is_array($items) && count($items)) {
-    // Special handling for single value fields.
-    if (!$field['multiple']) {
-      $form[$field_name]['replace'] = array(
-        '#type' => 'markup',
-        '#value' => '<p>'. t('If a new file is uploaded, this file will be replaced upon submitting this form.') .'</p>',
-        '#prefix' => '<div class="description">',
-        '#suffix' => '</div>',
-      );
-    }
-  }
-
-  // The class triggers the js upload behaviour.
-  $form[$field_name.'-attach-url'] = array(
-    '#type' => 'hidden',
-    '#value' => url('filefield/js', NULL, NULL, TRUE),
-    '#attributes' => array('class' => 'upload'),
-  );
-
-  // Some useful info for our js callback.
-  $form['vid'] = array(
-    '#type' => 'hidden',
-    '#value' => $node->vid,
-    '#tree' => FALSE,
-  );
-  $form['nid'] = array(
-    '#type' => 'hidden',
-    '#value' => $node->nid,
-    '#tree' => FALSE,
-  );
-  $form['type'] = array(
-    '#type' => 'hidden',
-    '#value' => $node->type,
-    '#tree' => FALSE,
-  );
-
   return $form;
 }
 */
@@ -887,53 +961,11 @@ function filefield_check_directory($directory, $form_item = NULL) {
   return TRUE;
 }
 
+
 /**
- * Menu callback for JavaScript-based uploads.
+ * Implementation of hook_token_list():
+ * Provide a user readable list of filefield tokens.
  */
-/* @todo: port to Drupal 6
-function filefield_js() {
-  // Parse fieldname from submit button.
-  $matches = array();
-  foreach(array_keys($_POST) as $key) {
-    if (preg_match('/cck_filefield_(.*)_op/', $key, $matches)) {
-      $field_name = $matches[1];
-      break;
-    }
-  }
-
-  $node = (object)$_POST;
-  $field = content_fields($field_name, $node->type); // load field data
-
-  // Load fids stored by content.module.
-  $items = array();
-  $values = content_field('load', $node, $field, $items, FALSE, FALSE);
-  $items = $values[$field_name];
-
-  // Load additional field data.
-  filefield_field('load', $node, $field, $items, FALSE, FALSE);
-
-  // Handle uploads and validation.
-  _filefield_widget_prepare_form_values($node, $field, $items);
-  _filefield_widget_validate($node, $field, $items);
-
-  // Get our new form baby, yeah tiger, get em!
-  $form = _filefield_widget_form($node, $field, $items);
-
-  foreach (module_implements('form_alter') as $module) {
-    $function = $module .'_form_alter';
-    $function('filefield_js', $form);
-  }
-  $form = form_builder('filefield_js', $form);
-
-  $output = theme('status_messages') . drupal_render($form);
-
-  // Send the updated file attachments form.
-  print drupal_to_js(array('status' => TRUE, 'data' => $output));
-  exit();
-}*/
-
-
-
 function filefield_token_list($type = 'all') {
   if ($type == 'field' || $type == 'all') {
     $tokens = array();
@@ -949,6 +981,10 @@ function filefield_token_list($type = 'all') {
   }
 }
 
+/**
+ * Implementation of hook_token_values():
+ * Provide the concrete token values for a given file item.
+ */
 function filefield_token_values($type, $object = NULL) {
   if ($type == 'field') {
     $item = $object[0];
