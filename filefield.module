@@ -20,23 +20,31 @@ function filefield_menu() {
   $items['filefield/js/upload/%/%/%'] = array(
     'page callback' => 'filefield_js',
     'page arguments' => array(3, 4, 5, 'filefield_file_upload_js'),
-    'access arguments' => array('access content'),
+    'access callback' => 'filefield_edit_access',
+    'access arguments' => array(3, 4),
     'type' => MENU_CALLBACK,
   );
   $items['filefield/js/delete/%/%/%'] = array(
     'page callback' => 'filefield_js',
     'page arguments' => array(3, 4, 5, 'filefield_file_edit_delete_js'),
-    'access arguments' => array('access content'),
+    'access callback' => 'filefield_edit_access',
+    'access arguments' => array(3, 4),
     'type' => MENU_CALLBACK,
   );
   return $items;
 }
 
 /**
- * Implementation of hook_perm().
+ * Access callback for the JavaScript upload and deletion AHAH callbacks.
+ * The content_permissions module provides nice fine-grained permissions for
+ * us to check, so we can make sure that the user may actually edit the file.
  */
-function filefield_perm() {
-  return array('view filefield uploads');
+function filefield_edit_access($field_name, $type_name) {
+  if (module_exists('content_permissions')) {
+    return user_access('edit '. $field_name);
+  }
+  // No content permissions to check, so let's fall back to a more general permission.
+  return user_access('access content');
 }
 
 /**
@@ -869,7 +877,7 @@ function theme_filefield_formatter_default($element) {
   if (!$file['fid']) {
     return '';
   }
-  $field = content_fields($element['#field_name'], $element['#type_name']);
+  $field = content_fields($element['#field_name']);
 
   if($field['force_list']) {
     $file['list'] = 1; // always show the files if that option is enabled
@@ -888,7 +896,7 @@ function theme_filefield_icon($file) {
 }
 
 function theme_filefield($file) {
-  if (user_access('view filefield uploads') && is_file($file['filepath']) && $file['list']) {
+  if (is_file($file['filepath']) && $file['list']) {
     $path = ($file['fid'] == 'upload')
             ? file_create_filename($file['filename'], file_create_path($field['widget']['file_path']))
             : $file['filepath'];
@@ -902,6 +910,10 @@ function theme_filefield($file) {
 }
 
 
+/**
+ * Implementation of hook_file_download(). Yes, *that* hook that causes
+ * any attempt for file upload module interoperability to fail spectacularly.
+ */
 function filefield_file_download($file) {
   $file = file_create_path($file);
 
@@ -911,21 +923,67 @@ function filefield_file_download($file) {
     return;
   }
 
-  // @todo: check the node for this file to be referenced in a field
-  // to determine if it is managed by filefield. and do the access denied part here.
-  if (!user_access('view filefield uploads')) {
-    // sorry you do not have the proper permissions to view filefield uploads.
-    return -1;
+  // Find out if any filefield contains this file, and if so, which field
+  // and node it belongs to. Required for later access checking.
+  $cck_files = array();
+  foreach (content_fields() as $field) {
+    if ($field['type'] == 'file') {
+      $db_info = content_database_info($field);
+      $table = $db_info['table'];
+      $fid_column = $db_info['columns']['fid']['column'];
+
+      $columns = array('vid', 'nid');
+      foreach ($db_info['columns'] as $property_name => $column_info) {
+        $columns[] = $column_info['column'] .' AS '. $property_name;
+      }
+      $result = db_query("SELECT ". implode(', ', $columns) ."
+                          FROM {". $table ."}
+                          WHERE ". $fid_column ." = %d", $file->fid);
+
+      while ($content = db_fetch_array($result)) {
+        $content['field'] = $field;
+        $cck_files[$field['field_name']][$content['vid']] = $content;
+      }
+    }
   }
 
-  /* @todo: D6 port - files don't have any direct connection with nodes anymore
-  $node = node_load($file->nid);
-  if (!node_access('view', $node)) {
-    // You don't have permission to view the node
-    // this file is attached to.
-    return -1;
+  // If no filefield item is involved with this file, we don't care about it.
+  if (empty($cck_files)) {
+    return;
   }
-  */
+
+  // If any node includes this file but the user may not view this field
+  // (as configured by the content_permissions module), then deny the download.
+  if (module_exists('content_permissions')) {
+    foreach ($cck_files as $field_name => $field_files) {
+      if (!user_access('view '. $field_name)) {
+        return -1;
+      }
+    }
+  }
+
+  // So the overall field view permissions are not denied, but if access is
+  // denied for a specific node containing the file, deny the download as well.
+  // It's probably a little too restrictive, but I can't think of a
+  // better way at the moment. Input appreciated.
+  // (And yeah, node access checks also include checking for 'access content'.)
+  $nodes = array();
+  foreach ($cck_files as $field_name => $field_files) {
+    foreach ($field_files as $revision_id => $content) {
+      // Checking separately for each revision is probably not the best idea -
+      // what if 'view revisions' is disabled? So, let's just check for the
+      // current revision of that node.
+      if (isset($nodes[$content['nid']])) {
+        continue; // don't check the same node twice
+      }
+      $node = node_load($content['nid']);
+      if (!node_access('view', $node)) {
+        // You don't have permission to view the node this file is attached to.
+        return -1;
+      }
+      $nodes[$content['nid']] = $node;
+    }
+  }
 
   // Well I guess you can see this file.
   $name = mime_header_encode($file->filename);
