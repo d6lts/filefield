@@ -822,7 +822,7 @@ function theme_filefield_generic_edit($element) {
   return theme('form_element', $element, $element['#children']);
 }
 
-/*
+/* @todo: port hook_filefield() to the current version
 function _filefield_widget_prepare_form_values($node, $field, &$items) {
   $field_name = $field['field_name'];
 
@@ -844,7 +844,8 @@ function _filefield_widget_prepare_form_values($node, $field, &$items) {
   }
 }*/
 
-/*
+/* @todo: do we still need those labels?
+    kinda cumbersome with CCK controlling all of our multiple-value stuff.
 function _filefield_widget_form($node, $field, &$items) {
   $form[$field_name] = array(
     '#type' => 'fieldset',
