@@ -759,6 +759,14 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   $field_form = empty($group_name) ? $form[$field_name] : $form[$group_name][$field_name];
   $output = theme('status_messages') . drupal_render($field_form[$delta]);
 
+  // AHAH is not being nice to us and doesn't know the "other" button (that is,
+  // either "Upload" or "Delete") yet. Which in turn causes it not to attach
+  // AHAH behaviours after replacing the element. So we need to tell it first.
+  $javascript = drupal_add_js(NULL, NULL);
+  if (isset($javascript['setting'])) {
+    $output .= '<script type="text/javascript">jQuery.extend(Drupal.settings, '. drupal_to_js(call_user_func_array('array_merge_recursive', $javascript['setting'])) .');</script>';
+  }
+
   // For some reason, file uploads don't like drupal_json() with its manual
   // setting of the text/javascript HTTP header. So use this one instead.
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
