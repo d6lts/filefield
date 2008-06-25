@@ -66,6 +66,7 @@ function filefield_elements() {
   $elements['filefield_file_upload'] = array(
     '#input' => TRUE,
     '#process' => array('filefield_file_upload_process'),
+    '#element_validate' => array(), // later filled with 'filefield_file_upload_validate'
     '#value_callback' => 'filefield_file_upload_value',
     '#replaced_file' => NULL,
   );
@@ -349,10 +350,11 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
 function theme_filefield_container_item($element) {
   $field = $element['#field'];
   $children = !empty($element['#children']) ? $element['#children'] : '';
+  $children = '<div class="ahah-new-content">'. $children .'</div>';
 
   // CCK renders a nice table for multiple-value fields, that's just fine as is.
   if ($field['multiple']) {
-    return theme('form_element', $element, $children);
+    return $children;
   }
   // If the field is single-value, we still want to have a table, for the looks.
   $header = array();
@@ -410,6 +412,9 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $item 
  * barebone element array into a file selection widget.
  */
 function filefield_file_upload_process($element, $edit, &$form_state, $form) {
+  // Before the element user gets to do his validation, make sure we do ours.
+  array_unshift($element['#element_validate'], 'filefield_file_upload_validate');
+
   $field = $element['#field'];
   $field_name = $field['field_name'];
 
@@ -466,6 +471,18 @@ function filefield_file_upload_value($element, $edit = FALSE) {
 }
 
 /**
+ * The 'validate' callback for 'duration_combo' form elements.
+ * Called after values are assigned, before form validate and submit are called.
+ */
+function filefield_file_upload_validate($element, &$form_state) {
+  if (!empty($element['#required']) && empty($element['#value']['fid'])) {
+    form_error($element, t('You need to upload a file to the %field field.', array(
+      '%field' => $element['#field']['widget']['label']
+    )));
+  }
+}
+
+/**
  * Submit callback for the "Upload" button next to each file upload field.
  */
 function filefield_file_upload_submit($form, &$form_state) {
@@ -479,15 +496,10 @@ function filefield_file_upload_submit($form, &$form_state) {
 
 /**
  * Form callback for the "Upload" button with JavaScript enabled,
- * invoked by filefield_js().
+ * invoked by filefield_js(). Uploads a file to the given field and delta.
  */
 function filefield_file_upload_js(&$form, &$form_state, $field, $delta) {
-  // Upload the file retrieve the replacement form element, an edit form.
-  $file = filefield_file_upload($form_state, $field, $delta);
-  if (empty($file['fid'])) {
-    return filefield_file_upload_form($form, $form_state, $field, $delta, $file);
-  }
-  return filefield_file_edit_form($form, $form_state, $field, $delta, $file);
+  filefield_file_upload($form_state, $field, $delta);
 }
 
 function filefield_file_upload(&$form_state, $field, $delta) {
@@ -649,13 +661,11 @@ function filefield_file_edit_delete_submit($form, &$form_state) {
 
 /**
  * Form callback for the "Delete" button with JavaScript enabled,
- * invoked by filefield_js().
+ * invoked by filefield_js(). Marks the file in the given field and delta
+ * as deleted, or deletes it right away (depending on the context).
  */
 function filefield_file_edit_delete_js(&$form, &$form_state, $field, $delta) {
-  // Mark the file as deleted and retrieve the replacement form element,
-  // an upload form.
-  $file = filefield_file_edit_delete($form_state, $field, $delta);
-  return filefield_file_upload_form($form, $form_state, $field, $delta, $file);
+  filefield_file_edit_delete($form_state, $field, $delta);
 }
 
 /**
@@ -714,14 +724,25 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   $built_form_state = $form_state;
   $built_form = form_builder($_POST['form_id'], $built_form, $built_form_state);
 
-  $form_element = $form_callback($built_form, $built_form_state, $field, $delta);
+  // Clean ids, so that the same element doesn't get a different element id
+  // when rendered once more further down.
+  form_clean_id(NULL, TRUE);
+
+  // Perform the action for this AHAH callback.
+  $form_callback($built_form, $built_form_state, $field, $delta);
+
+  // Ask CCK for the replacement form element. Going through CCK gets us
+  // the benefit of nice stuff like '#required' merged in correctly.
+  module_load_include('inc', 'content', 'includes/content.node_form');
+  $field_element = content_field_form($built_form, $built_form_state, $field, $delta);
+  $delta_element = $field_element[$field_name][$delta];
 
   // Add the new element at the right place in the form.
   if (module_exists('fieldgroup') && ($group_name = _fieldgroup_field_get_group($type_name, $field_name))) {
-    $form[$group_name][$field_name][$delta] = $form_element;
+    $form[$group_name][$field_name][$delta] = $delta_element;
   }
   else {
-    $form[$field_name][$delta] = $form_element;
+    $form[$field_name][$delta] = $delta_element;
   }
 
   // Write the (unbuilt, updated) form back to the form cache.
