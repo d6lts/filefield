@@ -48,9 +48,7 @@ function filefield_edit_access($field_name) {
 }
 
 /**
- * Access callback for viewing a filefield. Not used in filefield itself,
- * but might be beneficial for custom themers who want to properly check
- * view access before displaying it to the user.
+ * Access callback that checks if the current user may view the filefield.
  */
 function filefield_view_access($field_name) {
   if (module_exists('content_permissions')) {
@@ -888,7 +886,7 @@ function filefield_field_formatter_info() {
  */
 function theme_filefield_formatter_default($element) {
   $file = $element['#item'];
-  if (!$file['fid']) {
+  if (!$file['fid'] || !filefield_view_access($element['#field_name'])) {
     return '';
   }
   $field = content_fields($element['#field_name']);
