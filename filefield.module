@@ -964,13 +964,11 @@ function filefield_file_download($file) {
     return;
   }
 
-  // If any node includes this file but the user may not view this field
-  // (as configured by the content_permissions module), then deny the download.
-  if (module_exists('content_permissions')) {
-    foreach ($cck_files as $field_name => $field_files) {
-      if (!user_access('view '. $field_name)) {
-        return -1;
-      }
+  // If any node includes this file but the user may not view this field,
+  // then deny the download.
+  foreach ($cck_files as $field_name => $field_files) {
+    if (!filefield_view_access($field_name)) {
+      return -1;
     }
   }
 
