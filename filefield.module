@@ -734,7 +734,7 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   // Ask CCK for the replacement form element. Going through CCK gets us
   // the benefit of nice stuff like '#required' merged in correctly.
   module_load_include('inc', 'content', 'includes/content.node_form');
-  $field_element = content_field_form($built_form, $built_form_state, $field, $delta);
+  $field_element = content_field_form($form, $built_form_state, $field, $delta);
   $delta_element = $field_element[$field_name][0]; // there's only one element in there
 
   // Add the new element at the right place in the form.
