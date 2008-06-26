@@ -644,6 +644,12 @@ function filefield_file_edit_value($element, $edit = FALSE) {
   }
   $file = array_merge($file, $file_fixed_properties);
 
+  // Also merge in other values that might come from other child form elements,
+  // like the '_weight' property that CCK adds to this field.
+  unset($edit['flags']);
+  unset($edit['edit']);
+  $file = array_merge($edit, $file);
+
   return $file;
 }
 
