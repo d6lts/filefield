@@ -92,7 +92,7 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE, $
     $function =  $module .'_file';
     $function('insert', $file);
   }
-  return $file;
+  return (array)$file;
 }
 
 /**
