@@ -834,7 +834,7 @@ function filefield_generic_edit_priority($field, $file) {
 function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
   $field = $element['#field'];
   $delta = $element['#delta'];
-  $file = $element['#value'];
+  $file = $element['#default_value'];
   $url = file_create_url($file['filepath']);
 
   $prefix = isset($element['#prefix']) ? $element['#prefix'] : '';
