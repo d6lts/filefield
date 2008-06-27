@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * Load a file object from the database.
