@@ -37,17 +37,62 @@ function field_file_load($fid, $reset = NULL) {
     return FALSE;
   }
 
-  module_invoke_all('file', 'load', $file);
+  foreach(module_implements('file') as $module) {
+    $function =  $module .'_file';
+    $function('load', $file);
+  }
 
   // Cache the fully loaded value by both fid and filepath.
   // use non-copying objects to save memory.
   $files[$fid] = $file;
   $files[$file->filepath] = $file;
 
-  // cast to array for field. hook_file expects objects as well as core file functions.
+  // Cast to array for field. hook_file() expects objects as well as
+  // core file functions.
   return (array)$file;
 }
 
+/**
+ * Save a file upload to a new location. The source file is validated as a
+ * proper upload and handled as such. By implementing hook_file($op = 'insert'),
+ * modules are able to act on the file upload and to add their own properties
+ * to the file.
+ *
+ * The file will be added to the files table as a temporary file. Temporary files
+ * are periodically cleaned. To make the file permanent file call
+ * file_set_status() to change its status.
+ *
+ * @param $source
+ *   A string specifying the name of the upload field to save.
+ * @param $validators
+ *   An optional, associative array of callback functions used to validate the
+ *   file. The keys are function names and the values arrays of callback
+ *   parameters which will be passed in after the user and file objects. The
+ *   functions should return an array of error messages, an empty array
+ *   indicates that the file passed validation. The functions will be called in
+ *   the order specified.
+ * @param $dest
+ *   A string containing the directory $source should be copied to. If this is
+ *   not provided or is not writable, the temporary directory will be used.
+ * @param $replace
+ *   A boolean indicating whether an existing file of the same name in the
+ *   destination directory should overwritten. A false value will generate a
+ *   new, unique filename in the destination directory.
+ * @return
+ *   An array containing the file information, or 0 in the event of an error.
+ */
+function field_file_save_upload($source, $validators = array(), $dest = FALSE, $replace = FILE_EXISTS_RENAME) {
+  if (!$file = file_save_upload($source, $validators, $dest, $replace)) {
+    return 0;
+  }
+  // Let modules add additional file properties, and save initial values
+  // to the database if they like to do so.
+  foreach(module_implements('file') as $module) {
+    $function =  $module .'_file';
+    $function('insert', $file);
+  }
+  return $file;
+}
 
 /**
  * Update an field item file. Delete marked items if neccessary and set new items as permamant.
@@ -61,22 +106,29 @@ function field_file_load($fid, $reset = NULL) {
 function field_file_save($node, &$file) {
   // If this item is marked for deletion.
   if (!empty($file['delete'])) {
-    // if we're creating a new revision, return an empty array so CCK will remove the item.
-    if ($node->old_vid) {
+    // If we're creating a new revision, return an empty array so CCK will
+    // remove the item.
+    if (!empty($node->old_vid)) {
       return array();
     }
-    // otherwise delete the file and return an empty array.
+    // Otherwise delete the file and return an empty array.
     if (field_file_delete($file)) {
       return array();
     }
   }
 
-  // set permanent status on files if unset.
+  // Set permanent status on files if unset.
   if (empty($file['status'])) {
-    // cast to object since core functions us objects.
+    // Cast to object since core functions us objects.
     $file = (object)$file;
     file_set_status($file, FILE_STATUS_PERMANENT);
     $file = (array)$file;
+  }
+
+  // Let modules update their additional file properties too.
+  foreach(module_implements('file') as $module) {
+    $function =  $module .'_file';
+    $function('update', $file);
   }
   return $file;
 }
@@ -131,7 +183,7 @@ function field_file_delete($file, $force = FALSE) {
 function field_file_check_directory(&$directory, $mode = 0, $form_item = NULL) {
   $directory = rtrim($directory, '/\\');
 
-  // Check if directory exists.
+  // Check if the directory exists.
   if (!is_dir($directory)) {
     if (($mode & FILE_CREATE_DIRECTORY) && @mkdir($directory)) {
       @chmod($directory, 0775); // Necessary for non-webserver users.
@@ -150,7 +202,7 @@ function field_file_check_directory(&$directory, $mode = 0, $form_item = NULL) {
     if (($mode & FILE_MODIFY_PERMISSIONS) && !@chmod($directory, 0775)) {
       if ($form_item) {
         form_set_error($form_item, t('The directory %directory is not writable', array('%directory' => $directory)));
-      }  
+      }
       watchdog('file system', 'The directory %directory is not writable, because it does not have the correct permissions set.', array('%directory' => $directory), WATCHDOG_ERROR);
       return FALSE;
     }
