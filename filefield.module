@@ -5,8 +5,8 @@
  * @file
  * Defines a file field type.
  *
- * Uses content.module to store the fid, and Drupal's {files} table
- * to store the actual file data.
+ * Uses content.module to store the fid and field specific metadata,
+ * and Drupal's {files} table to store the actual file data.
  */
 
 include_once(drupal_get_path('module', 'filefield') .'/field_file.inc');
@@ -818,7 +818,7 @@ function filefield_file_widget_info() {
 }
 
 /**
- * Priority callback for the 'filefield_generic' widget:
+ * Priority callback for the 'filefield_generic_edit' widget:
  * Really low priority for all files, as this is the most basic fallback.
  */
 function filefield_generic_edit_priority($field, $file) {
@@ -869,22 +869,6 @@ function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
 function theme_filefield_generic_edit($element) {
   return theme('form_element', $element, $element['#children']);
 }
-
-/* @todo: port hook_filefield() to the current version
-function _filefield_widget_prepare_form_values($node, $field, &$items) {
-  $field_name = $field['field_name'];
-
-  // Attach new files.
-  if ($file = file_check_upload($field_name .'_upload')) {
-    $file = (array)$file;
-
-    // let modules massage act on the file.
-    foreach(module_implements('filefield') as $module) {
-      $function =  $module .'_filefield';
-      $function('file_prepare', $node, $field, $file);
-    }
-  }
-}*/
 
 /* @todo: do we still need those labels?
     kinda cumbersome with CCK controlling all of our multiple-value stuff.
