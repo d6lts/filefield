@@ -11,46 +11,41 @@
  *   Whether to reset the internal file_load cache.
  */
 function field_file_load($fid, $reset = NULL) {
-  static $files = array();
+  // Reset internal cache.
+  if (isset($reset)) {
+    _field_file_cache(NULL, TRUE);
+  }
 
   if (empty($fid)) {
-    return FALSE;
+    return array();
   }
-
-  // Reset internal cache.
-  if ($reset) {
-    $files = array();
-  }
+  $files = _field_file_cache();
 
   // Serve file from internal cache if available.
-  if (!empty($fid) && !empty($files[$fid])) {
-    return (array)$files[$fid];
-  }
+  if (empty($files[$fid])) {
+    if (is_numeric($fid)) {
+      $file = db_fetch_object(db_query('SELECT f.* FROM {files} f WHERE f.fid = %d', $fid));
+    }
+    else {
+      $file = db_fetch_object(db_query("SELECT f.* FROM {files} f WHERE f.filepath = '%s'", $fid));
+    }
 
-  if (is_numeric($fid)) {
-    $file = db_fetch_object(db_query('SELECT f.* FROM {files} f WHERE f.fid = %d', $fid));
-  }
-  else {
-    $file = db_fetch_object(db_query("SELECT f.* FROM {files} f WHERE f.filepath = '%s'", $fid));
-  }
+    if (!$file) {
+      return array();
+    }
 
-  if (!$file) {
-    return FALSE;
-  }
+    foreach(module_implements('file') as $module) {
+      $function =  $module .'_file';
+      $function('load', $file);
+    }
 
-  foreach(module_implements('file') as $module) {
-    $function =  $module .'_file';
-    $function('load', $file);
+    // Cache the fully loaded file for later reusability.
+    $files = _field_file_cache($file);
   }
-
-  // Cache the fully loaded value by both fid and filepath.
-  // use non-copying objects to save memory.
-  $files[$fid] = $file;
-  $files[$file->filepath] = $file;
 
   // Cast to array for field. hook_file() expects objects as well as
   // core file functions.
-  return (array)$file;
+  return (array)$files[$fid];
 }
 
 /**
@@ -92,6 +87,7 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE, $
     $function =  $module .'_file';
     $function('insert', $file);
   }
+  _field_file_cache($file); // cache the file in order to minimize load queries
   return (array)$file;
 }
 
@@ -131,6 +127,8 @@ function field_file_save($node, &$file) {
     $function =  $module .'_file';
     $function('update', $file);
   }
+  _field_file_cache($file); // update the cache, in case the file has changed
+
   return $file;
 }
 
@@ -160,9 +158,34 @@ function field_file_delete($file, $force = FALSE) {
   // database, so UIs can still find the file in the database.
   if (file_delete($file->filepath)) {
     db_query('DELETE FROM {files} WHERE fid = %d', $file->fid);
+    _field_file_cache(NULL, $file); // delete the file from the cache
     return TRUE;
   }
   return FALSE;
+}
+
+/**
+ * Internal cache, in order to minimize database queries for loading files.
+ */
+function _field_file_cache($file = NULL, $reset = FALSE) {
+  static $files = array();
+
+  // Reset internal cache.
+  if (is_object($reset)) { // file object, uncache just that one
+    unset($files[$reset->fid]);
+    unset($files[$reset->filepath]);
+  }
+  else if ($reset) { // TRUE, delete the whole cache
+    $files = array();
+  }
+
+  // Cache the file by both fid and filepath.
+  // Use non-copying objects to save memory.
+  if (isset($file)) {
+    $files[$file->fid] = $file;
+    $files[$file->filepath] = $file;
+  }
+  return $files;
 }
 
 /**
