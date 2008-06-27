@@ -90,13 +90,13 @@
 }
 
 .filefield-generic-edit-description {
-  /*padding-top: 0.3em;*/
   margin-left: 35px;
+  margin-right: 30px;
 }
 
 /* The text field is made unnecessarily long by node.css - shorten it */
 .filefield-generic-edit .form-text {
-  width: 80%;
+  width: 100%;
 }
 .filefield-generic-edit .description {
   white-space: normal;

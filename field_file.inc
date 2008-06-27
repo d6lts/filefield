@@ -81,8 +81,7 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE, $
   if (!$file = file_save_upload($source, $validators, $dest, $replace)) {
     return 0;
   }
-  // Let modules add additional file properties, and save initial values
-  // to the database if they like to do so.
+  // Let modules add additional properties to the yet barebone file object.
   foreach(module_implements('file') as $module) {
     $function =  $module .'_file';
     $function('insert', $file);

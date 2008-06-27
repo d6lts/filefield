@@ -102,8 +102,14 @@ function filefield_theme() {
     'filefield_formatter_default' => array(
       'arguments' => array('element' => NULL),
     ),
+    'filefield_unguarded' => array(
+      'arguments' => array('field' => NULL, 'file' => NULL),
+    ),
     'filefield' => array(
-      'arguments' => array('file' => NULL),
+      'arguments' => array('field' => NULL, 'file' => NULL),
+    ),
+    'filefield_file_formatter_generic' => array(
+      'arguments' => array('field' => NULL, 'file' => NULL),
     ),
     'filefield_icon' => array(
       'arguments' => array('file' => NULL),
@@ -334,6 +340,11 @@ function _filefield_widget_settings_file_path_validate($element, &$form_state) {
  * Implementation of hook_widget().
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  // JavaScript might reload the form element but not the CSS that has been
+  // defined inside the process hook of mimetype specific widgets. As we don't
+  // know which widget will show up, just include all of their CSS files.
+  $file_widget_info = _filefield_file_widget_info($field);
+  _filefield_add_css($file_widget_info);
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
   if (!$file = field_file_load($items[$delta]['fid'])) {
@@ -502,6 +513,10 @@ function filefield_file_upload_js(&$form, &$form_state, $field, $delta) {
   filefield_file_upload($form_state, $field, $delta);
 }
 
+/**
+ * Upload a file to the given field and delta (or try to, at least), and
+ * update the corresponding part of the form state with the new file data.
+ */
 function filefield_file_upload(&$form_state, $field, $delta) {
   $field_name = $field['field_name'];
   $file = &$form_state['values'][$field_name][$delta];
@@ -527,7 +542,6 @@ function filefield_file_upload(&$form_state, $field, $delta) {
     $file = array('fid' => 0, 'replaced_file' => $replaced_file);
     return $file;
   }
-
   if (!$file = field_file_save_upload($upload_name, $validators, $complete_file_path)) {
     watchdog('file', 'The file %file could not be saved as addition to the file field %field (content type %type). This can be a consequence of the file failing validation, or if it can\'t be moved to the file directory, or whatever reason the file framework comes up with. No further information is available to the filefield module, but if you\'re lucky then that function left one or more hints in the log as well (directly before this log entry).', array('%file' => $complete_file_path, '%field' => $field_name, '%type' => $field['type_name']));
     $file = array('fid' => 0, 'replaced_file' => $replaced_file);
@@ -600,6 +614,7 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $delta, $file) {
     '#type' => $edit_widget_info['form element'],
     '#field' => $field,
     '#delta' => $delta,
+    '#file' => (object) $file,
     '#default_value' => $file,
     '#prefix' => '<div class="filefield-file-edit-widget">',
     '#suffix' => '</div>',
@@ -783,46 +798,148 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
 
 
 /**
+ * Retrieve information about the widgets that are going to preview and
+ * edit the single files that are uploaded in CCK's edit form.
+ */
+function _filefield_file_widget_info($field) {
+  static $file_widget_info;
+  if (!isset($file_widget_info)) {
+    $file_widget_info = module_invoke_all('file_widget_info');
+
+    // By default, place the generic file edit widget at the end of the array
+    // so that it gets least priority. Can be modified by the alter hook.
+    $generic_widget_info = $file_widget_info['filefield_generic_edit'];
+    unset($file_widget_info['filefield_generic_edit']);
+    $file_widget_info['filefield_generic_edit'] = $generic_widget_info;
+
+    // Make sure the array looks like expected.
+    foreach ($file_widget_info as $element_name => $info) {
+      $file_widget_info[$element_name]['form element'] = $element_name;
+      $file_widget_info[$element_name]['css'] = isset($info['css']) ? $info['css'] : array();
+    }
+  }
+  $field_specific_widget_info = $file_widget_info;
+  drupal_alter('file_widget_info', $file_widget_info, $field);
+  return $field_specific_widget_info;
+}
+
+/**
+ * Retrieve information about the widgets that are going to display the
+ * single files for the node view or other views.
+ */
+function _filefield_file_formatter_info($field) {
+  static $file_formatter_info;
+  if (!isset($file_formatter_info)) {
+    $file_formatter_info = array();
+
+    foreach (module_implements('file_formatter_info') as $module) {
+      $function = $module .'_file_formatter_info';
+      $module_formatter_info = $function();
+
+      // In order to construct the formatter name, we need the module name.
+      foreach ($module_formatter_info as $formatter => $info) {
+        $info['module'] = $module;
+        $info['formatter'] = $formatter;
+        $info['theme'] = $module .'_file_formatter_'. $formatter;
+        $info['css'] = isset($info['css']) ? $info['css'] : array();
+        $file_formatter_info[$formatter] = $info;
+      }
+    }
+
+    // By default, place the generic file formatter at the end of the array
+    // so that it gets least priority. Can be modified by the alter hook.
+    $generic_formatter_info = $file_formatter_info['generic'];
+    unset($file_formatter_info['generic']);
+    $file_formatter_info['generic'] = $generic_formatter_info;
+  }
+  $field_specific_formatter_info = $file_formatter_info;
+  drupal_alter('file_formatter_info', $field_specific_formatter_info, $field);
+  return $field_specific_formatter_info;
+}
+
+/**
+ * Add all CSS files that extension file widgets might need, so that they
+ * exist even if the form element has only been inserted by JavaScript.
+ * Can also be used for formatter info arrays as those look similar.
+ */
+function _filefield_add_css($widget_or_formatter_info) {
+  static $done = FALSE;
+  if ($done) {
+    return; // adding those files once should be enough for each request
+  }
+  foreach ($widget_or_formatter_info as $name => $info) {
+    foreach ($info['css'] as $path) {
+      drupal_add_css($path);
+    }
+  }
+}
+
+/**
  * Determine which widget will be used for displaying the edit form
  * for the given file.
  */
 function filefield_widget_for_file($field, $file) {
-  $file_widget_info = module_invoke_all('file_widget_info');
-  drupal_alter('file_widget_info', $file_widget_info);
+  $file_widget_info = _filefield_file_widget_info($field);
+  $file = (object) $file; // other modules only get to see objects
 
-  $compatible_widget_info = array();
+  $suitable_widget_info = array();
   foreach ($file_widget_info as $element_name => $info) {
-    $info['form element'] = $element_name;
-    $priority_callback = $info['priority callback'];
-    $priority = $priority_callback($field, $file);
+    $suitability_callback = $info['suitability callback'];
+    $handles_file = $suitability_callback($field, $file);
 
-    if (!is_numeric($priority)) {
+    if (empty($handles_file)) {
       continue; // this widget is not interested in our file
     }
-    $compatible_widget_info[$priority] = $info;
+    $suitable_widget_info[] = $info;
   }
-  // Return the element with highest priority.
-  krsort($compatible_widget_info);
-  return reset($compatible_widget_info);
+  // Return any of the suited widgets.
+  // @todo: We need to let the user assign weights/priorities to those widgets,
+  //        so that not any random widget but the one that is actually desired.
+  return reset($suitable_widget_info);
 }
 
 /**
- * Implementation of hook_file_widget_info().
+ * Determine which formatter will be used for displaying the edit form
+ * for the given file.
+ */
+function filefield_formatter_for_file($field, $file) {
+  $file_formatter_info = _filefield_file_formatter_info($field);
+  $file = (object) $file; // other modules only get to see objects
+
+  $suitable_formatter_info = array();
+  foreach ($file_formatter_info as $element_name => $info) {
+    $suitability_callback = $info['suitability callback'];
+    $handles_file = $suitability_callback($field, $file);
+
+    if (empty($handles_file)) {
+      continue; // this formatter is not interested in our file
+    }
+    $suitable_formatter_info[] = $info;
+  }
+  // Return any of the suited formatters.
+  // @todo: We need to let the user assign weights/priorities to those formatters,
+  //        so that not any random formatter but the one that is actually desired.
+  return reset($suitable_formatter_info);
+}
+
+/**
+ * Implementation of filefield's hook_file_widget_info().
  */
 function filefield_file_widget_info() {
   return array(
     'filefield_generic_edit' => array(
-      'priority callback' => 'filefield_generic_edit_priority',
+      'suitability callback' => 'filefield_generic_handles_file',
     ),
   );
 }
 
 /**
- * Priority callback for the 'filefield_generic_edit' widget:
- * Really low priority for all files, as this is the most basic fallback.
+ * Suitability callback for the 'filefield_generic_edit' widget and the
+ * 'generic' file formatter: As this is the most basic fallback,
+ * it handles all files alike (displaying icon and description).
  */
-function filefield_generic_edit_priority($field, $file) {
-  return -1;
+function filefield_generic_handles_file($field, $file) {
+  return TRUE;
 }
 
 /**
@@ -834,8 +951,8 @@ function filefield_generic_edit_priority($field, $file) {
 function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
   $field = $element['#field'];
   $delta = $element['#delta'];
-  $file = $element['#default_value'];
-  $url = file_create_url($file['filepath']);
+  $file = $element['#file'];
+  $url = file_create_url($file->filepath);
 
   $prefix = isset($element['#prefix']) ? $element['#prefix'] : '';
   $suffix = isset($element['#suffix']) ? $element['#suffix'] : '';
@@ -848,13 +965,13 @@ function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
   );
   $element['description'] = array(
     '#type' => 'textfield',
-    '#default_value' => (strlen($file['description']))
-                        ? $file['description']
-                        : $file['filename'],
+    '#default_value' => (strlen($file->description))
+                        ? $file->description
+                        : $file->filename,
     '#maxlength' => 256,
-    '#description' => t('Size: !size, URL: !url', array(
-      '!size' => format_size($file['filesize']),
-      '!url' => l($url, $url),
+    '#description' => t('Size: !size. Filename: !link', array(
+      '!size' => format_size($file->filesize),
+      '!link' => l($file->filename, $url),
     )),
     '#required' => TRUE,
     '#prefix' => '<div class="filefield-generic-edit-description">',
@@ -897,43 +1014,97 @@ function filefield_field_formatter_info() {
 }
 
 /**
- * Theme function for the 'default' filefield field formatter.
+ * Theme function for the 'default' filefield formatter.
  */
 function theme_filefield_formatter_default($element) {
   $file = $element['#item'];
-  if (!$file['fid'] || !filefield_view_access($element['#field_name'])) {
+  $field = content_fields($element['#field_name']);
+  return theme('filefield', $field, $file);
+}
+
+/**
+ * Theme function for any file that is managed by filefield.
+ * It doesn't really format stuff by itself but rather redirects to other
+ * formatters that are telling us they want to handle the concerned file.
+ *
+ * This function checks if the file may be shown and returns an empty string
+ * if viewing the file is not allowed for any reason. If you need to display it
+ * in any case, please use theme('filefield') instead.
+ */
+function theme_filefield($field, $file) {
+  if (!filefield_view_access($field['field_name'])) {
     return '';
   }
-  $field = content_fields($element['#field_name']);
-
   if($field['force_list']) {
     $file['list'] = 1; // always show the files if that option is enabled
   }
-  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
-  return theme('filefield', $file);
+  if (empty($file['list'])) {
+    return '';
+  }
+  return theme('filefield_unguarded', $field, $file);
 }
 
+/**
+ * Theme function for any file that is managed by filefield.
+ * It doesn't really format stuff by itself but rather redirects to other
+ * formatters that are telling us they want to handle the concerned file.
+ *
+ * This function does not check if the file may be shown, it returns markup
+ * in any case (except if the file doesn't exist at all). If you need to check
+ * permissions, please use theme('filefield_guarded') instead.
+ */
+function theme_filefield_unguarded($field, $file) {
+  if (empty($file['fid']) || !is_file($file['filepath'])) {
+    return '';
+  }
+  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
+
+  $file_formatter_info = filefield_formatter_for_file($field, $file);
+  foreach ($file_formatter_info['css'] as $css_path) {
+    drupal_add_css($css_path);
+  }
+
+  return '<div class="filefield-item">'.
+    theme($file_formatter_info['theme'], $field, (object)$file) .'</div>';
+}
+
+
+/**
+ * Implementation of filefield's hook_file_formatter_info().
+ */
+function filefield_file_formatter_info() {
+  return array(
+    'generic' => array(
+      'suitability callback' => 'filefield_generic_handles_file',
+    ),
+  );
+}
+
+/**
+ * Theme function for the 'generic' single file formatter.
+ */
+function theme_filefield_file_formatter_generic($field, $file) {
+  $path = $file->filepath;
+  $url = file_create_url($path);
+  $icon = theme('filefield_icon', $file);
+  $desc = $file->description;
+  return '<div class="filefield-formatter-generic">'. $icon . l($desc, $url) .'</div>';
+}
+
+/**
+ * Return an image with an appropriate icon for the given file.
+ * Remember to pass a file object and not an array.
+ */
 function theme_filefield_icon($file) {
+  if (is_object($file)) {
+    $file = (array) $file;
+  }
   $dashed_mime = check_plain(strtr($file['filemime'], array('/' => '-')));
 
   if ($icon_url = filefield_icon_url($file)) {
     $icon = '<img class="field-icon-'. $dashed_mime .'" src="'. $icon_url .'" />';
   }
   return '<div class="filefield-icon field-icon-'. $dashed_mime .'">'. $icon .'</div>';
-}
-
-function theme_filefield($file) {
-  if (is_file($file['filepath']) && $file['list']) {
-    $path = ($file['fid'] == 'upload')
-            ? file_create_filename($file['filename'], file_create_path($field['widget']['file_path']))
-            : $file['filepath'];
-
-    $icon = theme('filefield_icon', $file);
-    $url = file_create_url($path);
-    $desc = $file['description'];
-    return '<div class="filefield-item">'. $icon . l($desc, $url) .'</div>';
-  }
-  return '';
 }
 
 
