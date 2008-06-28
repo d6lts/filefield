@@ -2,10 +2,6 @@
  * Overall styles
  */
 
-.filefield-icon {
-  float: left;
-}
-
 .filefield-icon img {
   display: inline;
 }
@@ -34,6 +30,7 @@
  */
 
 .filefield-item .filefield-icon {
+  float: left;
   margin-right: 0.4em;
 }
 
@@ -42,10 +39,6 @@
 /**
  * General widget form styles (applicable to all widgets)
  */
-
-.filefield-file-edit {
-  position: relative;
-}
 
 .filefield-file-edit-flags {
   float: right;
@@ -80,18 +73,14 @@
  * might hook into filefield (say, a widget with an image preview).
  */
 
-.filefield-generic-edit .filefield-icon img {
+.filefield-generic-edit .filefield-icon {
+  float: left;
   margin-right: 0.7em;
-  /* vertical centering with CSS is soo crufty. */
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  margin: auto;
+  margin-top: 0.3em;
 }
 
 .filefield-generic-edit-description {
-  margin-left: 35px;
-  margin-right: 30px;
+  margin-right: 6em;
 }
 
 /* The text field is made unnecessarily long by node.css - shorten it */
