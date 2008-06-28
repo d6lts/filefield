@@ -346,6 +346,9 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   _filefield_add_css($file_widget_info);
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
+  if (empty($items[$delta])) {
+    return filefield_file_upload_form($form, $form_state, $field, $delta);
+  }
   if (!$file = field_file_load($items[$delta]['fid'])) {
     return filefield_file_upload_form($form, $form_state, $field, $delta, $items[$delta]);
   }
@@ -380,8 +383,10 @@ function theme_filefield_container_item($element) {
 function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $item = NULL) {
   $form['#attributes']['enctype'] = 'multipart/form-data';
 
+  // Include JavaScript for client-side file validation.
   drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
 
+  $field_name_css = str_replace('_', '-', $field['field_name']);
   $id = 'filefield-'. $field_name_css .'-'. $delta .'-form';
 
   $replaced_file = (isset($item) && isset($item['replaced_file']))
@@ -744,6 +749,7 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   // but form_builder() does. Needed for retrieving the file array.
   $built_form = $form;
   $built_form_state = $form_state;
+  $built_form += array('#post' => $_POST);
   $built_form = form_builder($_POST['form_id'], $built_form, $built_form_state);
 
   // Clean ids, so that the same element doesn't get a different element id

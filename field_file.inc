@@ -117,12 +117,12 @@ function field_file_save($node, &$file) {
     }
   }
 
+  // Cast to object since core functions use objects.
+  $file = (object)$file;
+
   // Set permanent status on files if unset.
-  if (empty($file['status'])) {
-    // Cast to object since core functions us objects.
-    $file = (object)$file;
+  if (empty($file->status)) {
     file_set_status($file, FILE_STATUS_PERMANENT);
-    $file = (array)$file;
   }
 
   // Let modules update their additional file properties too.
@@ -132,6 +132,7 @@ function field_file_save($node, &$file) {
   }
   _field_file_cache($file); // update the cache, in case the file has changed
 
+  $file = (array)$file;
   return $file;
 }
 
@@ -155,7 +156,7 @@ function field_file_delete($file, $force = FALSE) {
   }
 
   // Let other modules clean up on delete.
-  module_invoke_all('file', 'delete', $file, $field);
+  module_invoke_all('file', 'delete', $file);
 
   // Make sure the file is deleted before removing its row from the
   // database, so UIs can still find the file in the database.
