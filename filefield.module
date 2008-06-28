@@ -1,9 +1,8 @@
 <?php
 // $Id$
-
 /**
  * @file
- * Defines a file field type.
+ * FileField: Defines a CCK file field type.
  *
  * Uses content.module to store the fid and field specific metadata,
  * and Drupal's {files} table to store the actual file data.
@@ -294,7 +293,7 @@ function filefield_widget_settings($op, $widget) {
   switch ($op) {
     case 'form':
       $form = array();
-      $form['file_extensions'] = array (
+      $form['file_extensions'] = array(
         '#type' => 'textfield',
         '#title' => t('Permitted upload file extensions'),
         '#default_value' => is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt',
@@ -435,7 +434,7 @@ function filefield_file_upload_process($element, $edit, &$form_state, $form) {
     '!size' => format_size(file_upload_max_size()),
   ));
   if (!empty($field['widget']['file_extensions'])) {
-    $upload_description .= ' ' . t('Allowed extensions: %ext.', array(
+    $upload_description .= ' '. t('Allowed extensions: %ext.', array(
       '%ext' => $field['widget']['file_extensions'],
     ));
   }
@@ -965,9 +964,9 @@ function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
   );
   $element['description'] = array(
     '#type' => 'textfield',
-    '#default_value' => (strlen($file->description))
-                        ? $file->description
-                        : $file->filename,
+    '#default_value' => empty($file->description)
+                        ? $file->filename
+                        : $file->description,
     '#maxlength' => 256,
     '#description' => t('Size: !size. Filename: !link', array(
       '!size' => format_size($file->filesize),
@@ -986,18 +985,6 @@ function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
 function theme_filefield_generic_edit($element) {
   return theme('form_element', $element, $element['#children']);
 }
-
-/* @todo: do we still need those labels?
-    kinda cumbersome with CCK controlling all of our multiple-value stuff.
-function _filefield_widget_form($node, $field, &$items) {
-  $form[$field_name] = array(
-    '#type' => 'fieldset',
-    '#title' => t($field['widget']['label']),
-    '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
-  );
-  return $form;
-}
-*/
 
 
 /**
@@ -1035,7 +1022,7 @@ function theme_filefield($field, $file) {
   if (!filefield_view_access($field['field_name'])) {
     return '';
   }
-  if($field['force_list']) {
+  if ($field['force_list']) {
     $file['list'] = 1; // always show the files if that option is enabled
   }
   if (empty($file['list'])) {

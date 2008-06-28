@@ -1,5 +1,12 @@
 <?php
 // $Id$
+/**
+ * @file
+ * FileField: Defines a CCK file field type.
+ *
+ * Uses content.module to store the fid and field specific metadata,
+ * and Drupal's {files} table to store the actual file data.
+ */
 
 include_once(drupal_get_path('module', 'filefield') .'/field_file.inc');
 
@@ -11,22 +18,22 @@ function filefield_install() {
 }
 
 /**
-* Implementation of hook_uninstall().
-*/
+ * Implementation of hook_uninstall().
+ */
 function filefield_uninstall() {
   content_notify('uninstall', 'filefield');
 }
 
 /**
-* Implementation of hook_enable().
-*/
+ * Implementation of hook_enable().
+ */
 function filefield_enable() {
   content_notify('enable', 'filefield');
 }
 
 /**
-* Implementation of hook_disable().
-*/
+ * Implementation of hook_disable().
+ */
 function filefield_disable() {
   content_notify('disable', 'filefield');
 }

@@ -1,5 +1,9 @@
 <?php
 // $Id$
+/**
+ * @file
+ * FileField Meta: Add Video Support to File Field.
+ */
 
 /**
  * Implementation of hook_install().

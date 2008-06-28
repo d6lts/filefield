@@ -1,7 +1,8 @@
-<?php // $Id$
-
+<?php
+// $Id$
 /**
- * Add Video Support to File Field.
+ * @file
+ * FileField Meta: Add Video Support to File Field.
  */
 
 /**

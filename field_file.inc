@@ -1,5 +1,9 @@
 <?php
 // $Id$
+/**
+ * @file
+ * Common functionality for file handling CCK field modules.
+ */
 
 /**
  * Load a file object from the database.
@@ -34,7 +38,7 @@ function field_file_load($fid, $reset = NULL) {
       return array();
     }
 
-    foreach(module_implements('file') as $module) {
+    foreach (module_implements('file') as $module) {
       $function =  $module .'_file';
       $function('load', $file);
     }
@@ -82,7 +86,7 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE, $
     return 0;
   }
   // Let modules add additional properties to the yet barebone file object.
-  foreach(module_implements('file') as $module) {
+  foreach (module_implements('file') as $module) {
     $function =  $module .'_file';
     $function('insert', $file);
   }
@@ -122,7 +126,7 @@ function field_file_save($node, &$file) {
   }
 
   // Let modules update their additional file properties too.
-  foreach(module_implements('file') as $module) {
+  foreach (module_implements('file') as $module) {
     $function =  $module .'_file';
     $function('update', $file);
   }
@@ -134,11 +138,11 @@ function field_file_save($node, &$file) {
 /**
  * Delete a field file and its database record.
  *
- * @param $path 
+ * @param $path
  *   A file object.
  * @param $force
  *   Force File Deletion ignoring reference counting.
- * @return mixed 
+ * @return mixed
  *   TRUE for success, Array for reference count block, or FALSE in the event of an error.
  */
 function field_file_delete($file, $force = FALSE) {
@@ -153,7 +157,7 @@ function field_file_delete($file, $force = FALSE) {
   // Let other modules clean up on delete.
   module_invoke_all('file', 'delete', $file, $field);
 
-  // Make sure the file is deleted before removing its row from the 
+  // Make sure the file is deleted before removing its row from the
   // database, so UIs can still find the file in the database.
   if (file_delete($file->filepath)) {
     db_query('DELETE FROM {files} WHERE fid = %d', $file->fid);
@@ -253,9 +257,9 @@ function field_file_check_directory(&$directory, $mode = 0, $form_item = NULL) {
  */
 function field_file_strip_path($path) {
   $dirpath = file_directory_path();
-  $dirlen = strlen($dirpath);
-  if (substr($path, 0, $dirlen + 1) == $dirpath .'/') {
-    $path = substr($path, $dirlen + 1);
+  $dirlen = drupal_strlen($dirpath);
+  if (drupal_substr($path, 0, $dirlen + 1) == $dirpath .'/') {
+    $path = drupal_substr($path, $dirlen + 1);
   }
   return $path;
 }
