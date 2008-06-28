@@ -562,6 +562,31 @@ function filefield_file_upload(&$form_state, $field, $delta) {
 }
 
 /**
+ * Create the file directory relative to the 'files' dir recursively for every
+ * directory in the path.
+ *
+ * @param $directory
+ *   The directory path under files to check, such as 'photo/path/here'.
+ * @param $form_item
+ *   An optional string containing the name of a form item that any errors
+ *   will be attached to. (See field_file_check_directory() for more details.)
+ */
+function filefield_check_directory($directory, $form_item = NULL) {
+  $directory = field_file_strip_path($directory);
+
+  foreach (explode('/', $directory) as $dir) {
+    $dirs[] = $dir;
+    $path = file_create_path(implode($dirs, '/'));
+    if (!field_file_check_directory($path, FILE_CREATE_DIRECTORY, $form_item)) {
+      watchdog('filefield', t('FileField failed to create directory (%d) at (%p).', array('%d' => $directory, '%p' => $path)), WATCHDOG_ERROR);
+      return FALSE;
+    }
+  }
+  return TRUE;
+}
+
+
+/**
  * The filefield widget for previously uploaded files.
  */
 function filefield_file_edit_form(&$form, &$form_state, $field, $delta, $file) {
@@ -1185,30 +1210,6 @@ function filefield_file_download($file) {
     'Content-Disposition: '. $disposition .'; filename='. $name,
     'Cache-Control: private',
   );
-}
-
-/**
- * Create the file directory relative to the 'files' dir recursively for every
- * directory in the path.
- *
- * @param $directory
- *   The directory path under files to check, such as 'photo/path/here'
- * @param $form_item
- *   An optional string containing the name of a form item that any errors
- *   will be attached to. (See field_file_check_directory() for more details.)
- */
-function filefield_check_directory($directory, $form_item = NULL) {
-  $directory = field_file_strip_path($directory);
-
-  foreach (explode('/', $directory) as $dir) {
-    $dirs[] = $dir;
-    $path = file_create_path(implode($dirs, '/'));
-    if (!field_file_check_directory($path, FILE_CREATE_DIRECTORY, $form_item)) {
-      watchdog('filefield', t('FileField failed to create directory (%d) at (%p).', array('%d' => $directory, '%p' => $path)), WATCHDOG_ERROR);
-      return FALSE;
-    }
-  }
-  return TRUE;
 }
 
 
