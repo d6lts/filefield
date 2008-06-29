@@ -416,6 +416,7 @@ function filefield_widget_settings($op, $widget) {
       $form['file_widgets'] = array(
         '#title' => t('File widgets'),
         '#description' => t('Control which kinds of files may be uploaded to the edit form for this field, by specifying the widgets that can handle the desired file types. You can also reorder the widgets to specify their priority: the top-most enabled widget always gets to handle the files that it supports, whereas the bottom-most enabled widget only gets to handle them if the file is not supported by any other other one.'),
+        '#required' => TRUE,
         '#tree' => TRUE,
         '#weight' => 5,
         '#theme' => 'filefield_draggable_settings_table',

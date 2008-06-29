@@ -22,7 +22,14 @@ function theme_filefield_draggable_settings_table($element) {
   $title = isset($element['#title']) ? $element['#title'] : '';
   unset($element['#title']); // the header is used instead of the regular label
 
-  $header = array(t('@title:', array('@title' => $title)), t('Order'));
+  $required = !empty($element['#required'])
+    ? '<span class="form-required" title="'. t('This field is required.') .'">*</span>'
+    : '';
+
+  $title_column = t('@title: !required', array(
+    '@title' => $title, '!required' => $required,
+  ));
+  $header = array($title_column, t('Order'));
   $rows = array();
 
   foreach (element_children($element) as $key) {
