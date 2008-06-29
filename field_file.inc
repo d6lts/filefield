@@ -152,7 +152,10 @@ function field_file_delete($file, $force = FALSE) {
   // file will not be deleted from Drupal, but file_delete will
   // return a populated array that tests as TRUE.
   if (!$force && $references = module_invoke_all('file', 'references', $file)) {
-    return $references;
+    $references = array_filter($references); // only keep positive values
+    if (!empty($references)) {
+      return $references;
+    }
   }
 
   // Let other modules clean up on delete.
