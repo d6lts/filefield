@@ -522,84 +522,9 @@ function _filefield_add_css($widget_or_formatter_info) {
 function filefield_widget_for_file($file, $field, $field_widget) {
   $file_widget_info = _filefield_file_widget_info($field_widget);
   $file = (object) $file; // other modules only get to see objects
-
-  $suitable_widget_info = array();
-  foreach ($file_widget_info as $widget_name => $info) {
-    if (!$info['enabled']) {
-      continue; // the admin disabled this widget
-    }
-    $handles_file = $info['suitability callback'];
-
-    // Either $handles_file is TRUE already or it's a function that
-    // will return TRUE if the widget handles this file.
-    if (is_string($handles_file)) {
-      $handles_file = $handles_file($file, $field, $field_widget);
-    }
-    if ($handles_file !== TRUE) {
-      continue; // this widget is not interested in our file
-    }
-    $suitable_widget_info[] = $info;
-  }
-  // Return the most appropriate widget, if one was found.
-  return empty($suitable_widget_info) ? NULL : reset($suitable_widget_info);
+  $suitability_args = array($file, $field, $field_widget);
+  return _filefield_extension_for_file($file_widget_info, $suitability_args);
 }
-
-/**
- * Retrieve information about the widgets that are going to preview and
- * edit the single files that are uploaded in CCK's edit form.
- * This function also sorts the widgets in the way that the administrator
- * has specified for this field.
- */
-function _filefield_file_widget_info($field_widget) {
-  $file_widget_info = _filefield_file_widget_info_original();
-
-  // Sort and enable the widgets according to previous admin settings or defaults.
-  foreach ($file_widget_info as $file_widget_name => $info) {
-    if (isset($field_widget['file_widgets'][$file_widget_name]['weight'])) {
-      $info['weight'] = $field_widget['file_widgets'][$file_widget_name]['weight'];
-    }
-    else {
-      // By default, the generic file edit widget should be last in the list
-      // of possible widgets, and other new widgets should also not be
-      // preferred to ones that already had their weight configured before.
-      $info['weight'] = ($file_widget_name == 'filefield_generic') ? 1000 : 999;
-    }
-
-    if (isset($field_widget['file_widgets'][$file_widget_name]['enabled'])) {
-      $info['enabled'] = $field_widget['file_widgets'][$file_widget_name]['enabled'];
-    }
-    else {
-      // By default, enable only the generic file edit widget, so that newly
-      // enabled modules don't show their widgets without approval of the admin.
-      $info['enabled'] = ($file_widget_name == 'filefield_generic');
-    }
-    $file_widget_info[$file_widget_name] = $info;
-  }
-  return _filefield_sort_by_weight($file_widget_info);
-}
-
-function _filefield_file_widget_info_original() {
-  static $file_widget_info;
-  if (!isset($file_widget_info)) {
-
-    foreach (module_implements('file_widget_info') as $module) {
-      $function = $module .'_file_widget_info';
-      $module_widget_info = $function();
-
-      // Prepare the array for mass consumption.
-      foreach ($module_widget_info as $widget_name => $info) {
-        $info['module'] = $module;
-        $info['name'] = $widget_name;
-        $info['css'] = isset($info['css']) ? $info['css'] : array();
-        $info['key'] = $module .'_'. $widget_name;
-        $file_widget_info[$info['key']] = $info;
-      }
-    }
-    drupal_alter('file_widget_info', $file_widget_info);
-  }
-  return $file_widget_info;
-}
-
 
 /**
  * Determine which formatter will be used for displaying the edit form
@@ -612,82 +537,117 @@ function _filefield_file_widget_info_original() {
 function filefield_formatter_for_file($file, $field) {
   $file_formatter_info = _filefield_file_formatter_info($field);
   $file = (object) $file; // other modules only get to see objects
+  $suitability_args = array($file, $field);
+  return _filefield_extension_for_file($file_formatter_info, $suitability_args);
+}
 
-  $suitable_formatter_info = array();
-  foreach ($file_formatter_info as $formatter => $info) {
+/**
+ * Common implementation of filefield_widget_for_file() and
+ * filefield_formatter_for_file().
+ */
+function _filefield_extension_for_file($file_extension_info, $suitability_args) {
+  $suitable_extension_info = array();
+  foreach ($file_extension_info as $extension_name => $info) {
     if (!$info['enabled']) {
-      continue; // the admin disabled this widget
+      continue; // the admin disabled this widget or formatter
     }
     $handles_file = $info['suitability callback'];
 
     // Either $handles_file is TRUE already or it's a function that
-    // will return TRUE if the formatter handles this file.
+    // will return TRUE if the widget/formatter handles this file.
     if (is_string($handles_file)) {
-      $handles_file = $handles_file($file, $field);
+      $handles_file = call_user_func_array($handles_file, $suitability_args);
     }
     if ($handles_file !== TRUE) {
-      continue; // this formatter is not interested in our file
+      continue; // this widget/formatter is not interested in our file
     }
-    $suitable_formatter_info[] = $info;
+    $suitable_extension_info[] = $info;
   }
-  // Return the most appropriate formatter, if one was found.
-  return empty($suitable_formatter_info) ? NULL : reset($suitable_formatter_info);
+  // Return the most appropriate widget/formatter, if one was found.
+  return empty($suitable_extension_info) ? NULL : reset($suitable_extension_info);
 }
 
 /**
- * Retrieve information about the widgets that are going to display the
- * single files for the node view or other views.
+ * Retrieve information about the widgets that are going to preview and
+ * edit the single files that are uploaded in CCK's edit form.
+ * This function also sorts the widgets in the way that the administrator
+ * has specified for this field.
  */
-function _filefield_file_formatter_info($field) {
-  $file_formatter_info = _filefield_file_formatter_info_original();
-
-  // Sort and enable the formatters according to previous admin settings or defaults.
-  foreach ($file_formatter_info as $formatter => $info) {
-    if (isset($field['file_formatters'][$formatter]['weight'])) {
-      $info['weight'] = $field['file_formatters'][$formatter]['weight'];
-    }
-    else {
-      // By default, the generic file formatter should be last in the list
-      // of possible formatters, and other new formatters should also not be
-      // preferred to ones that already had their weight configured before.
-      $info['weight'] = ($formatter == 'filefield_generic') ? 1000 : 999;
-    }
-
-    if (isset($field['file_formatters'][$formatter]['enabled'])) {
-      $info['enabled'] = $field['file_formatters'][$formatter]['enabled'];
-    }
-    else {
-      // By default, enable only the generic file formatter, so that newly
-      // enabled modules don't show their formatters without approval of the admin.
-      $info['enabled'] = ($formatter == 'filefield_generic');
-    }
-    $file_formatter_info[$formatter] = $info;
-  }
-  return _filefield_sort_by_weight($file_formatter_info);
+function _filefield_file_widget_info($field_widget) {
+  $file_widget_info = _filefield_file_extension_info_original('widget');
+  return _filefield_file_extension_info($file_widget_info, $field_widget['file_widgets']);
 }
 
-function _filefield_file_formatter_info_original() {
-  static $file_formatter_info;
-  if (!isset($file_formatter_info)) {
-    $file_formatter_info = array();
+/**
+ * Retrieve information about the formatters that are going to display the
+ * single files for the node view or other views.
+ * This function also sorts the formatters in the way that the administrator
+ * has specified for this field.
+ */
+function _filefield_file_formatter_info($field) {
+  $file_formatter_info = _filefield_file_extension_info_original('formatter');
+  return _filefield_file_extension_info($file_formatter_info, $field['file_formatters']);
+}
 
-    foreach (module_implements('file_formatter_info') as $module) {
-      $function = $module .'_file_formatter_info';
-      $module_formatter_info = $function();
+/**
+ * Common implementation for _filefield_file_widget_info() and
+ * _filefield_file_formatter_info(): sort and the given extensions and mark
+ * them as enabled or not, based on the extension $settings from
+ * hook_widget_settings() or hook_field_settings() respectively.
+ */
+function _filefield_file_extension_info($file_extension_info, $settings) {
+  // Sort and enable the formatters according to previous admin settings or defaults.
+  foreach ($file_extension_info as $extension_name => $info) {
+    if (isset($settings[$extension_name]['weight'])) {
+      $info['weight'] = $settings[$extension_name]['weight'];
+    }
+    else {
+      // By default, the generic file widget/formatter should be last in the
+      // list of possible formatters, and other new formatters should also not
+      // be preferred to ones that already had their weight configured before.
+      $info['weight'] = ($extension_name == 'filefield_generic') ? 1000 : 999;
+    }
 
-      // In order to construct the formatter name, we need the module name.
-      foreach ($module_formatter_info as $formatter => $info) {
+    if (isset($settings[$extension_name]['enabled'])) {
+      $info['enabled'] = $settings[$extension_name]['enabled'];
+    }
+    else {
+      // By default, enable only the generic file widget/formatter, so that
+      // newly enabled modules don't show their widges/formatters without
+      // approval of the admin.
+      $info['enabled'] = ($extension_name == 'filefield_generic');
+    }
+    $file_extension_info[$extension_name] = $info;
+  }
+  return _filefield_sort_by_weight($file_extension_info);
+}
+
+function _filefield_file_extension_info_original($extension_type) {
+  static $file_extension_info = array(); // with 'widget' and 'formatter' keys
+
+  if (!isset($file_extension_info[$extension_type])) {
+    $file_extension_info[$extension_type] = array();
+    $hook = 'file_'. $extension_type .'_info';
+
+    foreach (module_implements($hook) as $module) {
+      $function = $module .'_'. $hook;
+      $module_extension_info = $function();
+
+      // Prepare the array for mass consumption.
+      foreach ($module_extension_info as $extension_name => $info) {
+        if ($extension_type == 'formatter') {
+          $info['theme'] = $module .'_file_formatter_'. $extension_name;
+        }
         $info['module'] = $module;
-        $info['name'] = $formatter;
-        $info['theme'] = $module .'_file_formatter_'. $formatter;
+        $info['name'] = $extension_name;
         $info['css'] = isset($info['css']) ? $info['css'] : array();
-        $info['key'] = $module .'_'. $formatter;
-        $file_formatter_info[$info['key']] = $info;
+        $info['key'] = $module .'_'. $extension_name;
+        $file_extension_info[$extension_type][$info['key']] = $info;
       }
     }
-    drupal_alter('file_formatter_info', $file_formatter_info);
+    drupal_alter($hook, $file_extension_info[$extension_type]);
   }
-  return $file_formatter_info;
+  return $file_extension_info[$extension_type];
 }
 
 /**
