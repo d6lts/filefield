@@ -86,6 +86,9 @@ function filefield_elements() {
  */
 function filefield_theme() {
   return array(
+    'filefield_draggable_settings_table' => array(
+      'arguments' => array('element' => NULL),
+    ),
     'filefield_container_item' => array(
       'arguments' => array('element' => NULL),
     ),
@@ -117,6 +120,39 @@ function filefield_theme() {
 }
 
 /**
+ * Theme function for a file formatter / file widget settings table.
+ */
+function theme_filefield_draggable_settings_table($element) {
+  $settings_type = $element['#settings_type']; // 'widgets' or 'formatters'?
+  $table_id = 'filefield-file-'. $settings_type .'-table';
+  $order_class = 'filefield-file-'. $settings_type .'-weight';
+
+  $widget_info = $element['#widget_info'];
+  $title = isset($element['#title']) ? $element['#title'] : '';
+  unset($element['#title']); // the header is used instead of the regular label
+
+  $header = array(t('@title:', array('@title' => $title)), t('Order'));
+  $rows = array();
+
+  foreach (element_children($element) as $key) {
+    $element[$key]['weight']['#attributes']['class'] = $order_class;
+    $delta_element = drupal_render($element[$key]['weight']);
+    $row = array(
+      drupal_render($element[$key]),
+      $delta_element,
+    );
+    $rows[] = array('data' => $row, 'class' => 'draggable');
+  }
+  $output = theme('table', $header, $rows, array('id' => $table_id));
+  $output = theme('form_element', $element, $output);
+
+  drupal_add_tabledrag($table_id, 'order', 'sibling', $order_class);
+
+  return $output;
+}
+
+
+/**
  * Implementation of hook_field_info().
  */
 function filefield_field_info() {
@@ -141,13 +177,41 @@ function filefield_field_settings($op, $field) {
         '#default_value' => isset($field['force_list']) ? $field['force_list'] : 0,
         '#description' => t('If enabled, the "List" checkbox will be hidden and files are always shown. Otherwise, the user can choose for each file whether it should be listed or not.'),
       );
+
+      $form['file_formatters'] = array(
+        '#title' => t('File display'),
+        '#description' => t('Control how files may be displayed in the node view and other views for this field. If no formatters are enabled or are able to handle a file then that specific file will not be displayed. You can also reorder the formatters to specify their priority: the top-most enabled formatter always gets to display the files that it supports, whereas the bottom-most enabled formatter only gets to handle them if the file is not supported by any other other one.'),
+        '#tree' => TRUE,
+        '#weight' => 5,
+        '#theme' => 'filefield_draggable_settings_table',
+        '#settings_type' => 'formatters', // info for the theme function
+      );
+
+      $file_formatter_info = _filefield_file_formatter_info($field);
+
+      // Present the formatters in the order that was determined above.
+      $weight = 1;
+      foreach ($file_formatter_info as $formatter => $info) {
+        $form['file_formatters'][$formatter]['enabled'] = array(
+          '#type' => 'checkbox',
+          '#title' => $info['title'],
+          '#description' => $info['description'],
+          '#default_value' => $info['enabled'],
+        );
+        $form['file_formatters'][$formatter]['weight'] = array(
+          '#type' => 'weight',
+          '#delta' => count($file_formatter_info),
+          '#default_value' => $weight,
+        );
+        ++$weight;
+      }
       return $form;
 
     case 'validate':
       break;
 
     case 'save':
-      return array('force_list');
+      return array('force_list', 'file_formatters');
 
     case 'database columns':
       $columns = array(
@@ -310,6 +374,35 @@ function filefield_widget_settings($op, $widget) {
       if (module_exists('token')) {
         $form['file_path']['#suffix'] = theme('token_help', 'user');
       }
+
+      $form['file_widgets'] = array(
+        '#title' => t('File widgets'),
+        '#description' => t('Control which kinds of files may be uploaded to the edit form for this field, by specifying the widgets that can handle the desired file types. You can also reorder the widgets to specify their priority: the top-most enabled widget always gets to handle the files that it supports, whereas the bottom-most enabled widget only gets to handle them if the file is not supported by any other other one.'),
+        '#tree' => TRUE,
+        '#weight' => 5,
+        '#theme' => 'filefield_draggable_settings_table',
+        '#settings_type' => 'widgets', // info for the theme function
+      );
+
+      $file_widget_info = _filefield_file_widget_info($widget);
+
+      // Present the widgets in the order that was determined above.
+      $weight = 1;
+      foreach ($file_widget_info as $file_widget_name => $info) {
+        $form['file_widgets'][$file_widget_name]['enabled'] = array(
+          '#type' => 'checkbox',
+          '#title' => $info['title'],
+          '#description' => $info['description'],
+          '#default_value' => $info['enabled'],
+        );
+        $form['file_widgets'][$file_widget_name]['weight'] = array(
+          '#type' => 'weight',
+          '#delta' => count($file_widget_info),
+          '#default_value' => $weight,
+        );
+        ++$weight;
+      }
+
       // Let extension modules add their settings to the form.
       foreach (module_implements('filefield_widget_settings') as $module) {
         $function = $module .'_filefield_widget_settings';
@@ -319,10 +412,21 @@ function filefield_widget_settings($op, $widget) {
 
     case 'validate':
       module_invoke_all('filefield_widget_settings', $op, $widget, NULL);
+
+      $valid = FALSE;
+      foreach ($widget['file_widgets'] as $file_widget_name => $info) {
+        if ($info['enabled']) {
+          $valid = TRUE;
+          break;
+        }
+      }
+      if (!$valid) {
+        form_set_error('file_widgets', t('At least one type of file widgets must be enabled.'));
+      }
       break;
 
     case 'save':
-      $core_settings = array('file_extensions', 'file_path');
+      $core_settings = array('file_extensions', 'file_path', 'file_widgets');
       $additional_settings = module_invoke_all(
         'filefield_widget_settings', $op, $widget, NULL
       );
@@ -342,7 +446,7 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   // JavaScript might reload the form element but not the CSS that has been
   // defined inside the process hook of mimetype specific widgets. As we don't
   // know which widget will show up, just include all of their CSS files.
-  $file_widget_info = _filefield_file_widget_info($field);
+  $file_widget_info = _filefield_file_widget_info($field['widget']);
   _filefield_add_css($file_widget_info);
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
@@ -443,6 +547,10 @@ function filefield_file_upload_process($element, $edit, &$form_state, $form) {
       '%ext' => $field['widget']['file_extensions'],
     ));
   }
+  $required_file_widgets = _filefield_required_file_widgets($field['widget']);
+  if (!empty($required_file_widgets)) {
+    $upload_description .= '<br/>'. t('Additionally, uploads are restricted to the following categories: !widgets.', array('!widgets' => implode(', ', $required_file_widgets)));
+  }
 
   $upload_name = $field_name .'_'. $element['#delta'];
   $element[$upload_name] = array(
@@ -537,6 +645,7 @@ function filefield_file_upload(&$form_state, $field, $delta) {
   // Let modules provide their own validators.
   $validators = array_merge(module_invoke_all('filefield_validators'), array(
     'file_validate_extensions' => array($field['widget']['file_extensions']),
+    'filefield_validate_file_widget_support' => array($field, $field['widget']),
   ));
   $upload_name = $field_name .'_'. $delta;
   $complete_file_path = file_directory_path() .'/'. $widget_file_path;
@@ -559,6 +668,57 @@ function filefield_file_upload(&$form_state, $field, $delta) {
   $file = array_merge($file_default_properties, $file);
   $file['replaced_file'] = $replaced_file;
   return $file;
+}
+
+/**
+ * Check that a file is supported by at least one of the widgets that are
+ * enabled for the field instance in question.
+ *
+ * @return
+ *   An array. If the file is not allowed, it will contain an error message.
+ */
+function filefield_validate_file_widget_support($file, $field, $field_widget) {
+  $errors = array();
+
+  // No widgets at all means the widget settings db entry does not exist,
+  // so we fall back to "accept this file and use the generic edit widget".
+  if (empty($field_widget['file_widgets'])) {
+    return $errors;
+  }
+  // In the common case, we only accept a file if an enabled widget
+  // wants to handle it.
+  $edit_widget_info = filefield_widget_for_file($field, $field_widget, $file);
+  if (empty($edit_widget_info)) {
+    $errors[] = t('Uploaded files are restricted to the following categories: !widgets.', array(
+      '!widgets' => implode(', ', _filefield_required_file_widgets($field_widget)),
+    ));
+  }
+  return $errors;
+}
+
+/**
+ * If not all file types might be handled by the enabled set of file widgets,
+ * return an array specifying which widgets are allowed for the given field.
+ * If a widget is enabled which handles all files, return an empty array.
+ */
+function _filefield_required_file_widgets($field_widget) {
+  if (empty($field_widget['file_widgets'])) {
+    return array();
+  }
+  $titles = array();
+  $file_widget_info = _filefield_file_widget_info($field_widget);
+
+  foreach ($file_widget_info as $widget_name => $info) {
+    if (!$info['enabled']) {
+      continue;
+    }
+    if ($info['suitability callback'] === TRUE) {
+      // Handles all kinds of files, no need for requiring any other widget.
+      return array();
+    }
+    $titles[] = $info['title'];
+  }
+  return $titles;
 }
 
 /**
@@ -638,9 +798,11 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $delta, $file) {
     );
   }
 
-  $edit_widget_info = filefield_widget_for_file($field, $file);
+  $edit_widget_info = filefield_widget_for_file($field, $field['widget'], $file);
   $widget['edit'] = array(
-    '#type' => $edit_widget_info['form element'],
+    '#type' => empty($edit_widget_info)
+                ? 'filefield_generic_edit' // as last-resort fallback
+                : $edit_widget_info['form element'],
     '#field' => $field,
     '#delta' => $delta,
     '#file' => (object) $file,
@@ -830,27 +992,76 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
 /**
  * Retrieve information about the widgets that are going to preview and
  * edit the single files that are uploaded in CCK's edit form.
+ * This function also sorts the widgets in the way that the administrator
+ * has specified for this field.
  */
-function _filefield_file_widget_info($field) {
+function _filefield_file_widget_info($field_widget) {
+  $file_widget_info = _filefield_file_widget_info_original();
+
+  // Sort and enable the widgets according to previous admin settings or defaults.
+  foreach ($file_widget_info as $file_widget_name => $info) {
+    if (isset($field_widget['file_widgets'][$file_widget_name]['weight'])) {
+      $info['weight'] = $field_widget['file_widgets'][$file_widget_name]['weight'];
+    }
+    else {
+      // By default, the generic file edit widget should be last in the list
+      // of possible widgets, and other new widgets should also not be
+      // preferred to ones that already had their weight configured before.
+      $info['weight'] = ($file_widget_name == 'filefield_generic_edit') ? 1000 : 999;
+    }
+
+    if (isset($field_widget['file_widgets'][$file_widget_name]['enabled'])) {
+      $info['enabled'] = $field_widget['file_widgets'][$file_widget_name]['enabled'];
+    }
+    else {
+      // By default, enable only the generic file edit widget, so that newly
+      // enabled modules don't show their widgets without approval of the admin.
+      $info['enabled'] = ($file_widget_name == 'filefield_generic_edit');
+    }
+    $file_widget_info[$file_widget_name] = $info;
+  }
+  return _filefield_sort_by_weight($file_widget_info);
+}
+
+function _filefield_file_widget_info_original() {
   static $file_widget_info;
   if (!isset($file_widget_info)) {
     $file_widget_info = module_invoke_all('file_widget_info');
-
-    // By default, place the generic file edit widget at the end of the array
-    // so that it gets least priority. Can be modified by the alter hook.
-    $generic_widget_info = $file_widget_info['filefield_generic_edit'];
-    unset($file_widget_info['filefield_generic_edit']);
-    $file_widget_info['filefield_generic_edit'] = $generic_widget_info;
+    drupal_alter('file_widget_info', $file_widget_info);
 
     // Make sure the array looks like expected.
     foreach ($file_widget_info as $element_name => $info) {
-      $file_widget_info[$element_name]['form element'] = $element_name;
-      $file_widget_info[$element_name]['css'] = isset($info['css']) ? $info['css'] : array();
+      $info['form element'] = $element_name;
+      $info['css'] = isset($info['css']) ? $info['css'] : array();
+      $file_widget_info[$element_name] = $info;
     }
   }
-  $field_specific_widget_info = $file_widget_info;
-  drupal_alter('file_widget_info', $file_widget_info, $field);
-  return $field_specific_widget_info;
+  return $file_widget_info;
+}
+
+/**
+ * Helper function to sort file formatter/widget settings according to
+ * user drag-n-drop reordering.
+ */
+function _filefield_sort_by_weight($items) {
+  uasort($items, '_filefield_sort_by_weight_helper');
+  foreach ($items as $delta => $item) {
+    unset($items[$delta]['weight']);
+  }
+  return $items;
+}
+
+/**
+ * Sort function for file formatter/widget order.
+ * (copied form element_sort(), which acts on #weight keys)
+ */
+function _filefield_sort_by_weight_helper($a, $b) {
+  $a_weight = (is_array($a) && isset($a['weight'])) ? $a['weight'] : 0;
+  $b_weight = (is_array($b) && isset($b['weight'])) ? $b['weight'] : 0;
+  if ($a_weight == $b_weight) {
+    return 0;
+  }
+  return ($a_weight < $b_weight) ? -1 : 1;
 }
 
 /**
@@ -858,6 +1069,34 @@ function _filefield_file_widget_info($field) {
  * single files for the node view or other views.
  */
 function _filefield_file_formatter_info($field) {
+  $file_formatter_info = _filefield_file_formatter_info_original();
+
+  // Sort and enable the formatters according to previous admin settings or defaults.
+  foreach ($file_formatter_info as $formatter => $info) {
+    if (isset($field['file_formatters'][$formatter]['weight'])) {
+      $info['weight'] = $field['file_formatters'][$formatter]['weight'];
+    }
+    else {
+      // By default, the generic file formatter should be last in the list
+      // of possible formatters, and other new formatters should also not be
+      // preferred to ones that already had their weight configured before.
+      $info['weight'] = ($formatter == 'filefield_generic') ? 1000 : 999;
+    }
+
+    if (isset($field['file_formatters'][$formatter]['enabled'])) {
+      $info['enabled'] = $field['file_formatters'][$formatter]['enabled'];
+    }
+    else {
+      // By default, enable only the generic file formatter, so that newly
+      // enabled modules don't show their formatters without approval of the admin.
+      $info['enabled'] = ($formatter == 'filefield_generic');
+    }
+    $file_formatter_info[$formatter] = $info;
+  }
+  return _filefield_sort_by_weight($file_formatter_info);
+}
+
+function _filefield_file_formatter_info_original() {
   static $file_formatter_info;
   if (!isset($file_formatter_info)) {
     $file_formatter_info = array();
@@ -872,19 +1111,13 @@ function _filefield_file_formatter_info($field) {
         $info['formatter'] = $formatter;
         $info['theme'] = $module .'_file_formatter_'. $formatter;
         $info['css'] = isset($info['css']) ? $info['css'] : array();
-        $file_formatter_info[$formatter] = $info;
+        $file_formatter_info[$module .'_'. $formatter] = $info;
       }
     }
 
-    // By default, place the generic file formatter at the end of the array
-    // so that it gets least priority. Can be modified by the alter hook.
-    $generic_formatter_info = $file_formatter_info['generic'];
-    unset($file_formatter_info['generic']);
-    $file_formatter_info['generic'] = $generic_formatter_info;
+    drupal_alter('file_formatter_info', $field_specific_formatter_info);
   }
-  $field_specific_formatter_info = $file_formatter_info;
-  drupal_alter('file_formatter_info', $field_specific_formatter_info, $field);
-  return $field_specific_formatter_info;
+  return $file_formatter_info;
 }
 
 /**
@@ -907,30 +1140,43 @@ function _filefield_add_css($widget_or_formatter_info) {
 /**
  * Determine which widget will be used for displaying the edit form
  * for the given file.
+ *
+ * @return
+ *   An array with info about the most appropriate file widget,
+ *   or NULL if no widget is available to edit this file.
  */
-function filefield_widget_for_file($field, $file) {
-  $file_widget_info = _filefield_file_widget_info($field);
+function filefield_widget_for_file($field, $field_widget, $file) {
+  $file_widget_info = _filefield_file_widget_info($field_widget);
   $file = (object) $file; // other modules only get to see objects
 
   $suitable_widget_info = array();
   foreach ($file_widget_info as $element_name => $info) {
-    $suitability_callback = $info['suitability callback'];
-    $handles_file = $suitability_callback($field, $file);
+    if (!$info['enabled']) {
+      continue; // the admin disabled this widget
+    }
+    $handles_file = $info['suitability callback'];
 
-    if (empty($handles_file)) {
+    // Either $handles_file is TRUE already or it's a function that
+    // will return TRUE if the widget handles this file.
+    if (is_string($handles_file)) {
+      $handles_file = $handles_file($field, $field_widget, $file);
+    }
+    if ($handles_file !== TRUE) {
       continue; // this widget is not interested in our file
     }
     $suitable_widget_info[] = $info;
   }
-  // Return any of the suited widgets.
-  // @todo: We need to let the user assign weights/priorities to those widgets,
-  //        so that not any random widget but the one that is actually desired.
-  return reset($suitable_widget_info);
+  // Return the most appropriate widget, if one was found.
+  return empty($suitable_widget_info) ? NULL : reset($suitable_widget_info);
 }
 
 /**
  * Determine which formatter will be used for displaying the edit form
  * for the given file.
+ *
+ * @return
+ *   An array with info about the most appropriate file formatter,
+ *   or NULL if no formatter is available to display this file.
  */
 function filefield_formatter_for_file($field, $file) {
   $file_formatter_info = _filefield_file_formatter_info($field);
@@ -938,19 +1184,29 @@ function filefield_formatter_for_file($field, $file) {
 
   $suitable_formatter_info = array();
   foreach ($file_formatter_info as $element_name => $info) {
-    $suitability_callback = $info['suitability callback'];
-    $handles_file = $suitability_callback($field, $file);
+    if (!$info['enabled']) {
+      continue; // the admin disabled this widget
+    }
+    $handles_file = $info['suitability callback'];
 
-    if (empty($handles_file)) {
+    // Either $handles_file is TRUE already or it's a function that
+    // will return TRUE if the formatter handles this file.
+    if (is_string($handles_file)) {
+      $handles_file = $handles_file($field, $file);
+    }
+    if ($handles_file !== TRUE) {
       continue; // this formatter is not interested in our file
     }
     $suitable_formatter_info[] = $info;
   }
-  // Return any of the suited formatters.
-  // @todo: We need to let the user assign weights/priorities to those formatters,
-  //        so that not any random formatter but the one that is actually desired.
-  return reset($suitable_formatter_info);
+  // Return the most appropriate formatter, if one was found.
+  return empty($suitable_formatter_info) ? NULL : reset($suitable_formatter_info);
 }
+
+function _filefield_widget_suitability_strings($field_widget) {
+  $file_widget_info = _filefield_file_widget_info($field_widget);
+}
+
 
 /**
  * Implementation of filefield's hook_file_widget_info().
@@ -958,18 +1214,11 @@ function filefield_formatter_for_file($field, $file) {
 function filefield_file_widget_info() {
   return array(
     'filefield_generic_edit' => array(
-      'suitability callback' => 'filefield_generic_handles_file',
+      'suitability callback' => TRUE,
+      'title' => t('Generic files'),
+      'description' => t('An edit widget for all kinds of files.'),
     ),
   );
-}
-
-/**
- * Suitability callback for the 'filefield_generic_edit' widget and the
- * 'generic' file formatter: As this is the most basic fallback,
- * it handles all files alike (displaying icon and description).
- */
-function filefield_generic_handles_file($field, $file) {
-  return TRUE;
 }
 
 /**
@@ -1078,10 +1327,13 @@ function theme_filefield_unguarded($field, $file) {
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
   $file_formatter_info = filefield_formatter_for_file($field, $file);
+  if (empty($file_formatter_info)) {
+    return '<div class="filefield-item filefield-item-empty"/>';
+  }
+
   foreach ($file_formatter_info['css'] as $css_path) {
     drupal_add_css($css_path);
   }
-
   return '<div class="filefield-item">'.
     theme($file_formatter_info['theme'], $field, (object)$file) .'</div>';
 }
@@ -1093,7 +1345,9 @@ function theme_filefield_unguarded($field, $file) {
 function filefield_file_formatter_info() {
   return array(
     'generic' => array(
-      'suitability callback' => 'filefield_generic_handles_file',
+      'suitability callback' => TRUE,
+      'title' => t('Generic files'),
+      'description' => t('Displays all kinds of files with an icon and a linked file description.'),
     ),
   );
 }
