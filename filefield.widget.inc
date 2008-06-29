@@ -11,7 +11,7 @@
  */
 
 /**
- * Real implementation of hook_widget() - the one in filefield.module
+ * Implementation of hook_widget() - the one in filefield.module
  * is just there to include this one on demand.
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
