@@ -433,7 +433,7 @@ function filefield_widget_settings($op, $widget) {
                                 : array();
         $additions = module_invoke(
           $info['module'], 'file_widget_settings_'. $info['name'],
-          'form', $info, $file_widget_settings
+          'form', $file_widget_settings
         );
         if (is_array($additions)) {
           $form['file_widgets'][$file_widget_name] = array_merge(
@@ -465,7 +465,7 @@ function filefield_widget_settings($op, $widget) {
                                 : array();
         module_invoke(
           $info['module'], 'file_widget_settings_'. $info['name'],
-          'validate', $info, $file_widget_settings
+          'validate', $file_widget_settings
         );
       }
       break;
