@@ -191,23 +191,49 @@ function filefield_field_settings($op, $field) {
 
       // Present the formatters in the order that was determined above.
       $weight = 1;
-      foreach ($file_formatter_info as $formatter => $info) {
-        $form['file_formatters'][$formatter]['enabled'] = array(
+      foreach ($file_formatter_info as $file_formatter => $info) {
+        $form['file_formatters'][$file_formatter]['enabled'] = array(
           '#type' => 'checkbox',
           '#title' => $info['title'],
           '#description' => $info['description'],
           '#default_value' => $info['enabled'],
         );
-        $form['file_formatters'][$formatter]['weight'] = array(
+        $form['file_formatters'][$file_formatter]['weight'] = array(
           '#type' => 'weight',
           '#delta' => count($file_formatter_info),
           '#default_value' => $weight,
         );
+
+        // Let modules add their own formatter specific settings.
+        $file_formatter_settings = isset($field['file_formatters'][$file_formatter])
+                                    ? $field['file_formatters'][$file_formatter]
+                                    : array();
+        $additions = module_invoke(
+          $info['module'], 'file_formatter_settings_'. $info['name'],
+          'form', $file_formatter_settings
+        );
+        if (is_array($additions)) {
+          $form['file_formatters'][$file_formatter] = array_merge(
+            $form['file_formatters'][$file_formatter], $additions
+          );
+        }
         ++$weight;
       }
       return $form;
 
     case 'validate':
+      // Let modules add their own formatter specific validations.
+      $file_formatter_info = _filefield_file_formatter_info($widget);
+
+      foreach ($file_formatter_info as $file_formatter => $info) {
+        $file_formatter_settings = isset($field['file_formatters'][$file_formatter])
+                                    ? $field['file_formatters'][$file_formatter]
+                                    : array();
+        module_invoke(
+          $info['module'], 'file_formatter_settings_'. $info['name'],
+          'validate', $file_formatter_settings
+        );
+      }
       break;
 
     case 'save':
@@ -400,19 +426,25 @@ function filefield_widget_settings($op, $widget) {
           '#delta' => count($file_widget_info),
           '#default_value' => $weight,
         );
-        ++$weight;
-      }
 
-      // Let extension modules add their settings to the form.
-      foreach (module_implements('filefield_widget_settings') as $module) {
-        $function = $module .'_filefield_widget_settings';
-        $function('form_alter', $widget, $form);
+        // Let modules add their own widget specific settings.
+        $file_widget_settings = isset($widget['file_widgets'][$file_widget_name])
+                                ? $widget['file_widgets'][$file_widget_name]
+                                : array();
+        $additions = module_invoke(
+          $info['module'], 'file_widget_settings_'. $info['name'],
+          'form', $info, $file_widget_settings
+        );
+        if (is_array($additions)) {
+          $form['file_widgets'][$file_widget_name] = array_merge(
+            $form['file_widgets'][$file_widget_name], $additions
+          );
+        }
+        ++$weight;
       }
       return $form;
 
     case 'validate':
-      module_invoke_all('filefield_widget_settings', $op, $widget, NULL);
-
       $valid = FALSE;
       foreach ($widget['file_widgets'] as $file_widget_name => $info) {
         if ($info['enabled']) {
@@ -423,14 +455,23 @@ function filefield_widget_settings($op, $widget) {
       if (!$valid) {
         form_set_error('file_widgets', t('At least one type of file widgets must be enabled.'));
       }
+
+      // Let modules add their own widget specific validations.
+      $file_widget_info = _filefield_file_widget_info($widget);
+
+      foreach ($file_widget_info as $file_widget_name => $info) {
+        $file_widget_settings = isset($widget['file_widgets'][$file_widget_name])
+                                ? $widget['file_widgets'][$file_widget_name]
+                                : array();
+        module_invoke(
+          $info['module'], 'file_widget_settings_'. $info['name'],
+          'validate', $info, $file_widget_settings
+        );
+      }
       break;
 
     case 'save':
-      $core_settings = array('file_extensions', 'file_path', 'file_widgets');
-      $additional_settings = module_invoke_all(
-        'filefield_widget_settings', $op, $widget, NULL
-      );
-      return array_merge($core_settings, $additional_settings);
+      return array('file_extensions', 'file_path', 'file_widgets');
   }
 }
 
@@ -1007,7 +1048,7 @@ function _filefield_file_widget_info($field_widget) {
       // By default, the generic file edit widget should be last in the list
       // of possible widgets, and other new widgets should also not be
       // preferred to ones that already had their weight configured before.
-      $info['weight'] = ($file_widget_name == 'filefield_generic_edit') ? 1000 : 999;
+      $info['weight'] = ($file_widget_name == 'filefield_generic') ? 1000 : 999;
     }
 
     if (isset($field_widget['file_widgets'][$file_widget_name]['enabled'])) {
@@ -1016,7 +1057,7 @@ function _filefield_file_widget_info($field_widget) {
     else {
       // By default, enable only the generic file edit widget, so that newly
       // enabled modules don't show their widgets without approval of the admin.
-      $info['enabled'] = ($file_widget_name == 'filefield_generic_edit');
+      $info['enabled'] = ($file_widget_name == 'filefield_generic');
     }
     $file_widget_info[$file_widget_name] = $info;
   }
@@ -1026,15 +1067,20 @@ function _filefield_file_widget_info($field_widget) {
 function _filefield_file_widget_info_original() {
   static $file_widget_info;
   if (!isset($file_widget_info)) {
-    $file_widget_info = module_invoke_all('file_widget_info');
-    drupal_alter('file_widget_info', $file_widget_info);
 
-    // Make sure the array looks like expected.
-    foreach ($file_widget_info as $element_name => $info) {
-      $info['form element'] = $element_name;
-      $info['css'] = isset($info['css']) ? $info['css'] : array();
-      $file_widget_info[$element_name] = $info;
+    foreach (module_implements('file_widget_info') as $module) {
+      $function = $module .'_file_widget_info';
+      $module_widget_info = $function();
+
+      // Prepare the array for mass consumption.
+      foreach ($module_widget_info as $widget_name => $info) {
+        $info['module'] = $module;
+        $info['name'] = $widget_name;
+        $info['css'] = isset($info['css']) ? $info['css'] : array();
+        $file_widget_info[$module .'_'. $widget_name] = $info;
+      }
     }
+    drupal_alter('file_widget_info', $file_widget_info);
   }
   return $file_widget_info;
 }
@@ -1108,14 +1154,13 @@ function _filefield_file_formatter_info_original() {
       // In order to construct the formatter name, we need the module name.
       foreach ($module_formatter_info as $formatter => $info) {
         $info['module'] = $module;
-        $info['formatter'] = $formatter;
+        $info['name'] = $formatter;
         $info['theme'] = $module .'_file_formatter_'. $formatter;
         $info['css'] = isset($info['css']) ? $info['css'] : array();
         $file_formatter_info[$module .'_'. $formatter] = $info;
       }
     }
-
-    drupal_alter('file_formatter_info', $field_specific_formatter_info);
+    drupal_alter('file_formatter_info', $file_formatter_info);
   }
   return $file_formatter_info;
 }
@@ -1213,7 +1258,8 @@ function _filefield_widget_suitability_strings($field_widget) {
  */
 function filefield_file_widget_info() {
   return array(
-    'filefield_generic_edit' => array(
+    'generic' => array(
+      'form element' => 'filefield_generic_edit',
       'suitability callback' => TRUE,
       'title' => t('Generic files'),
       'description' => t('An edit widget for all kinds of files.'),
