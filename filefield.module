@@ -105,13 +105,15 @@ function filefield_theme() {
       'arguments' => array('element' => NULL),
     ),
     'filefield_unguarded' => array(
-      'arguments' => array('field' => NULL, 'file' => NULL),
+      'arguments' => array('file' => NULL, 'field' => NULL),
     ),
     'filefield' => array(
-      'arguments' => array('field' => NULL, 'file' => NULL),
+      'arguments' => array('file' => NULL, 'field' => NULL),
     ),
     'filefield_file_formatter_generic' => array(
-      'arguments' => array('field' => NULL, 'file' => NULL),
+      'arguments' => array(
+        'file' => NULL, 'field' => NULL, 'file_formatter_settings' => NULL,
+      ),
     ),
     'filefield_icon' => array(
       'arguments' => array('file' => NULL),
@@ -728,7 +730,7 @@ function filefield_validate_file_widget_support($file, $field, $field_widget) {
   }
   // In the common case, we only accept a file if an enabled widget
   // wants to handle it.
-  $edit_widget_info = filefield_widget_for_file($field, $field_widget, $file);
+  $edit_widget_info = filefield_widget_for_file($file, $field, $field_widget);
   if (empty($edit_widget_info)) {
     $errors[] = t('Uploaded files are restricted to the following categories: !widgets.', array(
       '!widgets' => implode(', ', _filefield_required_file_widgets($field_widget)),
@@ -839,7 +841,7 @@ function filefield_file_edit_form(&$form, &$form_state, $field, $delta, $file) {
     );
   }
 
-  $edit_widget_info = filefield_widget_for_file($field, $field['widget'], $file);
+  $edit_widget_info = filefield_widget_for_file($file, $field, $field['widget']);
   $widget['edit'] = array(
     '#type' => empty($edit_widget_info)
                 ? 'filefield_generic_edit' // as last-resort fallback
@@ -1077,7 +1079,8 @@ function _filefield_file_widget_info_original() {
         $info['module'] = $module;
         $info['name'] = $widget_name;
         $info['css'] = isset($info['css']) ? $info['css'] : array();
-        $file_widget_info[$module .'_'. $widget_name] = $info;
+        $info['key'] = $module .'_'. $formatter;
+        $file_widget_info[$info['key']] = $info;
       }
     }
     drupal_alter('file_widget_info', $file_widget_info);
@@ -1157,7 +1160,8 @@ function _filefield_file_formatter_info_original() {
         $info['name'] = $formatter;
         $info['theme'] = $module .'_file_formatter_'. $formatter;
         $info['css'] = isset($info['css']) ? $info['css'] : array();
-        $file_formatter_info[$module .'_'. $formatter] = $info;
+        $info['key'] = $module .'_'. $formatter;
+        $file_formatter_info[$info['key']] = $info;
       }
     }
     drupal_alter('file_formatter_info', $file_formatter_info);
@@ -1190,7 +1194,7 @@ function _filefield_add_css($widget_or_formatter_info) {
  *   An array with info about the most appropriate file widget,
  *   or NULL if no widget is available to edit this file.
  */
-function filefield_widget_for_file($field, $field_widget, $file) {
+function filefield_widget_for_file($file, $field, $field_widget) {
   $file_widget_info = _filefield_file_widget_info($field_widget);
   $file = (object) $file; // other modules only get to see objects
 
@@ -1223,12 +1227,12 @@ function filefield_widget_for_file($field, $field_widget, $file) {
  *   An array with info about the most appropriate file formatter,
  *   or NULL if no formatter is available to display this file.
  */
-function filefield_formatter_for_file($field, $file) {
+function filefield_formatter_for_file($file, $field) {
   $file_formatter_info = _filefield_file_formatter_info($field);
   $file = (object) $file; // other modules only get to see objects
 
   $suitable_formatter_info = array();
-  foreach ($file_formatter_info as $element_name => $info) {
+  foreach ($file_formatter_info as $formatter => $info) {
     if (!$info['enabled']) {
       continue; // the admin disabled this widget
     }
@@ -1237,7 +1241,7 @@ function filefield_formatter_for_file($field, $file) {
     // Either $handles_file is TRUE already or it's a function that
     // will return TRUE if the formatter handles this file.
     if (is_string($handles_file)) {
-      $handles_file = $handles_file($field, $file);
+      $handles_file = $handles_file($file, $field);
     }
     if ($handles_file !== TRUE) {
       continue; // this formatter is not interested in our file
@@ -1332,7 +1336,7 @@ function filefield_field_formatter_info() {
 function theme_filefield_formatter_default($element) {
   $file = $element['#item'];
   $field = content_fields($element['#field_name']);
-  return theme('filefield', $field, $file);
+  return theme('filefield', $file, $field);
 }
 
 /**
@@ -1344,7 +1348,7 @@ function theme_filefield_formatter_default($element) {
  * if viewing the file is not allowed for any reason. If you need to display it
  * in any case, please use theme('filefield') instead.
  */
-function theme_filefield($field, $file) {
+function theme_filefield($file, $field) {
   if (!filefield_view_access($field['field_name'])) {
     return '';
   }
@@ -1354,7 +1358,7 @@ function theme_filefield($field, $file) {
   if (empty($file['list'])) {
     return '';
   }
-  return theme('filefield_unguarded', $field, $file);
+  return theme('filefield_unguarded', $file, $field);
 }
 
 /**
@@ -1366,13 +1370,13 @@ function theme_filefield($field, $file) {
  * in any case (except if the file doesn't exist at all). If you need to check
  * permissions, please use theme('filefield_guarded') instead.
  */
-function theme_filefield_unguarded($field, $file) {
+function theme_filefield_unguarded($file, $field) {
   if (empty($file['fid']) || !is_file($file['filepath'])) {
     return '';
   }
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
-  $file_formatter_info = filefield_formatter_for_file($field, $file);
+  $file_formatter_info = filefield_formatter_for_file($file, $field);
   if (empty($file_formatter_info)) {
     return '<div class="filefield-item filefield-item-empty"/>';
   }
@@ -1380,8 +1384,13 @@ function theme_filefield_unguarded($field, $file) {
   foreach ($file_formatter_info['css'] as $css_path) {
     drupal_add_css($css_path);
   }
+  $settings = isset($field['file_formatters'][$file_formatter_info['key']])
+    ? $field['file_formatters'][$file_formatter_info['key']]
+    : NULL;
+
   return '<div class="filefield-item">'.
-    theme($file_formatter_info['theme'], $field, (object)$file) .'</div>';
+    theme($file_formatter_info['theme'], (object)$file, $field, $settings)
+    .'</div>';
 }
 
 
@@ -1401,7 +1410,7 @@ function filefield_file_formatter_info() {
 /**
  * Theme function for the 'generic' single file formatter.
  */
-function theme_filefield_file_formatter_generic($field, $file) {
+function theme_filefield_file_formatter_generic($file, $field, $file_formatter_settings) {
   $path = $file->filepath;
   $url = file_create_url($path);
   $icon = theme('filefield_icon', $file);
