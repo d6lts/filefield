@@ -18,7 +18,6 @@ function theme_filefield_draggable_settings_table($element) {
   $table_id = 'filefield-file-'. $settings_type .'-table';
   $order_class = 'filefield-file-'. $settings_type .'-weight';
 
-  $widget_info = $element['#widget_info'];
   $title = isset($element['#title']) ? $element['#title'] : '';
   unset($element['#title']); // the header is used instead of the regular label
 
@@ -35,10 +34,7 @@ function theme_filefield_draggable_settings_table($element) {
   foreach (element_children($element) as $key) {
     $element[$key]['weight']['#attributes']['class'] = $order_class;
     $delta_element = drupal_render($element[$key]['weight']);
-    $row = array(
-      drupal_render($element[$key]),
-      $delta_element,
-    );
+    $row = array(drupal_render($element[$key]), $delta_element);
     $rows[] = array('data' => $row, 'class' => 'draggable');
   }
   $output = theme('table', $header, $rows, array('id' => $table_id));
