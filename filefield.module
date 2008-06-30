@@ -208,44 +208,15 @@ function filefield_field_settings($op, $field) {
       $form['file_formatters'] = array(
         '#title' => t('File display'),
         '#description' => t('Control how files may be displayed in the node view and other views for this field. If no formatters are enabled or are able to handle a file then that specific file will not be displayed. You can also reorder the formatters to specify their priority: the top-most enabled formatter always gets to display the files that it supports, whereas the bottom-most enabled formatter only gets to handle them if the file is not supported by any other other one.'),
-        '#tree' => TRUE,
         '#weight' => 5,
-        '#theme' => 'filefield_draggable_settings_table',
         '#settings_type' => 'formatters', // info for the theme function
       );
-
       $file_formatter_info = _filefield_file_formatter_info($field);
 
-      // Present the formatters in the order that was determined above.
-      $weight = 1;
-      foreach ($file_formatter_info as $file_formatter => $info) {
-        $form['file_formatters'][$file_formatter]['enabled'] = array(
-          '#type' => 'checkbox',
-          '#title' => $info['title'],
-          '#description' => $info['description'],
-          '#default_value' => $info['enabled'],
-        );
-        $form['file_formatters'][$file_formatter]['weight'] = array(
-          '#type' => 'weight',
-          '#delta' => count($file_formatter_info),
-          '#default_value' => $weight,
-        );
-
-        // Let modules add their own formatter specific settings.
-        $file_formatter_settings = isset($field['file_formatters'][$file_formatter])
-                                    ? $field['file_formatters'][$file_formatter]
-                                    : array();
-        $additions = module_invoke(
-          $info['module'], 'file_formatter_settings_'. $info['name'],
-          'form', $file_formatter_settings
-        );
-        if (is_array($additions)) {
-          $form['file_formatters'][$file_formatter] = array_merge(
-            $form['file_formatters'][$file_formatter], $additions
-          );
-        }
-        ++$weight;
-      }
+      $form['file_formatters'] = _filefield_draggable_settings_table(
+        $form['file_formatters'], $file_formatter_info,
+        $field['file_formatters'], 'file_formatter_settings'
+      );
       return $form;
 
     case 'validate':
@@ -278,6 +249,9 @@ function filefield_field_settings($op, $field) {
       $data = content_views_field_views_data($field);
       $db_info = content_database_info($field);
       $table_alias = content_views_tablename($field);
+
+      // Set our own field handler so that we can hook the file formatter
+      // configuration table into the options form.
 
       // By defining the relationship, we already have a "Has file" filter
       // plus all the filters that Views already provides for files.
@@ -399,7 +373,7 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
 function filefield_field_formatter_info() {
   return array(
     'default' => array(
-      'label' => t('Default'),
+      'label' => t('Dynamic file formatters'),
       'field types' => array('file'),
       'multiple values' => CONTENT_HANDLE_CORE,
     ),
@@ -449,44 +423,15 @@ function filefield_widget_settings($op, $widget) {
         '#title' => t('File widgets'),
         '#description' => t('Control which kinds of files may be uploaded to the edit form for this field, by specifying the widgets that can handle the desired file types. You can also reorder the widgets to specify their priority: the top-most enabled widget always gets to handle the files that it supports, whereas the bottom-most enabled widget only gets to handle them if the file is not supported by any other other one.'),
         '#required' => TRUE,
-        '#tree' => TRUE,
         '#weight' => 5,
-        '#theme' => 'filefield_draggable_settings_table',
         '#settings_type' => 'widgets', // info for the theme function
       );
-
       $file_widget_info = _filefield_file_widget_info($widget);
 
-      // Present the widgets in the order that was determined above.
-      $weight = 1;
-      foreach ($file_widget_info as $file_widget_name => $info) {
-        $form['file_widgets'][$file_widget_name]['enabled'] = array(
-          '#type' => 'checkbox',
-          '#title' => $info['title'],
-          '#description' => $info['description'],
-          '#default_value' => $info['enabled'],
-        );
-        $form['file_widgets'][$file_widget_name]['weight'] = array(
-          '#type' => 'weight',
-          '#delta' => count($file_widget_info),
-          '#default_value' => $weight,
-        );
-
-        // Let modules add their own widget specific settings.
-        $file_widget_settings = isset($widget['file_widgets'][$file_widget_name])
-                                ? $widget['file_widgets'][$file_widget_name]
-                                : array();
-        $additions = module_invoke(
-          $info['module'], 'file_widget_settings_'. $info['name'],
-          'form', $file_widget_settings
-        );
-        if (is_array($additions)) {
-          $form['file_widgets'][$file_widget_name] = array_merge(
-            $form['file_widgets'][$file_widget_name], $additions
-          );
-        }
-        ++$weight;
-      }
+      $form['file_widgets'] = _filefield_draggable_settings_table(
+        $form['file_widgets'], $file_widget_info,
+        $widget['file_widgets'], 'file_widget_settings'
+      );
       return $form;
 
     case 'validate':
@@ -523,6 +468,59 @@ function filefield_widget_settings($op, $widget) {
 function _filefield_widget_settings_file_path_validate($element, &$form_state) {
   // Strip slashes from the beginning and end of $widget['file_path']
   $form_state['values']['file_path'] = trim($form_state['values']['file_path'], '\\/');
+}
+
+/**
+ * Construct a table with file widgets or file formatter settings, amending
+ * additional properties and child elements to the given element base.
+ *
+ * @param $element
+ *   The element base, expected to at least provide the '#title' property
+ *   and a '#settings_type' property with 'widgets' or 'formatters' as info
+ *   for the theme function.
+ * @param $file_extension_info
+ *   An array of information about all widgets or formatters, as retrieved
+ *   by _filefield_file_widget_info() or _filefield_file_formatter_info().
+ * @param $extension_settings
+ *   The existing collection of settings for all the widgets or formatters.
+ * @param $hook_base
+ *   The base name of the extension settings hook, e.g. 'file_widget_settings'
+ *   or 'file_formatter_settings'.
+ * @return
+ *   An extended element with potentially lots of properties and children,
+ *   which is going to be themed into a table with JavaScript draggable items.
+ */
+function _filefield_draggable_settings_table($element, $file_extension_info, $extension_settings, $hook_base) {
+  $element['#tree'] = TRUE;
+  $element['#theme'] = 'filefield_draggable_settings_table';
+
+  // Present the extensions in the predetermined order.
+  $weight = 1;
+  foreach ($file_extension_info as $extension_name => $info) {
+    $element[$extension_name]['enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => $info['title'],
+      '#description' => $info['description'],
+      '#default_value' => $info['enabled'],
+    );
+    $element[$extension_name]['weight'] = array(
+      '#type' => 'weight',
+      '#delta' => count($file_extension_info),
+      '#default_value' => $weight,
+    );
+
+    // Let modules add their own extension specific settings.
+    $file_extension_settings = isset($extension_settings[$extension_name])
+                                ? $extension_settings[$extension_name]
+                                : array();
+    $additions = module_invoke($info['module'], $hook_base .'_'. $info['name'],
+                               'form', $file_extension_settings);
+    if (is_array($additions)) {
+      $element[$extension_name] = array_merge($element[$extension_name], $additions);
+    }
+    ++$weight;
+  }
+  return $element;
 }
 
 
