@@ -52,7 +52,6 @@ function theme_filefield_draggable_settings_table($element) {
 function theme_filefield_container_item($element) {
   $field = $element['#field'];
   $children = !empty($element['#children']) ? $element['#children'] : '';
-  $children = '<div class="ahah-new-content">'. $children .'</div>';
 
   // CCK renders a nice table for multiple-value fields, that's just fine as is.
   if ($field['multiple']) {

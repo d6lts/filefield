@@ -22,20 +22,17 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   _filefield_add_css($file_widget_info);
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
-  if (empty($items[$delta])) {
-    return filefield_file_upload_form($form, $form_state, $field, $delta);
+  if (!empty($items[$delta]) && $file = field_file_load($items[$delta]['fid'])) {
+    $file = array_merge($items[$delta], $file);
+    return filefield_file_edit_form($form, $form_state, $field, $delta, $file);
   }
-  if (!$file = field_file_load($items[$delta]['fid'])) {
-    return filefield_file_upload_form($form, $form_state, $field, $delta, $items[$delta]);
-  }
-  $file = array_merge($items[$delta], $file);
-  return filefield_file_edit_form($form, $form_state, $field, $delta, $file);
+  return filefield_file_upload_form($form, $form_state, $field, $delta, $items);
 }
 
 /**
  * The filefield widget for not (yet) existing files.
  */
-function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $item = NULL) {
+function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $items) {
   $form['#attributes']['enctype'] = 'multipart/form-data';
 
   // Include JavaScript for client-side file validation.
@@ -44,8 +41,10 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $item 
   $field_name_css = str_replace('_', '-', $field['field_name']);
   $id = 'filefield-'. $field_name_css .'-'. $delta .'-form';
 
-  $replaced_file = (isset($item) && isset($item['replaced_file']))
-                    ? $item['replaced_file'] : NULL;
+  $replaced_file = (isset($items[$delta]) && isset($items[$delta]['replaced_file']))
+                    ? $items[$delta]['replaced_file'] : NULL;
+
+  $max_filesize = _filefield_maximum_filesize($field, $field['widget'], $items);
 
   $widget = array(
     '#type'   => 'filefield_file_upload',
@@ -54,25 +53,29 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $item 
     '#replaced_file' => $replaced_file,
     '#prefix' => '<div id="'. $id .'" class="filefield-file-form"><div class="filefield-file-upload">',
     '#suffix' => '</div></div>',
+    '#max_filesize' => $max_filesize,
   );
-  // Buttons inside custom form elements are not registered by the Forms API,
-  // so we make the "Upload" button a regular child element and not a part
-  // of the filefield_file_upload widget.
-  $widget[$field['field_name'] .'_'. $delta .'_upload'] = array(
-    '#name' => $field['field_name'] .'_'. $delta .'_upload',
-    '#type' => 'submit',
-    '#value' => t('Upload'),
-    '#submit' => array('filefield_file_upload_submit'), // without JavaScript
-    '#ahah' => array( // with JavaScript
-      'path' => 'filefield/js/upload/'. $field['field_name'] .'/'. $field['type_name'] .'/'. $delta,
-      'wrapper' => $id,
-      'method' => 'replace',
-      'effect' => 'fade',
-    ),
-    '#weight' => 10,
-    '#field' => $field,
-    '#delta' => $delta,
-  );
+
+  if ($max_filesize > 0) {
+    // Buttons inside custom form elements are not registered by the Forms API,
+    // so we make the "Upload" button a regular child element and not a part
+    // of the filefield_file_upload widget.
+    $widget[$field['field_name'] .'_'. $delta .'_upload'] = array(
+      '#name' => $field['field_name'] .'_'. $delta .'_upload',
+      '#type' => 'submit',
+      '#value' => t('Upload'),
+      '#submit' => array('filefield_file_upload_submit'), // without JavaScript
+      '#ahah' => array( // with JavaScript
+        'path' => 'filefield/js/upload/'. $field['field_name'] .'/'. $field['type_name'] .'/'. $delta,
+        'wrapper' => $id,
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+      '#weight' => 10,
+      '#field' => $field,
+      '#delta' => $delta,
+    );
+  }
   return $widget;
 }
 
@@ -87,11 +90,20 @@ function filefield_file_upload_process($element, $edit, &$form_state, $form) {
 
   $field = $element['#field'];
   $field_name = $field['field_name'];
+  $max_filesize = $element['#max_filesize'];
 
   // Construct the upload description out of user supplied text,
   // maximum upload file size, and (optionally) allowed extensions.
+  if ($max_filesize == -1) {
+    $element[$upload_name] = array(
+      '#type' => 'markup',
+      '#value' => t('The allowed maximum file size total has been exceeded. No new files can be uploaded anymore.'),
+    );
+    return $element;
+  }
+
   $upload_description = t('Maximum file size: !size.', array(
-    '!size' => format_size(file_upload_max_size()),
+    '!size' => format_size($max_filesize),
   ));
   if (!empty($field['widget']['file_extensions'])) {
     $upload_description .= ' '. t('Allowed extensions: %ext.', array(
@@ -162,7 +174,7 @@ function filefield_file_upload_validate($element, &$form_state) {
 function filefield_file_upload_submit($form, &$form_state) {
   $field = $form_state['clicked_button']['#field'];
   $delta = $form_state['clicked_button']['#delta'];
-  filefield_file_upload($form_state, $field, $delta);
+  _filefield_file_upload($form_state, $field, $delta);
 
   // Rebuild the form with the new uploaded-file state (hopefully).
   node_form_submit_build_node($form, $form_state);
@@ -173,14 +185,14 @@ function filefield_file_upload_submit($form, &$form_state) {
  * invoked by filefield_js(). Uploads a file to the given field and delta.
  */
 function filefield_file_upload_js(&$form, &$form_state, $field, $delta) {
-  filefield_file_upload($form_state, $field, $delta);
+  _filefield_file_upload($form_state, $field, $delta);
 }
 
 /**
  * Upload a file to the given field and delta (or try to, at least), and
  * update the corresponding part of the form state with the new file data.
  */
-function filefield_file_upload(&$form_state, $field, $delta) {
+function _filefield_file_upload(&$form_state, $field, $delta) {
   $field_name = $field['field_name'];
   $file = &$form_state['values'][$field_name][$delta];
   $replaced_file = $file['replaced_file'];
@@ -194,8 +206,12 @@ function filefield_file_upload(&$form_state, $field, $delta) {
   }
 
   // Let modules provide their own validators.
+  $max_filesize = _filefield_maximum_filesize(
+    $field, $field['widget'], $form_state['values'][$field_name]
+  );
   $validators = array_merge(module_invoke_all('filefield_validators'), array(
     'file_validate_extensions' => array($field['widget']['file_extensions']),
+    'file_validate_size' => array($max_filesize),
     'filefield_validate_file_widget_support' => array($field, $field['widget']),
   ));
   $upload_name = $field_name .'_'. $delta;
@@ -270,6 +286,73 @@ function _filefield_required_file_widgets($field_widget) {
     $titles[] = $info['title'];
   }
   return $titles;
+}
+
+/**
+ * Get the maximum file size that is allowed for a new upload.
+ *
+ * @return
+ *   -1 for "no more files allowed", or any positive value as the number
+ *   of bytes that may still be uploaded. A result of 0 ("unlimited") will
+ *   never happen because of PHP's upload limits.)
+ */
+function _filefield_maximum_filesize($field, $widget, $items) {
+  // Clean out empty items, so that they're not taken into account
+  // by implementations of hook_filefield_filesize_restrictions().
+  // Also, objectify items - because we're leaving the pure filefield realm.
+  $node_files = array();
+  foreach ($items as $delta => $item) {
+    if (is_array($item) && !empty($item['fid'])) {
+      $node_files[] = (object) $item;
+    }
+  }
+
+  // Calculate the maximum file size - the least of all returned values.
+  $max_filesize = FALSE;
+  $restrictions = module_invoke_all(
+    'filefield_filesize_restrictions', $field, $widget, $node_files
+  );
+  foreach ($restrictions as $value) {
+    if ($max_filesize === FALSE || $value < $max_filesize) {
+      $max_filesize = $value;
+    }
+  }
+
+  // Return -1 if any restriction value was not a positive number.
+  if ($max_filesize === FALSE || $max_filesize <= 0) {
+    return -1;
+  }
+  return $max_filesize;
+}
+
+/**
+ * Implementation of hook_filefield_filesize_restrictions():
+ * Specify how large a newly uploaded file may be, in bytes.
+ * (The smallest size of all hook implementations will be applied in the end).
+ */
+function filefield_filefield_filesize_restrictions($field, $widget, $node_files) {
+  $filesize_restrictions = array(file_upload_max_size());
+
+  // Maximum file size for each file separately.
+  if (!empty($widget['max_filesize_per_file'])) {
+    $filesize_restrictions[] = parse_size($widget['max_filesize_per_file']);
+  }
+
+  // Maximum file size for all files in the node (for this field).
+  if (!empty($widget['max_filesize_per_node'])) {
+    $allowed_total_size = parse_size($widget['max_filesize_per_node']);
+    $total_size = 0;
+
+    foreach ($node_files as $delta => $file) {
+      if (!empty($file->filesize)) {
+        $total_size += $file->filesize;
+      }
+    }
+    if (!empty($total_size)) {
+      $filesize_restrictions[] = $allowed_total_size - $total_size;
+    }
+  }
+  return $filesize_restrictions;
 }
 
 /**
@@ -523,6 +606,11 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   $form_state = array('submitted' => FALSE);
   $form = form_builder('filefield_js', $form, $form_state);
   $field_form = empty($group_name) ? $form[$field_name] : $form[$group_name][$field_name];
+
+  // We add a div around the new content to tell AHAH to let this fade in.
+  $field_form[$delta]['#prefix'] = '<div class="ahah-new-content">'. (isset($field_form[$delta]['#prefix']) ? $field_form[$delta]['#prefix'] : '');
+  $field_form[$delta]['#suffix'] = (isset($field_form[$delta]['#suffix']) ? $field_form[$delta]['#suffix'] : '') .'</div>';
+
   $output = theme('status_messages') . drupal_render($field_form[$delta]);
 
   // AHAH is not being nice to us and doesn't know the "other" button (that is,
