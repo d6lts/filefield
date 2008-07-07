@@ -154,28 +154,15 @@ function filefield_icon_url($file) {
  * Implementation of hook_file().
  * (Which is implemented by filefield/imagefield in Drupal 6 yet).
  */
-function filefield_file($op, $file) {
-  switch ($op) {
-    // report references to prevent deletion of files associated to older revisions
-    // or by other fields.
-    case 'references':
-      $references = 0;
-      foreach(content_fields() as $field) {
-        if ($field['type'] != 'file') {
-          continue;
-        }
-        $db_info = content_database_info($field);
-        $references += db_result(db_query(
-          'SELECT count('. $db_info['columns']['fid']['column'] .')
-            FROM {'. $db_info['table'] .'}
-            WHERE '. $db_info['columns']['fid']['column'] .' = %d', $file->fid
-        ));
-        if (isset($file->filefield_delete) && $field['field_name'] == $file->filefield_delete) {
-          --$references; // doesn't count as it's being deleted
-        }
-      }
-      return array('filefield' => $references);
+function filefield_file_references($op, $file) {
+  $references = 0;
+  foreach(content_fields() as $field) {
+    if ($field['type'] != 'file') {
+      continue;
+    }
+    $references += field_file_references($file, $field);
   }
+  return array('filefield' => $references);
 }
 
 
@@ -332,7 +319,7 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
     case 'delete revision':
       foreach ($items as $delta => $item) {
         // For hook_file($op = 'references'), remember that this is being deleted.
-        $item['filefield_delete'] = $field['field_name'];
+        $item['field_name'] = $field['field_name'];
         if (field_file_delete($item)) {
           unset($items[$delta]);
         }
@@ -343,7 +330,7 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
     case 'delete':
       foreach ($items as $delta => $item) {
         // For hook_file($op = 'references'), remember that this is being deleted.
-        $item['filefield_delete'] = $field['field_name'];
+        $item['field_name'] = $field['field_name'];
         field_file_delete($item);
       }
       break;

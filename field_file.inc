@@ -38,9 +38,9 @@ function field_file_load($fid, $reset = NULL) {
       return array();
     }
 
-    foreach (module_implements('file') as $module) {
-      $function =  $module .'_file';
-      $function('load', $file);
+    foreach (module_implements('file_load') as $module) {
+      $function =  $module .'_file_load';
+      $function($file);
     }
 
     // Cache the fully loaded file for later reusability.
@@ -86,9 +86,9 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE, $
     return 0;
   }
   // Let modules add additional properties to the yet barebone file object.
-  foreach (module_implements('file') as $module) {
-    $function =  $module .'_file';
-    $function('insert', $file);
+  foreach (module_implements('file_insert') as $module) {
+    $function =  $module .'_file_insert';
+    $function($file);
   }
   _field_file_cache($file); // cache the file in order to minimize load queries
   return (array)$file;
@@ -126,9 +126,9 @@ function field_file_save($node, &$file) {
   }
 
   // Let modules update their additional file properties too.
-  foreach (module_implements('file') as $module) {
-    $function =  $module .'_file';
-    $function('update', $file);
+  foreach (module_implements('file_update') as $module) {
+    $function =  $module .'_file_update';
+    $function($file);
   }
   _field_file_cache($file); // update the cache, in case the file has changed
 
@@ -151,7 +151,7 @@ function field_file_delete($file, $force = FALSE) {
   // If any module returns a value from the reference hook, the
   // file will not be deleted from Drupal, but file_delete will
   // return a populated array that tests as TRUE.
-  if (!$force && $references = module_invoke_all('file', 'references', $file)) {
+  if (!$force && $references = module_invoke_all('file_references', $file)) {
     $references = array_filter($references); // only keep positive values
     if (!empty($references)) {
       return $references;
@@ -159,7 +159,7 @@ function field_file_delete($file, $force = FALSE) {
   }
 
   // Let other modules clean up on delete.
-  module_invoke_all('file', 'delete', $file);
+  module_invoke_all('file_delete', $file);
 
   // Make sure the file is deleted before removing its row from the
   // database, so UIs can still find the file in the database.
@@ -266,4 +266,22 @@ function field_file_strip_path($path) {
     $path = drupal_substr($path, $dirlen + 1);
   }
   return $path;
+}
+
+
+/**
+ * return references to a file by a single field.
+ */
+
+function field_file_references($file, $field) {
+  $db_info = content_database_info($field);
+  $references += db_result(db_query(
+    'SELECT count('. $db_info['columns']['fid']['column'] .')
+      FROM {'. $db_info['table'] .'}
+      WHERE '. $db_info['columns']['fid']['column'] .' = %d', $file->fid
+  ));
+  if (isset($file->field_name) && $field['field_name'] == $file->field_name) {
+    --$references; // doesn't count as it's being deleted
+  }
+  return $references;
 }
