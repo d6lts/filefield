@@ -229,6 +229,7 @@ function filefield_field_settings($op, $field) {
         'fid' => array('type' => 'int', 'not null' => FALSE),
         'description' => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE, 'sortable' => TRUE),
         'list' => array('type' => 'int', 'size' => 'tiny', 'not null' => FALSE),
+        'data' => array('type' => 'text'),
       );
       return $columns;
 

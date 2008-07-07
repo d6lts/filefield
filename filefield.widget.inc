@@ -90,6 +90,7 @@ function filefield_file_upload_process($element, $edit, &$form_state, $form) {
 
   $field = $element['#field'];
   $field_name = $field['field_name'];
+  $upload_name = $field_name .'_'. $element['#delta'];
   $max_filesize = $element['#max_filesize'];
 
   // Construct the upload description out of user supplied text,
@@ -115,7 +116,6 @@ function filefield_file_upload_process($element, $edit, &$form_state, $form) {
     $upload_description .= '<br/>'. t('Additionally, uploads are restricted to the following categories: !widgets.', array('!widgets' => implode(', ', $required_file_widgets)));
   }
 
-  $upload_name = $field_name .'_'. $element['#delta'];
   $element[$upload_name] = array(
     '#type' => 'file',
     '#title' => t('Attach new file'),
