@@ -221,7 +221,7 @@ function filefield_field_settings($op, $field) {
 
     case 'validate':
       // Let modules add their own formatter specific validations.
-      $file_formatter_info = _filefield_file_formatter_info($widget);
+      $file_formatter_info = _filefield_file_formatter_info($field);
 
       foreach ($file_formatter_info as $file_formatter => $info) {
         $file_formatter_settings = isset($field['file_formatters'][$file_formatter])
