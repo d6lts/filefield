@@ -44,7 +44,7 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $items
   $replaced_file = (isset($items[$delta]) && isset($items[$delta]['replaced_file']))
                     ? $items[$delta]['replaced_file'] : NULL;
 
-  $max_filesize = _filefield_maximum_filesize($field, $field['widget'], $items);
+  $requirements = _filefield_upload_requirements($field, $field['widget'], $items);
 
   $widget = array(
     '#type'   => 'filefield_file_upload',
@@ -53,10 +53,10 @@ function filefield_file_upload_form(&$form, &$form_state, $field, $delta, $items
     '#replaced_file' => $replaced_file,
     '#prefix' => '<div id="'. $id .'" class="filefield-file-form"><div class="filefield-file-upload">',
     '#suffix' => '</div></div>',
-    '#max_filesize' => $max_filesize,
+    '#upload_requirements' => $requirements,
   );
 
-  if ($max_filesize > 0) {
+  if ($requirements['upload possible']) {
     // Buttons inside custom form elements are not registered by the Forms API,
     // so we make the "Upload" button a regular child element and not a part
     // of the filefield_file_upload widget.
@@ -91,30 +91,26 @@ function filefield_file_upload_process($element, $edit, &$form_state, $form) {
   $field = $element['#field'];
   $field_name = $field['field_name'];
   $upload_name = $field_name .'_'. $element['#delta'];
-  $max_filesize = $element['#max_filesize'];
+
+  $requirements = $element['#upload_requirements'];
 
   // Construct the upload description out of user supplied text,
   // maximum upload file size, and (optionally) allowed extensions.
-  if ($max_filesize == -1) {
+  if ($requirements['upload possible'] == FALSE) {
     $element[$upload_name] = array(
       '#type' => 'markup',
-      '#value' => t('The allowed maximum file size total has been exceeded. No new files can be uploaded anymore.'),
+      '#value' => t('!errors No new files can be uploaded anymore.', array(
+        '!errors' => implode(' ', $requirements['messages']),
+      )),
     );
     return $element;
   }
 
-  $upload_description = t('Maximum file size: !size.', array(
-    '!size' => format_size($max_filesize),
-  ));
-  if (!empty($field['widget']['file_extensions'])) {
-    $upload_description .= ' '. t('Allowed extensions: %ext.', array(
-      '%ext' => $field['widget']['file_extensions'],
-    ));
-  }
-  $required_file_widgets = _filefield_required_file_widgets($field['widget']);
-  if (!empty($required_file_widgets)) {
-    $upload_description .= '<br/>'. t('Additionally, uploads are restricted to the following categories: !widgets.', array('!widgets' => implode(', ', $required_file_widgets)));
-  }
+  // Make a list out of the messages if there are too many restrictions.
+  // Looks better than a concatenated sequence of sentences.
+  $upload_description = (count($requirements['messages']) > 2)
+    ? '<ul><li>'. implode('</li><li>', $requirements['messages']) .'</li></ul>'
+    : implode(' ', $requirements['messages']);
 
   $element[$upload_name] = array(
     '#type' => 'file',
@@ -194,8 +190,6 @@ function filefield_file_upload_js(&$form, &$form_state, $field, $delta) {
  */
 function _filefield_file_upload(&$form_state, $field, $delta) {
   $field_name = $field['field_name'];
-  $file = &$form_state['values'][$field_name][$delta];
-  $replaced_file = $file['replaced_file'];
 
   if (module_exists('token')) {
     global $user;
@@ -206,16 +200,14 @@ function _filefield_file_upload(&$form_state, $field, $delta) {
   }
 
   // Let modules provide their own validators.
-  $max_filesize = _filefield_maximum_filesize(
+  $validators = _filefield_upload_validators(
     $field, $field['widget'], $form_state['values'][$field_name]
   );
-  $validators = array_merge(module_invoke_all('filefield_validators'), array(
-    'file_validate_extensions' => array($field['widget']['file_extensions']),
-    'file_validate_size' => array($max_filesize),
-    'filefield_validate_file_widget_support' => array($field, $field['widget']),
-  ));
   $upload_name = $field_name .'_'. $delta;
   $complete_file_path = file_directory_path() .'/'. $widget_file_path;
+
+  $file = &$form_state['values'][$field_name][$delta];
+  $replaced_file = $file['replaced_file'];
 
   if (!filefield_check_directory($widget_file_path, $upload_name)) {
     watchdog('file', 'The upload directory %directory for the file field %field (content type %type) could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $widget_file_path, '%field' => $field_name, '%type' => $field['type_name']));
@@ -238,13 +230,114 @@ function _filefield_file_upload(&$form_state, $field, $delta) {
 }
 
 /**
+ * Retrieve a list of file validator functions (and arguments) that can be
+ * passed to file_save_upload() (or field_file_save_upload()) as is.
+ */
+function _filefield_upload_validators($field, $widget, $items) {
+  $validator_info = _filefield_validator_info($field, $widget, $items);
+  $validators = array();
+
+  foreach ($validator_info as $validator_function => $info) {
+    $validators[$validator_function] = $info['validator arguments'];
+  }
+  return $validators;
+}
+
+/**
+ * Retrieve a list of upload requirement strings for the various upload
+ * restrictions that this module and possible extensions provide.
+ */
+function _filefield_upload_requirements($field, $widget, $items) {
+  $validator_info = _filefield_validator_info($field, $widget, $items);
+  $messages = array();
+  $errors = array();
+
+  foreach ($validator_info as $validator_function => $info) {
+    $messages[] = $info['requirement message'];
+
+    if (isset($info['upload possible']) && $info['upload possible'] == FALSE) {
+      $errors[] = $info['requirement message'];
+    }
+  }
+  return array(
+    'messages' => empty($errors) ? $messages : $errors,
+    'upload possible' => empty($errors),
+  );
+}
+
+/**
+ * Retrieve an array of file validators and their associated requirement
+ * messages (placing filefield's own validators first in the result array).
+ */
+function _filefield_validator_info($field, $widget, $items) {
+  // Clean out empty items, so that they're not taken into account by
+  // implementations of hook_filefield_validators() - they're irrelevant here.
+  // Also, objectify items - because we're leaving the pure filefield realm.
+  $existing_files = array();
+  foreach ($items as $delta => $item) {
+    if (is_array($item) && !empty($item['fid'])) {
+      $existing_files[] = (object) $item;
+    }
+  }
+  return array_merge(
+    _filefield_filefield_validators($field, $widget, $existing_files),
+    module_invoke_all('filefield_validators', $field, $widget, $existing_files)
+  );
+}
+
+/**
+ * Implementation of hook_filefield_validators():
+ * Upload restrictions for file size, file extension and supported file widgets.
+ * Implemented as private function instead of as a real hook, because we want
+ * to make an exception so that these requirements appear first in any list.
+ */
+function _filefield_filefield_validators($field, $widget, $existing_files) {
+  $validators = array();
+
+  // Thanks to the php.ini restrictions, there is always a maximum file size.
+  // Therefore we can rely on at least one restriction always being in force.
+  $max_filesize = _filefield_maximum_filesize(
+    $field, $widget, $existing_files
+  );
+  $filesize_message = ($max_filesize > 0)
+    ? t('Maximum file size: !size.', array('!size' => format_size($max_filesize)))
+    : t('The allowed maximum file size total has been exceeded.');
+
+  $validators['file_validate_size'] = array(
+    'validator arguments' => array($max_filesize),
+    'requirement message' => $filesize_message,
+    'upload possible' => ($max_filesize > 0),
+  );
+
+  if (!empty($widget['file_extensions'])) {
+    $validators['file_validate_extensions'] = array(
+      'validator arguments' => array($widget['file_extensions']),
+      'requirement message' => t('Allowed extensions: %ext.', array(
+        '%ext' => $widget['file_extensions'],
+      )),
+    );
+  }
+
+  $supported_file_widgets = _filefield_supported_file_widgets($widget);
+  if (!empty($supported_file_widgets)) {
+    $validators['filefield_validate_file_widget_support'] = array(
+      'validator arguments' => array($field, $widget, $supported_file_widgets),
+      'requirement message' => t('Uploads are restricted to the following categories: !widgets.', array(
+        '!widgets' => implode(', ', $supported_file_widgets),
+      )),
+    );
+  }
+  return $validators;
+}
+
+/**
  * Check that a file is supported by at least one of the widgets that are
  * enabled for the field instance in question.
  *
  * @return
  *   An array. If the file is not allowed, it will contain an error message.
  */
-function filefield_validate_file_widget_support($file, $field, $field_widget) {
+function filefield_validate_file_widget_support($file, $field, $field_widget, $supported_file_widgets) {
   $errors = array();
 
   // No widgets at all means the widget settings db entry does not exist,
@@ -257,7 +350,7 @@ function filefield_validate_file_widget_support($file, $field, $field_widget) {
   $edit_widget_info = filefield_widget_for_file($file, $field, $field_widget);
   if (empty($edit_widget_info)) {
     $errors[] = t('Uploaded files are restricted to the following categories: !widgets.', array(
-      '!widgets' => implode(', ', _filefield_required_file_widgets($field_widget)),
+      '!widgets' => implode(', ', $supported_file_widgets),
     ));
   }
   return $errors;
@@ -265,10 +358,10 @@ function filefield_validate_file_widget_support($file, $field, $field_widget) {
 
 /**
  * If not all file types might be handled by the enabled set of file widgets,
- * return an array specifying which widgets are allowed for the given field.
- * If a widget is enabled which handles all files, return an empty array.
+ * return an array of widget titles specifying which ones are allowed for the
+ * given field. If a widget is enabled which handles all files, return an empty array.
  */
-function _filefield_required_file_widgets($field_widget) {
+function _filefield_supported_file_widgets($field_widget) {
   if (empty($field_widget['file_widgets'])) {
     return array();
   }
@@ -296,21 +389,11 @@ function _filefield_required_file_widgets($field_widget) {
  *   of bytes that may still be uploaded. A result of 0 ("unlimited") will
  *   never happen because of PHP's upload limits.)
  */
-function _filefield_maximum_filesize($field, $widget, $items) {
-  // Clean out empty items, so that they're not taken into account
-  // by implementations of hook_filefield_filesize_restrictions().
-  // Also, objectify items - because we're leaving the pure filefield realm.
-  $node_files = array();
-  foreach ($items as $delta => $item) {
-    if (is_array($item) && !empty($item['fid'])) {
-      $node_files[] = (object) $item;
-    }
-  }
-
+function _filefield_maximum_filesize($field, $widget, $existing_files) {
   // Calculate the maximum file size - the least of all returned values.
   $max_filesize = FALSE;
   $restrictions = module_invoke_all(
-    'filefield_filesize_restrictions', $field, $widget, $node_files
+    'filefield_filesize_restrictions', $field, $widget, $existing_files
   );
   foreach ($restrictions as $value) {
     if ($max_filesize === FALSE || $value < $max_filesize) {
@@ -330,7 +413,7 @@ function _filefield_maximum_filesize($field, $widget, $items) {
  * Specify how large a newly uploaded file may be, in bytes.
  * (The smallest size of all hook implementations will be applied in the end).
  */
-function filefield_filefield_filesize_restrictions($field, $widget, $node_files) {
+function filefield_filefield_filesize_restrictions($field, $widget, $existing_files) {
   $filesize_restrictions = array(file_upload_max_size());
 
   // Maximum file size for each file separately.
@@ -343,7 +426,7 @@ function filefield_filefield_filesize_restrictions($field, $widget, $node_files)
     $allowed_total_size = parse_size($widget['max_filesize_per_node']);
     $total_size = 0;
 
-    foreach ($node_files as $delta => $file) {
+    foreach ($existing_files as $delta => $file) {
       if (!empty($file->filesize)) {
         $total_size += $file->filesize;
       }
