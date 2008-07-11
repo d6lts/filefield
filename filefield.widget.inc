@@ -551,7 +551,7 @@ function filefield_file_edit_value($element, $edit = FALSE) {
 
   // Form API is being mean to us and doesn't include the 'list' value
   // for checkboxes if the checkbox is disabled (0), only if it's enabled (1).
-  // That means we need to take the extra mile.
+  // That means we need to go the extra mile.
   $list = isset($element['flags']['list'])
           ? !empty($edit['flags']['list'])
           : $file['list'];
