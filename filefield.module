@@ -8,14 +8,14 @@
  * and Drupal's {files} table to store the actual file data.
  */
 
-include_once(drupal_get_path('module', 'filefield') .'/field_file.inc');
+function filefield_init() {
+  // field file api.
+  module_load_include('inc', 'filefield', 'field_file');
+  
+  // widget hooks and callbacks.
+  module_load_include('inc', 'filefield', 'filefield_widget.inc');
+}
 
-// FileField consists mostly of hooks and callbacks, which means we need to
-// unconditionally include filefield.widget.inc so module_invoke() finds those.
-// (The formatter and theme files are auto-included with 'file' declarations.)
-// With the registry in Drupal 7, it should be possible to remove this
-// unconditional include and have them included automatically by Drupal core.
-include_once(drupal_get_path('module', 'filefield') .'/filefield.widget.inc');
 
 /**
  * Implementation of hook_menu().
@@ -29,7 +29,7 @@ function filefield_menu() {
     'access callback' => 'filefield_edit_access',
     'access arguments' => array(3),
     'type' => MENU_CALLBACK,
-    'file' => 'filefield.widget.inc',
+    'file' => 'filefield_widget.inc',
   );
   $items['filefield/js/delete/%/%/%'] = array(
     'page callback' => 'filefield_js',
@@ -37,7 +37,7 @@ function filefield_menu() {
     'access callback' => 'filefield_edit_access',
     'access arguments' => array(3),
     'type' => MENU_CALLBACK,
-    'file' => 'filefield.widget.inc',
+    'file' => 'filefield_widget.inc',
   );
   return $items;
 }
@@ -109,11 +109,11 @@ function filefield_theme() {
     ),
     'filefield_file_upload' => array(
       'arguments' => array('element' => NULL),
-      'file' => 'filefield.widget.inc',
+      'file' => 'filefield_widget.inc',
     ),
     'filefield_file_edit' => array(
       'arguments' => array('element' => NULL),
-      'file' => 'filefield.widget.inc',
+      'file' => 'filefield_widget.inc',
     ),
     'filefield_generic_edit' => array(
       'arguments' => array('element' => NULL),
