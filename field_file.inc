@@ -21,8 +21,9 @@ function field_file_load($fid, $reset = NULL) {
   }
 
   if (empty($fid)) {
-    return array();
+    return array('fid' => 0, 'filepath' => '', 'filename' => '', 'filemime' => '', 'filesize' => 0);
   }
+
   $files = _field_file_cache();
 
   // Serve file from internal cache if available.
@@ -35,7 +36,7 @@ function field_file_load($fid, $reset = NULL) {
     }
 
     if (!$file) {
-      return array();
+      $file = array('fid' => 0, 'filepath' => '', 'filename' => '', 'filemime' => '', 'filesize' => 0);
     }
 
     foreach (module_implements('file_load') as $module) {
