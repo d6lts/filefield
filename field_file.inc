@@ -215,29 +215,25 @@ function _field_file_cache($file = NULL, $reset = FALSE) {
 function field_file_check_directory(&$directory, $mode = 0, $form_item = NULL) {
   $directory = rtrim($directory, '/\\');
 
-  // Check if the directory exists.
-  if (!is_dir($directory)) {
-    if (($mode & FILE_CREATE_DIRECTORY) && @mkdir($directory)) {
-      @chmod($directory, 0775); // Necessary for non-webserver users.
-    }
-    else {
-      if ($form_item) {
-        form_set_error($form_item, t('The directory %directory does not exist.', array('%directory' => $directory)));
-      }
-      watchdog('file system', 'The directory %directory does not exist.', array('%directory' => $directory), WATCHDOG_ERROR);
-      return FALSE;
-    }
+  // error if dir is a file. 
+  if (is_file($directory)) {
+    watchdog('file system',  'check_directory: The path  %directory is a file.',  array('%directory' => $directory), WATCHDOG_ERROR);
+    if ($form_item)  form_set_error($form_item, t('The directory %directory is a file!', array('%directory' => $directory)));
+    return FALSE;
+  }
+
+  // create the directory if it is missing.
+  if (!is_dir($directory) && $mode & FILE_CREATE_DIRECTORY && !@mkdir($directory, 0775, true)) {
+    watchdog('file system', 'The directory %directory does not exist.', array('%directory' => $directory), WATCHDOG_ERROR);
+    if ($form_item) form_set_error($form_item, t('The directory %directory does not exist.', array('%directory' => $directory)));
+    return FALSE;
   }
 
   // Check to see if the directory is writable.
-  if (!is_writable($directory)) {
-    if (($mode & FILE_MODIFY_PERMISSIONS) && !@chmod($directory, 0775)) {
-      if ($form_item) {
-        form_set_error($form_item, t('The directory %directory is not writable', array('%directory' => $directory)));
-      }
-      watchdog('file system', 'The directory %directory is not writable, because it does not have the correct permissions set.', array('%directory' => $directory), WATCHDOG_ERROR);
-      return FALSE;
-    }
+  if (!is_writable($directory) && $mode & FILE_MODIFY_PERMISSIONS && !@chmod($directory, 0775)) {
+    watchdog('file system', 'The directory %directory is not writable, because it does not have the correct permissions set.', array('%directory' => $directory), WATCHDOG_ERROR);
+    if ($form_item) form_set_error($form_item, t('The directory %directory is not writable', array('%directory' => $directory)));
+    return FALSE;
   }
 
   if ((file_directory_path() == $directory || file_directory_temp() == $directory) && !is_file("$directory/.htaccess")) {
