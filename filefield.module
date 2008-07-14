@@ -225,6 +225,7 @@ function filefield_file_download($file) {
  * Implementation of CCK's hook_field_info().
  */
 function filefield_field_info() {
+  dsm('field info');
   return array(
     'filefield' => array(
       'label' => 'File',
@@ -309,14 +310,14 @@ function filefield_widget_info() {
   return array(
     'filefield_widget' => array(
       'label' => t('File Upload'),
-      'field types' => array('file'),
+      'field types' => array('filefield'),
       'multiple values' => CONTENT_HANDLE_CORE,
       'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
       'description' => t('A plain file upload widget.'),
     ),
     'filefield_combo' => array(
       'label' => 'Extensible File',
-      'field types' => array('file'),
+      'field types' => array('filefield'),
       'multiple values' => CONTENT_HANDLE_CORE,
       'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
       'description' => t('(Experimental)An extensible file upload widget.'),

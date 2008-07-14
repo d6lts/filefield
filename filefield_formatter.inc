@@ -15,7 +15,9 @@
  */
 function theme_filefield_formatter_filefield_default($element) {
   $file = $element['#item'];
-  return 'filefiedl' . theme('filefield', $file);
+  $field = content_fields($element['#field_name']);
+  $output = theme('filefield', $file, $field);
+  return $output;
 }
 
 /**
@@ -29,7 +31,7 @@ function theme_filefield_formatter_filefield_default($element) {
  */
 function theme_filefield($file, $field) {
   if (!filefield_view_access($field['field_name'])) {
-    return '';
+    return '<!-- you do not have access to view this file -->view_access_denied';
   }
   if ($field['force_list']) {
     $file['list'] = 1; // always show the files if that option is enabled
@@ -37,7 +39,7 @@ function theme_filefield($file, $field) {
   if (empty($file['list'])) {
     return '';
   }
-  return theme('filefield_unguarded', $file, $field);
+  return theme('filefield_file', $file);
 }
 
 /**
@@ -55,21 +57,7 @@ function theme_filefield_unguarded($file, $field) {
   }
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
-  $file_formatter_info = filefield_formatter_for_file($file, $field);
-  if (empty($file_formatter_info)) {
-    return '<div class="filefield-item filefield-item-empty"/>';
-  }
-
-  foreach ($file_formatter_info['css'] as $css_path) {
-    drupal_add_css($css_path);
-  }
-  $settings = isset($field['file_formatters'][$file_formatter_info['key']])
-    ? $field['file_formatters'][$file_formatter_info['key']]
-    : NULL;
-
-  return '<div class="filefield-item">'.
-    theme($file_formatter_info['theme'], (object)$file, $field, $settings)
-    .'</div>';
+  return '<div class="filefield-item filefield-item-empty"/>';
 }
 
 
@@ -80,6 +68,5 @@ function theme_filefield_file($file) {
   $path = $file['filepath'];
   $url = file_create_url($path);
   $icon = theme('filefield_icon', $file);
-  $desc = $file['description'];
-  return '<div class="filefield-file">'. $icon . l($desc, $url) .'</div>';
+  return '<div class="filefield-file">'. $icon . l($file['filename'], $url) .'</div>';
 }
