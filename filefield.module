@@ -270,12 +270,31 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
  * Implementation of CCK's hook_widget_settings().
  */
 function filefield_widget_settings($op, $widget) {
+  $return = array();
+  // load our widget settings callbacks..
   module_load_include('inc','filefield','filefield_widget_settings');
-  $op = str_replace(' ', '_', $op);
-  $function = 'filefield_field_settings_'. $op;
+  $op =  str_replace(' ', '_', $op);
+  $function = 'filefield_widget_settings_'. $op;
   if (function_exists($function)) {
-    return $function($widget);
+    $return = $function($widget);
   }
+
+  // sometimes widget_settings is called with widget, sometimes with field.
+  // CCK needs to make up it's mind here or get with the new hook formats.
+  $widget_type = isset($widget['widget_type']) ? $widget['widget_type'] : $widget['type'];
+
+  // dynamically load widgets file and callbacks.
+  module_load_include('inc', $widget['module'], $widget_type .'_widget');
+
+  $function = $widget_type .'_widget_settings_'. $op;
+  if (function_exists($function)) {
+    $return = array_merge($return, $function($widget));
+  }
+  if ($op == 'save') {
+    dsm($return);
+  }
+ 
+  return $return;
 }
 
 /**

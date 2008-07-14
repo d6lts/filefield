@@ -14,23 +14,30 @@ function filefield_widget_settings_form($widget) {
     '#default_value' => is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt',
     '#size' => 64,
     '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
+    '#weight' => 1,
   );
-  $form['file_path'] = array(
+  $form['path_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Path settings'),
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#weight' => 6,
+  );
+
+  $form['path_settings']['file_path'] = array(
     '#type' => 'textfield',
     '#title' => t('File path'),
     '#default_value' => is_string($widget['file_path']) ? $widget['file_path'] : '',
     '#description' => t('Optional subdirectory within the "%dir" directory where files will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))),
     '#element_validate' => array('_filefield_widget_settings_file_path_validate'),
+    '#suffix' => theme('token_help', 'user'),
   );
-  if (module_exists('token')) {
-    $form['file_path']['#suffix'] = theme('token_help', 'user');
-  }
 
   $form['max_filesize'] = array(
     '#type' => 'fieldset',
     '#title' => t('File size restrictions'),
     '#description' => t('Limits for the size of files that a user can upload. Note that these settings only apply to newly uploaded files, whereas existing files are not affected.'),
-    '#weight' => 3,
+    '#weight' => 6,
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
