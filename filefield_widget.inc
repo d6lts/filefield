@@ -34,7 +34,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   //dsm('imagefield_widget_process');
   //dsm($element);
   //dsm($form_state);
-
+  $element['#theme'] = 'filefield_row';
   $file = $element['#value'];
   $delta = $element['#delta'];
   $field_name = $element['#field_name'];
@@ -58,6 +58,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     '#type' => 'checkbox',
     '#title' => t('List'),
     '#default_value' => $file['list'],
+    '#attributes' => array('class' => 'filefield-list'),
   );  
 
   $element['data'] = array(
@@ -199,10 +200,24 @@ function _filefield_widget_validate($element, &$form_state) {
 /**
  * FormAPI theme function. Theme the output of an image field.
  */
-function theme_filefield_widget(&$element) {
+function theme_filefield_widget($element) {
   return $element['#children'];
 }
 
+function theme_filefield_row($element) {
+  return '<div class="filefield-row clear-block">'.
+              '<div class="filefield-info clear-block">'. 
+                  '<div class="filefield-filename clear-block">'. drupal_render($element['preview']) . '</div>'.
+                  //'<div class="filefield-filesize">filesize: 32Kb</div>'.
+                  //'<div class="filefield-filemime">mimetype: text/patch</div>'.
+              '</div>' .
+              '<div class="fielfield-edit clear-block"'.
+                '<div class="filefield-list">'. drupal_render($element['list']) . '</div>' .
+                '<div class="filefield-description">'. drupal_render($element['description']) . '</div>' .
+                '<div class="filefield-stuff">'. drupal_render($element) .'</div>'.
+              '</div>'.
+         '</div>';
+}
 
 
 /**

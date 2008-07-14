@@ -29,6 +29,8 @@ function filefield_init() {
 
   // file hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_file');
+
+  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 }
 
 /**
@@ -97,6 +99,11 @@ function filefield_theme() {
       'arguments' => array('element' => NULL),
       'file' => 'filefield_widget.inc',
     ),
+    'filefield_row' => array(
+      'arguments' => array('element' => NULL),
+      'file' => 'filefield_widget.inc',
+    ),
+
 
     'filefield_formatter_filefield_default' => array(
       'arguments' => array('element' => NULL),

@@ -2,34 +2,12 @@
  * Overall styles
  */
 
-.filefield-icon img {
-  display: inline;
-}
-
-/**
- * Clear the filefield-icon float, or any other floats
- * that custom widgets might have inserted but not cleared.
- * Stolen from "How To Clear Floats Without Structural Markup",
- * http://www.positioniseverything.net/easyclearing.html
- */
-.filefield-item:after, .filefield-file-edit:after {
-    content: "";
-    display: block;
-    height: 0;
-    clear: both;
-    visibility: hidden;
-}
-/* Hides from IE-mac \*/
-* html .filefield-item, .filefield-file-edit {height: 1%;}
-/* End hide from IE-mac */
-
-/* End overall styles */
 
 /**
  * Formatter styles
  */
 
-.filefield-item .filefield-icon {
+.filefield-icon {
   float: left;
   margin-right: 0.4em;
 }
@@ -39,15 +17,33 @@
 /**
  * General widget form styles (applicable to all widgets)
  */
-
-.filefield-file-edit-flags {
-  float: right;
-  text-align: right;
-  margin-bottom: -4px; /* The "List" checkbox has too much bottom margin */
+.filefield-row {
 }
 
+.filefield-row .filefield-info  {
+  float : left;
+  padding-right: 1em;
+}
+
+.filefield-row .filefield-edit {
+  float : left;
+  width: 70%;
+}
+
+
+
+.filefield-row .filefield-description  {
+  width: 70%;
+}
+
+
+.filefield-row .filefield-list  {
+  float : right;
+}
+
+
 .filefield-file-edit-widget {
-  width: 90%;
+ float: left;
 }
 
 /* Only applies to single-value fields, for which we provide our own table. */
@@ -85,7 +81,7 @@
 
 /* The text field is made unnecessarily long by node.css - shorten it */
 .filefield-generic-edit .form-text {
-  width: 100%;
+  width: 99%;
 }
 .filefield-generic-edit .description {
   white-space: normal;
