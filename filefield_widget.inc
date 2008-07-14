@@ -10,24 +10,204 @@
  * This file contains CCK widget related functionality.
  */
 
-/**
- * Implementation of hook_widget() - the one in filefield.module
- * is just there to include this one on demand.
- */
-function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
-  // JavaScript might reload the form element but not the CSS that has been
-  // defined inside the process hook of mimetype specific widgets. As we don't
-  // know which widget will show up, just include all of their CSS files.
-  $file_widget_info = _filefield_file_widget_info($field['widget']);
-  _filefield_add_css($file_widget_info);
-  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
-
-  if (!empty($items[$delta]) && $file = field_file_load($items[$delta]['fid'])) {
-    $file = array_merge($items[$delta], $file);
-    return filefield_file_edit_form($form, $form_state, $field, $delta, $file);
+function filefield_widget_value($element, $edit = FALSE) {
+  //dsm('imagefield_widget_value');
+  //dsm($edit);
+  
+  if (!$edit) { 
+    $file =  field_file_load($element['#default_value']['fid']);
+    $item = $element['#default_value'];
   }
-  return filefield_file_upload_form($form, $form_state, $field, $delta, $items);
+  else {
+    $file = field_file_load($edit['fid']);
+    $item = array(
+      'fid' => $edit['fid'],
+      'alt' => $edit['alt'],
+      'title' => $edit['title'],
+      'data' => '',
+    );
+  }
+  return array_merge($item, $file);
 }
+
+function filefield_widget_process($element, $edit, &$form_state, $form) {
+  //dsm('imagefield_widget_process');
+  //dsm($element);
+  //dsm($form_state);
+
+  $file = $element['#value'];
+  $delta = $element['#delta'];
+  $field_name = $element['#field_name'];
+
+  
+  $element['fid'] = array('#type' => 'hidden', '#value' =>  $file['fid']);
+
+  if ($file['fid'] != 0) {
+    $element['preview'] = array('#type' => 'markup', '#value' => theme('imagefield_item', $file));  
+    if (empty($file['filepath'])) {
+      //dsm($file);
+    }
+  }
+  $element['description'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Description'),
+    '#default_value' => $file['description'],
+  );
+  
+  $element['list'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('List'),
+    '#default_value' => $file['list'],
+  );  
+
+  $element['data'] = array(
+    '#type' => 'hidden', 
+    '#value' => '',
+  );
+
+  if ($file['fid'] != 0) {
+    $element['remove_btn'] = array(
+      '#name' => $field_name .'_'. $delta .'_remove_btn',
+      '#type' => 'submit', 
+      '#value' => t('Remove'),
+      '#submit' => array('imagefield_widget_submit_remove_btn'),
+      '#field_name' => $field_name,
+      '#delta' => $delta,
+    );
+    return $element;
+  }
+
+  if ($file['fid'] == 0) {
+    $element['description']['#type'] = 'hidden';
+
+    $element['upload'] = array(
+      '#name' => 'files['. $field_name .'_'. $delta .']',
+      '#type' => 'file',
+      '#title' => t('New Upload'),
+    );
+
+    $element['upload_btn'] = array(
+      '#name' => $field_name .'_'. $delta .'_upload_btn',
+      '#type' => 'submit', 
+      '#value' => t('Upload'),
+      '#submit' => array('imagefield_widget_submit_upload_btn'),
+      '#field_name' => $field_name,
+      '#delta' => $delta,
+    );
+  }
+  return $element;
+}
+
+function filefield_widget_submit_remove_btn($form, &$form_state) {
+  //dsm ('imagefield_widget_submit_remove_btn');
+  //dsm($form);
+  //dsm($form_state);
+  $field_name = $form_state['clicked_button']['#field_name'];
+  $delta = $form_state['clicked_button']['#delta'];
+  $form_state['values'][$field_name][$delta] = array(
+    'fid' => 0,
+    'alt' => '',
+    'filepath' => '',
+    'filename' => '',
+    'title' => '',
+    'data' => '',
+  ); 
+  $form_state['rebuild'] = true;
+}
+
+function filefield_widget_submit_upload_btn($form, &$form_state) {
+  //dsm('imagefield_widget_submit_upload_btn');
+  //dsm($form);
+  //dsm($form_state);
+  $field_name = $form_state['clicked_button']['#field_name'];
+  $delta = $form_state['clicked_button']['#delta'];
+
+  $field = content_fields($field_name);
+
+  $widget_file_path = $field['widget']['file_path'];
+  if (module_exists('token')) {
+    global $user;
+    $widget_file_path = token_replace($widget_file_path, 'user', $user);
+  }
+
+  $complete_file_path = file_directory_path() .'/'. $widget_file_path;
+  $upload_name = $field_name .'_'. $delta;
+  if (!field_file_check_directory($complete_file_path, FILE_CREATE_DIRECTORY)) {
+    watchdog('imagefield', 'The upload directory %directory for the file field %field (content type %type) could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $widget_file_path, '%field' => $field_name, '%type' => $field['type_name']));
+    form_set_error($upload_name, t('The file could not be uploaded.'));
+    return $file;
+  }
+
+  $validators = array(
+    'file_validate_extensions' => array($field['widget']['file_extensions']),
+    'file_validate_size' => array($field['widget']['max_filesize']),
+    'file_validate_image_resolution' => array($field['widget']['max_resolution']),
+  );
+
+  if (!$file = field_file_save_upload($upload_name, $validators, $complete_file_path)) {
+    watchdog('imagefield', 'The file upload failed. %upload', array('%upload' => $upload_name));
+    form_set_error($upload_name, t('The Image upload failed.'));
+    return;
+  }
+  //dsm($file);
+  $form_state['values'][$field_name][$delta]['fid'] = $file['fid'];
+  $form_state['rebuild'] = true;
+}
+
+function filefield_widget_submit_reuse_btn($form, &$form_state) {
+  //dsm('imagefield_widget_submit_reuse_btn');
+  //dsm($form);
+  //dsm($form_state);
+
+  $field_name = $form_state['clicked_button']['#field_name'];
+  $delta = $form_state['clicked_button']['#delta'];
+
+  $reuse =  trim($form_state['values'][$field_name][$delta]['reuse']);
+  if (empty($reuse))  return;
+
+  // if numeric assume we got an fid and try to load it.
+  if (is_numeric($reuse) && $file = field_file_load($reuse)) {
+    $form_state['values'][$field_name][$delta]['fid'] = $file['fid'];
+    $form_state['rebuild'] = true;
+  } 
+  else {
+    // load fid from path..
+    $result = db_query("SELECT fid FROM {files} WHERE filepath='%s'", $reuse);
+    if ($fid = db_result($result)) {
+      $form_state['values'][$field_name][$delta]['fid'] = $fid;
+      $form_state['rebuild'] = true;
+    }
+  }
+}
+
+function filefield_widget_after_build($element) {
+  //dsm('imagefield_widget_after_build');
+  //dsm($element);
+ 
+  $element['#value'] = array(
+    'fid' => $element['fid']['#value'],
+    'description' => $element['description']['#value'],
+    'list' => $element['list']['#value'],
+    'data' => $element['data']['#value'],
+  );
+  return $element;
+}
+
+function _filefield_widget_validate($element, &$form_state) {
+  //dsm('imagefield_validate');
+  //dsm($element);
+}
+
+
+
+/**
+ * FormAPI theme function. Theme the output of an image field.
+ */
+function theme_filefield_widget(&$element) {
+  return $element['#children'];
+}
+
+
 
 /**
  * The filefield widget for not (yet) existing files.
@@ -714,3 +894,66 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
 }
+
+
+
+/**
+ * Implementation of filefield's hook_file_widget_info().
+ */
+function filefield_file_widget_info() {
+  return array(
+    'generic' => array(
+      'form element' => 'filefield_generic_edit',
+      'suitability callback' => TRUE,
+      'title' => t('Generic files'),
+      'description' => t('An edit widget for all kinds of files.'),
+    ),
+  );
+}
+
+/**
+ * The 'process' callback for 'filefield_generic_edit' form elements.
+ * Called after defining the form and while building it, transforms the
+ * barebone element array into an icon and and a text field for editing
+ * the file description.
+ */
+function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
+  $field = $element['#field'];
+  $delta = $element['#delta'];
+  $file = $element['#file'];
+  $url = file_create_url($file->filepath);
+
+  $prefix = isset($element['#prefix']) ? $element['#prefix'] : '';
+  $suffix = isset($element['#suffix']) ? $element['#suffix'] : '';
+  $element['#prefix'] = $prefix .'<div class="filefield-generic-edit">';
+  $element['#suffix'] = '</div>'. $suffix;
+
+  $element['icon'] = array(
+    '#type' => 'markup',
+    '#value' => theme('filefield_icon', $file),
+  );
+  $element['description'] = array(
+    '#type' => 'textfield',
+    '#default_value' => empty($file->description)
+                        ? $file->filename
+                        : $file->description,
+    '#maxlength' => 256,
+    '#description' => t('Size: !size. Filename: !link', array(
+      '!size' => format_size($file->filesize),
+      '!link' => l($file->filename, $url),
+    )),
+    '#required' => TRUE,
+    '#prefix' => '<div class="filefield-generic-edit-description">',
+    '#suffix' => '</div>',
+  );
+  return $element;
+}
+
+/**
+ * Theme function for the 'filefield_generic_edit' form element.
+ */
+function theme_filefield_generic_edit($element) {
+  return theme('form_element', $element, $element['#children']);
+}
+
+

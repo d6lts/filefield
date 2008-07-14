@@ -119,6 +119,8 @@ function filefield_update_3() {
   return $ret;
 }
 
+
+
 function filefield_update_6001() {
   include_once(drupal_get_path('module','content') .'/includes/content.admin.inc');
   // add data column to filefields.
@@ -129,4 +131,19 @@ function filefield_update_6001() {
     $new_field['columns']['data'] =  array('type' => 'text');
     content_alter_db($field, $new_field);
   }
+  // clear that cache.
+  cache_clear_all('*', content_cache_tablename(), true);
+  return array();
+}
+
+
+function filefield_update_6002() {
+  $ret = array();
+  // rename the field type from file to filefield. adhere to module namespace.
+  $ret[] = update_sql("UPDATE {content_node_field} SET type='filefield' WHERE type='file'");
+  // rename default widget to filefield_widget. adhere to module namespace.
+  $ret[] = update_sql("UPDATE {content_node_field_instance} SET widget_type='filefield_widget' WHERE widget_type='file'");
+  // clear that cache.
+  cache_clear_all('*', content_cache_tablename(), true);
+  return $ret;
 }

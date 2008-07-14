@@ -1,5 +1,5 @@
-<?php
-// $Id$
+<?php  // $Id$
+
 /**
  * @file
  * FileField: Defines a CCK file field type.
@@ -8,14 +8,28 @@
  * and Drupal's {files} table to store the actual file data.
  */
 
+/**
+ * Implementation of hook_init().
+ */
 function filefield_init() {
+
+  /**
+   * include filefield dependecies.
+   * @todo: explore better dynamic loading.
+   */
+
   // field file api.
   module_load_include('inc', 'filefield', 'field_file');
   
   // widget hooks and callbacks.
-  module_load_include('inc', 'filefield', 'filefield_widget.inc');
-}
+  module_load_include('inc', 'filefield', 'filefield_widget');
 
+  // formatter hooks and callbacks.
+  module_load_include('inc', 'filefield', 'filefield_formatter');
+
+  // file hooks and callbacks.
+  module_load_include('inc', 'filefield', 'filefield_file');
+}
 
 /**
  * Implementation of hook_menu().
@@ -43,49 +57,25 @@ function filefield_menu() {
 }
 
 /**
- * Access callback for the JavaScript upload and deletion AHAH callbacks.
- * The content_permissions module provides nice fine-grained permissions for
- * us to check, so we can make sure that the user may actually edit the file.
- */
-function filefield_edit_access($field_name) {
-  if (module_exists('content_permissions')) {
-    return user_access('edit '. $field_name);
-  }
-  // No content permissions to check, so let's fall back to a more general permission.
-  return user_access('access content');
-}
-
-/**
- * Access callback that checks if the current user may view the filefield.
- */
-function filefield_view_access($field_name) {
-  if (module_exists('content_permissions')) {
-    return user_access('view '. $field_name);
-  }
-  // No content permissions to check, so let's fall back to a more general permission.
-  return user_access('access content');
-}
-
-/**
  * Implementation of hook_elements().
  */
 function filefield_elements() {
   $elements = array();
-  $elements['filefield_file_upload'] = array(
+  $elements['filefield_widget'] =  array(
     '#input' => TRUE,
-    '#process' => array('filefield_file_upload_process'),
-    '#element_validate' => array(), // later filled with 'filefield_file_upload_validate'
-    '#value_callback' => 'filefield_file_upload_value',
-    '#replaced_file' => NULL,
+    '#columns' => array('fid', 'description', 'list', 'data'),
+    '#process' => array('filefield_widget_process'),
+    '#after_build' => array('filefield_widget_after_build'),
+    '#value_callback' => 'filefield_widget_value',
+    '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
   );
-  $elements['filefield_file_edit'] = array(
+  $elements['filefield_extensible'] =  array(
     '#input' => TRUE,
-    '#process' => array('filefield_file_edit_process'),
-    '#value_callback' => 'filefield_file_edit_value',
-  );
-  $elements['filefield_generic_edit'] = array(
-    '#input' => TRUE,
-    '#process' => array('filefield_generic_edit_process'),
+    '#columns' => array('fid', 'description', 'list', 'data'),
+    '#process' => array('filefield_extensible_process'),
+    '#after_build' => array('filefield_extensible_after_build'),
+    '#value_callback' => 'filefield_extensible_value',
+    '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
   );
   return $elements;
 }
@@ -95,10 +85,12 @@ function filefield_elements() {
  */
 function filefield_theme() {
   return array(
-    'filefield_draggable_settings_table' => array(
+    'filefield_widget' => array(
       'arguments' => array('element' => NULL),
-      'file' => 'filefield.theme.inc',
+      'file' => 'filefield_widget.inc',
     ),
+    
+    // @todo: verify the need for the rest one by one.
     'filefield_container_item' => array(
       'arguments' => array('element' => NULL),
       'file' => 'filefield.theme.inc',
@@ -139,682 +131,6 @@ function filefield_theme() {
     ),
   );
 }
-
-/**
- * Determine the most appropriate icon for the given file's mimetype.
- *
- * @return The URL of the icon image file, or FALSE if no icon could be found.
- */
-function filefield_icon_url($file) {
-  include_once(drupal_get_path('module', 'filefield') .'/filefield.theme.inc');
-  return _filefield_icon_url($file);
-}
-
-/**
- * Implementation of hook_file().
- * (Which is implemented by filefield/imagefield in Drupal 6 yet).
- */
-function filefield_file_references($file) {
-  $references = 0;
-  foreach(content_fields() as $field) {
-    if ($field['type'] != 'file') {
-      continue;
-    }
-    $references += field_file_references($file, $field);
-  }
-  return array('filefield' => $references);
-}
-
-
-/**
- * Implementation of hook_field_info().
- */
-function filefield_field_info() {
-  return array(
-    'file' => array(
-      'label' => 'File',
-      'description' => t('Store an arbitrary file.'),
-    ),
-  );
-}
-
-/**
- * Implementation of hook_field_settings().
- */
-function filefield_field_settings($op, $field) {
-  switch ($op) {
-    case 'form':
-      $form = array();
-      $form['force_list'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Always list files'),
-        '#default_value' => isset($field['force_list']) ? $field['force_list'] : 0,
-        '#description' => t('If enabled, the "List" checkbox will be hidden and files are always shown. Otherwise, the user can choose for each file whether it should be listed or not.'),
-      );
-
-      $form['file_formatters'] = array(
-        '#title' => t('File display'),
-        '#description' => t('Control how files may be displayed in the node view and other views for this field. If no formatters are enabled or are able to handle a file then that specific file will not be displayed. You can also reorder the formatters to specify their priority: the top-most enabled formatter always gets to display the files that it supports, whereas the bottom-most enabled formatter only gets to handle them if the file is not supported by any other other one.'),
-        '#weight' => 5,
-        '#settings_type' => 'formatters', // info for the theme function
-      );
-      $file_formatter_info = _filefield_file_formatter_info($field);
-
-      $form['file_formatters'] = _filefield_draggable_settings_table(
-        $form['file_formatters'], $file_formatter_info,
-        $field['file_formatters'], 'file_formatter_settings'
-      );
-      return $form;
-
-    case 'validate':
-      // Let modules add their own formatter specific validations.
-      $file_formatter_info = _filefield_file_formatter_info($field);
-
-      foreach ($file_formatter_info as $file_formatter => $info) {
-        $file_formatter_settings = isset($field['file_formatters'][$file_formatter])
-                                    ? $field['file_formatters'][$file_formatter]
-                                    : array();
-        module_invoke(
-          $info['module'], 'file_formatter_settings_'. $info['name'],
-          'validate', $file_formatter_settings
-        );
-      }
-      break;
-
-    case 'save':
-      return array('force_list', 'file_formatters');
-
-    case 'database columns':
-      $columns = array(
-        'fid' => array('type' => 'int', 'not null' => FALSE),
-        'description' => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE, 'sortable' => TRUE),
-        'list' => array('type' => 'int', 'size' => 'tiny', 'not null' => FALSE),
-        'data' => array('type' => 'text', 'serialize' => true),
-      );
-      return $columns;
-
-    case 'views data':
-      $data = content_views_field_views_data($field);
-      $db_info = content_database_info($field);
-      $table_alias = content_views_tablename($field);
-
-      // Set our own field handler so that we can hook the file formatter
-      // configuration table into the options form.
-
-      // By defining the relationship, we already have a "Has file" filter
-      // plus all the filters that Views already provides for files.
-      // No need for having a filter by ourselves.
-      unset($data[$table_alias][$field['field_name'] .'_fid']['filter']);
-
-      // Add a relationship for related file.
-      $data[$table_alias][$field['field_name'] .'_fid']['relationship'] = array(
-        'base' => 'files',
-        'field' => $db_info['columns']['fid']['column'],
-        'handler' => 'views_handler_relationship',
-      );
-      return $data;
-  }
-}
-
-/**
- * Implementation of CCK's hook_content_is_empty().
- *
- * The result of this determines whether content.module will save
- * the value of the field.
- */
-function filefield_content_is_empty($item, $field) {
-  if (empty($item['fid'])) {
-    return TRUE;
-  }
-  return FALSE;
-}
-
-/**
- * Implementation of CCK's hook_field().
- */
-function filefield_field($op, $node, $field, &$items, $teaser, $page) {
-  $field_name = $field['field_name'];
-
-  switch ($op) {
-    // Called after content.module loads default data.
-    case 'load':
-      if (empty($items)) {
-        return array();
-      }
-      foreach ($items as $delta => $item) {
-        // Despite hook_content_is_empty(), CCK still doesn't filter out
-        // empty items from $op = 'load', so we need to do that ourselves.
-        if (empty($item['fid']) || !($file = field_file_load($item['fid']))) {
-          unset($items[$delta]);
-        }
-        else {
-          $items[$delta] = array_merge($item, $file);
-        }
-      }
-      $items = array_values($items); // compact deltas
-      return array($field_name => $items);
-
-    case 'insert':
-    case 'update':
-      foreach ($items as $delta => $item) {
-        $items[$delta] = field_file_save($node, $item);
-
-        // Remove items from the array if they have been deleted.
-        if (empty($items[$delta])) {
-          unset($items[$delta]);
-        }
-      }
-      $items = array_values($items); // compact deltas
-      break;
-
-    case 'presave':
-      // Extract previous (permanent) files from the items array that have been
-      // deleted or replaced, so that insert/update can remove them properly.
-      foreach ($items as $delta => $item) {
-        if (!empty($item['replaced_file'])) {
-          $items[] = $item['replaced_file'];
-        }
-      }
-      break;
-
-    case 'delete revision':
-      foreach ($items as $delta => $item) {
-        // For hook_file($op = 'references'), remember that this is being deleted.
-        $item['field_name'] = $field['field_name'];
-        if (field_file_delete($item)) {
-          unset($items[$delta]);
-        }
-      }
-      $items = array_values($items); // compact deltas
-      break;
-
-    case 'delete':
-      foreach ($items as $delta => $item) {
-        // For hook_file($op = 'references'), remember that this is being deleted.
-        $item['field_name'] = $field['field_name'];
-        field_file_delete($item);
-      }
-      break;
-
-    case 'sanitize':
-      foreach ($items as $delta => $item) {
-        // Cleanup $items during node preview.
-        if (empty($item['fid']) || !empty($item['delete'])) {
-          unset($items[$delta]);
-        }
-        else {
-          // Load the complete file if a filepath is not available.
-          if (!empty($item['fid']) && empty($item['filepath'])) {
-            $items[$delta] = array_merge($item, field_file_load($item['fid']));
-          }
-          // Add nid so formatters can create a link to the node.
-          $items[$delta]['nid'] = $node->nid;
-        }
-      }
-      break;
-  }
-}
-
-/**
- * Implementation of CCK's hook_field_formatter_info().
- */
-function filefield_field_formatter_info() {
-  return array(
-    'default' => array(
-      'label' => t('Dynamic file formatters'),
-      'field types' => array('file'),
-      'multiple values' => CONTENT_HANDLE_CORE,
-    ),
-  );
-}
-
-/**
- * Implementation of CCK's hook_widget_info().
- */
-function filefield_widget_info() {
-  return array(
-    'filefield_combo' => array(
-      'label' => 'File',
-      'field types' => array('file'),
-      'multiple values' => CONTENT_HANDLE_CORE,
-      'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
-    ),
-  );
-}
-
-/**
- * Implementation of CCK's hook_widget_settings().
- */
-function filefield_widget_settings($op, $widget) {
-  switch ($op) {
-    case 'form':
-      $form = array();
-      $form['file_extensions'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Permitted upload file extensions'),
-        '#default_value' => is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt',
-        '#size' => 64,
-        '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
-      );
-      $form['file_path'] = array(
-        '#type' => 'textfield',
-        '#title' => t('File path'),
-        '#default_value' => is_string($widget['file_path']) ? $widget['file_path'] : '',
-        '#description' => t('Optional subdirectory within the "%dir" directory where files will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))),
-        '#element_validate' => array('_filefield_widget_settings_file_path_validate'),
-      );
-      if (module_exists('token')) {
-        $form['file_path']['#suffix'] = theme('token_help', 'user');
-      }
-
-      $form['max_filesize'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('File size restrictions'),
-        '#description' => t('Limits for the size of files that a user can upload. Note that these settings only apply to newly uploaded files, whereas existing files are not affected.'),
-        '#weight' => 3,
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-      );
-      $form['max_filesize']['max_filesize_per_file'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Maximum upload size per file'),
-        '#default_value' => is_string($widget['max_filesize_per_file'])
-                            ? $widget['max_filesize_per_file']
-                            : '',
-        '#description' => t('Specify the size limit that applies to each file separately. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the allowed file size. If you leave this this empty the file sizes will be limited only by PHP\'s maximum post and file upload sizes.'),
-        '#element_validate' => array('_filefield_widget_settings_max_filesize_per_file_validate'),
-      );
-      $form['max_filesize']['max_filesize_per_node'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Maximum upload size per node'),
-        '#default_value' => is_string($widget['max_filesize_per_node'])
-                            ? $widget['max_filesize_per_node']
-                            : '',
-        '#description' => t('Specify the total size limit for all files in field on a given node. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the total size of a node. Leave this empty if there should be no size restriction.'),
-        '#element_validate' => array('_filefield_widget_settings_max_filesize_per_node_validate'),
-      );
-
-      $form['file_widgets'] = array(
-        '#title' => t('File widgets'),
-        '#description' => t('Control which kinds of files may be uploaded to the edit form for this field, by specifying the widgets that can handle the desired file types. You can also reorder the widgets to specify their priority: the top-most enabled widget always gets to handle the files that it supports, whereas the bottom-most enabled widget only gets to handle them if the file is not supported by any other other one.'),
-        '#required' => TRUE,
-        '#weight' => 5,
-        '#settings_type' => 'widgets', // info for the theme function
-      );
-      $file_widget_info = _filefield_file_widget_info($widget);
-
-      $form['file_widgets'] = _filefield_draggable_settings_table(
-        $form['file_widgets'], $file_widget_info,
-        $widget['file_widgets'], 'file_widget_settings'
-      );
-      return $form;
-
-    case 'validate':
-      $valid = FALSE;
-      foreach ($widget['file_widgets'] as $file_widget_name => $info) {
-        if ($info['enabled']) {
-          $valid = TRUE;
-          break;
-        }
-      }
-      if (!$valid) {
-        form_set_error('file_widgets', t('At least one type of file widgets must be enabled.'));
-      }
-
-      // Let modules add their own widget specific validations.
-      $file_widget_info = _filefield_file_widget_info($widget);
-
-      foreach ($file_widget_info as $file_widget_name => $info) {
-        $file_widget_settings = isset($widget['file_widgets'][$file_widget_name])
-                                ? $widget['file_widgets'][$file_widget_name]
-                                : array();
-        module_invoke(
-          $info['module'], 'file_widget_settings_'. $info['name'],
-          'validate', $file_widget_settings
-        );
-      }
-      break;
-
-    case 'save':
-      return array(
-        'file_extensions', 'file_path', 'max_filesize_per_file',
-        'max_filesize_per_node', 'file_widgets'
-      );
-  }
-}
-
-function _filefield_widget_settings_file_path_validate($element, &$form_state) {
-  // Strip slashes from the beginning and end of $widget['file_path']
-  $form_state['values']['file_path'] = trim($form_state['values']['file_path'], '\\/');
-}
-
-function _filefield_widget_settings_max_filesize_per_file_validate($element, &$form_state) {
-  if (empty($form_state['values']['max_filesize_per_file'])) {
-    return; // Empty means no size restrictions, so don't throw an error.
-  }
-  else if (!is_numeric(parse_size($form_state['values']['max_filesize_per_file']))) {
-    form_error($element, t('The "Maximum file size for each file" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).'));
-  }
-}
-
-function _filefield_widget_settings_max_filesize_per_node_validate($element, &$form_state) {
-  if (empty($form_state['values']['max_filesize_per_node'])) {
-    return; // Empty means no size restrictions, so don't throw an error.
-  }
-  else if (!is_numeric(parse_size($form_state['values']['max_filesize_per_node']))) {
-    form_error($element, t('The "Maximum file size per node" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).'));
-  }
-}
-
-/**
- * Construct a table with file widgets or file formatter settings, amending
- * additional properties and child elements to the given element base.
- *
- * @param $element
- *   The element base, expected to at least provide the '#title' property
- *   and a '#settings_type' property with 'widgets' or 'formatters' as info
- *   for the theme function.
- * @param $file_extension_info
- *   An array of information about all widgets or formatters, as retrieved
- *   by _filefield_file_widget_info() or _filefield_file_formatter_info().
- * @param $extension_settings
- *   The existing collection of settings for all the widgets or formatters.
- * @param $hook_base
- *   The base name of the extension settings hook, e.g. 'file_widget_settings'
- *   or 'file_formatter_settings'.
- * @return
- *   An extended element with potentially lots of properties and children,
- *   which is going to be themed into a table with JavaScript draggable items.
- */
-function _filefield_draggable_settings_table($element, $file_extension_info, $extension_settings, $hook_base) {
-  $element['#tree'] = TRUE;
-  $element['#theme'] = 'filefield_draggable_settings_table';
-
-  // Present the extensions in the predetermined order.
-  $weight = 1;
-  foreach ($file_extension_info as $extension_name => $info) {
-    $element[$extension_name]['enabled'] = array(
-      '#type' => 'checkbox',
-      '#title' => $info['title'],
-      '#description' => $info['description'],
-      '#default_value' => $info['enabled'],
-    );
-    $element[$extension_name]['weight'] = array(
-      '#type' => 'weight',
-      '#delta' => count($file_extension_info),
-      '#default_value' => $weight,
-    );
-
-    // Let modules add their own extension specific settings.
-    $file_extension_settings = isset($extension_settings[$extension_name])
-                                ? $extension_settings[$extension_name]
-                                : array();
-    $additions = module_invoke($info['module'], $hook_base .'_'. $info['name'],
-                               'form', $file_extension_settings);
-    if (is_array($additions)) {
-      $element[$extension_name] = array_merge($element[$extension_name], $additions);
-    }
-    ++$weight;
-  }
-  return $element;
-}
-
-
-/**
- * Add all CSS files that extension file widgets might need, so that they
- * exist even if the form element has only been inserted by JavaScript.
- * Can also be used for formatter info arrays as those look similar.
- */
-function _filefield_add_css($widget_or_formatter_info) {
-  static $done = FALSE;
-  if ($done) {
-    return; // adding those files once should be enough for each request
-  }
-  foreach ($widget_or_formatter_info as $name => $info) {
-    foreach ($info['css'] as $path) {
-      drupal_add_css($path);
-    }
-  }
-}
-
-
-/**
- * Determine which widget will be used for displaying the edit form
- * for the given file.
- *
- * @return
- *   An array with info about the most appropriate file widget,
- *   or NULL if no widget is available to edit this file.
- */
-function filefield_widget_for_file($file, $field, $field_widget) {
-  $file_widget_info = _filefield_file_widget_info($field_widget);
-  $file = (object) $file; // other modules only get to see objects
-  $suitability_args = array($file, $field, $field_widget);
-  return _filefield_extension_for_file($file_widget_info, $suitability_args);
-}
-
-/**
- * Determine which formatter will be used for displaying the edit form
- * for the given file.
- *
- * @return
- *   An array with info about the most appropriate file formatter,
- *   or NULL if no formatter is available to display this file.
- */
-function filefield_formatter_for_file($file, $field) {
-  $file_formatter_info = _filefield_file_formatter_info($field);
-  $file = (object) $file; // other modules only get to see objects
-  $suitability_args = array($file, $field);
-  return _filefield_extension_for_file($file_formatter_info, $suitability_args);
-}
-
-/**
- * Common implementation of filefield_widget_for_file() and
- * filefield_formatter_for_file().
- */
-function _filefield_extension_for_file($file_extension_info, $suitability_args) {
-  $suitable_extension_info = array();
-  foreach ($file_extension_info as $extension_name => $info) {
-    if (!$info['enabled']) {
-      continue; // the admin disabled this widget or formatter
-    }
-    $handles_file = $info['suitability callback'];
-
-    // Either $handles_file is TRUE already or it's a function that
-    // will return TRUE if the widget/formatter handles this file.
-    if (is_string($handles_file)) {
-      $handles_file = call_user_func_array($handles_file, $suitability_args);
-    }
-    if ($handles_file !== TRUE) {
-      continue; // this widget/formatter is not interested in our file
-    }
-    $suitable_extension_info[] = $info;
-  }
-  // Return the most appropriate widget/formatter, if one was found.
-  return empty($suitable_extension_info) ? NULL : reset($suitable_extension_info);
-}
-
-/**
- * Retrieve information about the widgets that are going to preview and
- * edit the single files that are uploaded in CCK's edit form.
- * This function also sorts the widgets in the way that the administrator
- * has specified for this field.
- */
-function _filefield_file_widget_info($field_widget) {
-  $file_widget_info = _filefield_file_extension_info_original('widget');
-  return _filefield_file_extension_info($file_widget_info, $field_widget['file_widgets']);
-}
-
-/**
- * Retrieve information about the formatters that are going to display the
- * single files for the node view or other views.
- * This function also sorts the formatters in the way that the administrator
- * has specified for this field.
- */
-function _filefield_file_formatter_info($field) {
-  $file_formatter_info = _filefield_file_extension_info_original('formatter');
-  return _filefield_file_extension_info($file_formatter_info, $field['file_formatters']);
-}
-
-/**
- * Common implementation for _filefield_file_widget_info() and
- * _filefield_file_formatter_info(): sort and the given extensions and mark
- * them as enabled or not, based on the extension $settings from
- * hook_widget_settings() or hook_field_settings() respectively.
- */
-function _filefield_file_extension_info($file_extension_info, $settings) {
-  // Sort and enable the formatters according to previous admin settings or defaults.
-  foreach ($file_extension_info as $extension_name => $info) {
-    if (isset($settings[$extension_name]['weight'])) {
-      $info['weight'] = $settings[$extension_name]['weight'];
-    }
-    else {
-      // By default, the generic file widget/formatter should be last in the
-      // list of possible formatters, and other new formatters should also not
-      // be preferred to ones that already had their weight configured before.
-      $info['weight'] = ($extension_name == 'filefield_generic') ? 1000 : 999;
-    }
-
-    if (isset($settings[$extension_name]['enabled'])) {
-      $info['enabled'] = $settings[$extension_name]['enabled'];
-    }
-    else {
-      // By default, enable only the generic file widget/formatter, so that
-      // newly enabled modules don't show their widges/formatters without
-      // approval of the admin.
-      $info['enabled'] = ($extension_name == 'filefield_generic');
-    }
-    $file_extension_info[$extension_name] = $info;
-  }
-  return _filefield_sort_by_weight($file_extension_info);
-}
-
-function _filefield_file_extension_info_original($extension_type) {
-  static $file_extension_info = array(); // with 'widget' and 'formatter' keys
-
-  if (!isset($file_extension_info[$extension_type])) {
-    $file_extension_info[$extension_type] = array();
-    $hook = 'file_'. $extension_type .'_info';
-
-    foreach (module_implements($hook) as $module) {
-      $function = $module .'_'. $hook;
-      $module_extension_info = $function();
-
-      // Prepare the array for mass consumption.
-      foreach ($module_extension_info as $extension_name => $info) {
-        if ($extension_type == 'formatter') {
-          $info['theme'] = $module .'_file_formatter_'. $extension_name;
-        }
-        $info['module'] = $module;
-        $info['name'] = $extension_name;
-        $info['css'] = isset($info['css']) ? $info['css'] : array();
-        $info['key'] = $module .'_'. $extension_name;
-        $file_extension_info[$extension_type][$info['key']] = $info;
-      }
-    }
-    drupal_alter($hook, $file_extension_info[$extension_type]);
-  }
-  return $file_extension_info[$extension_type];
-}
-
-/**
- * Helper function to sort file formatter/widget settings according to
- * user drag-n-drop reordering.
- */
-function _filefield_sort_by_weight($items) {
-  uasort($items, '_filefield_sort_by_weight_helper');
-  foreach ($items as $delta => $item) {
-    unset($items[$delta]['weight']);
-  }
-  return $items;
-}
-
-/**
- * Sort function for file formatter/widget order.
- * (copied form element_sort(), which acts on #weight keys)
- */
-function _filefield_sort_by_weight_helper($a, $b) {
-  $a_weight = (is_array($a) && isset($a['weight'])) ? $a['weight'] : 0;
-  $b_weight = (is_array($b) && isset($b['weight'])) ? $b['weight'] : 0;
-  if ($a_weight == $b_weight) {
-    return 0;
-  }
-  return ($a_weight < $b_weight) ? -1 : 1;
-}
-
-
-/**
- * Implementation of filefield's hook_file_formatter_info().
- */
-function filefield_file_formatter_info() {
-  return array(
-    'generic' => array(
-      'suitability callback' => TRUE,
-      'title' => t('Generic files'),
-      'description' => t('Displays all kinds of files with an icon and a linked file description.'),
-    ),
-  );
-}
-
-/**
- * Implementation of filefield's hook_file_widget_info().
- */
-function filefield_file_widget_info() {
-  return array(
-    'generic' => array(
-      'form element' => 'filefield_generic_edit',
-      'suitability callback' => TRUE,
-      'title' => t('Generic files'),
-      'description' => t('An edit widget for all kinds of files.'),
-    ),
-  );
-}
-
-/**
- * The 'process' callback for 'filefield_generic_edit' form elements.
- * Called after defining the form and while building it, transforms the
- * barebone element array into an icon and and a text field for editing
- * the file description.
- */
-function filefield_generic_edit_process($element, $edit, &$form_state, $form) {
-  $field = $element['#field'];
-  $delta = $element['#delta'];
-  $file = $element['#file'];
-  $url = file_create_url($file->filepath);
-
-  $prefix = isset($element['#prefix']) ? $element['#prefix'] : '';
-  $suffix = isset($element['#suffix']) ? $element['#suffix'] : '';
-  $element['#prefix'] = $prefix .'<div class="filefield-generic-edit">';
-  $element['#suffix'] = '</div>'. $suffix;
-
-  $element['icon'] = array(
-    '#type' => 'markup',
-    '#value' => theme('filefield_icon', $file),
-  );
-  $element['description'] = array(
-    '#type' => 'textfield',
-    '#default_value' => empty($file->description)
-                        ? $file->filename
-                        : $file->description,
-    '#maxlength' => 256,
-    '#description' => t('Size: !size. Filename: !link', array(
-      '!size' => format_size($file->filesize),
-      '!link' => l($file->filename, $url),
-    )),
-    '#required' => TRUE,
-    '#prefix' => '<div class="filefield-generic-edit-description">',
-    '#suffix' => '</div>',
-  );
-  return $element;
-}
-
-/**
- * Theme function for the 'filefield_generic_edit' form element.
- */
-function theme_filefield_generic_edit($element) {
-  return theme('form_element', $element, $element['#children']);
-}
-
 
 /**
  * Implementation of hook_file_download(). Yes, *that* hook that causes
@@ -903,39 +219,165 @@ function filefield_file_download($file) {
 
 
 /**
- * Implementation of hook_token_list():
- * Provide a user readable list of filefield tokens.
+ * Implementation of CCK's hook_field_info().
  */
-function filefield_token_list($type = 'all') {
-  if ($type == 'field' || $type == 'all') {
-    $tokens = array();
-    $tokens['file']['fid']                = t("File ID");
-    $tokens['file']['description']        = t("File description");
-    $tokens['file']['filename']           = t("File name");
-    $tokens['file']['filepath']           = t("File path");
-    $tokens['file']['filemime']           = t("File MIME type");
-    $tokens['file']['filesize']           = t("File size (in bytes)");
-    $tokens['file']['filesize_formatted'] = t("File size (pretty printed)");
-    $tokens['file']['view']               = t("Fully formatted HTML file tag");
-    return $tokens;
+function filefield_field_info() {
+  return array(
+    'filefield' => array(
+      'label' => 'File',
+      'description' => t('Store an arbitrary file.'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_field_settings().
+ */
+function filefield_field_settings($op, $field) {
+  module_load_include('inc','filefield','filefield_field_settings');
+  $op = str_replace(' ', '_', $op);
+  // add filefield specific handlers...
+  $function = 'filefield_field_settings_'. $op;
+  if (function_exists($function)) {
+    return $function($field);
   }
 }
 
 /**
- * Implementation of hook_token_values():
- * Provide the concrete token values for a given file item.
+ * Implementtation of CCK's hook_field().
  */
-function filefield_token_values($type, $object = NULL) {
-  if ($type == 'field') {
-    $item = $object[0];
-    $tokens['fid']                = $item['fid'];
-    $tokens['description']        = $item['description'];
-    $tokens['filename']           = $item['filename'];
-    $tokens['filepath']           = $item['filepath'];
-    $tokens['filemime']           = $item['filemime'];
-    $tokens['filesize']           = $item['filesize'];
-    $tokens['filesize_formatted'] = format_size($item['filesize']);
-    $tokens['view']               = $item['view'];
-    return $tokens;
+function filefield_field($op, $node, $field, &$items, $teaser, $page) {
+  module_load_include('inc','filefield','filefield_field');
+  $op = str_replace(' ', '_', $op);
+  // add filefield specific handlers...
+  $function = 'filefield_field_'. $op;
+  if (function_exists($function)) {
+    return $function($node, $field, $items, $teaser, $page);
   }
 }
+
+/**
+ * Implementation of CCK's hook_widget_settings().
+ */
+function filefield_widget_settings($op, $widget) {
+  module_load_include('inc','filefield','filefield_widget_settings');
+  $op = str_replace(' ', '_', $op);
+  $function = 'filefield_field_settings_'. $op;
+  if (function_exists($function)) {
+    return $function($widget);
+  }
+}
+
+/**
+ * Implementation of hook_widget().
+ */
+function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  if (empty($items[$delta])) { 
+    $items[$delta] = array('fid' => 0, 'description' => '', 'list' => 0, 'data' => '');
+  }
+  $form['#attributes'] = array('enctype' => 'multipart/form-data');
+  $element = array(
+    '#type' => $field['widget']['type'],
+    '#default_value' => $items[$delta],
+  );
+  return $element;
+}
+
+/**
+ * Implementation of CCK's hook_content_is_empty().
+ *
+ * The result of this determines whether content.module will save
+ * the value of the field.
+ */
+function filefield_content_is_empty($item, $field) {
+  if (empty($item['fid'])) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+
+
+
+/**
+ * Implementation of CCK's hook_widget_info().
+ */
+function filefield_widget_info() {
+  return array(
+    'filefield_widget' => array(
+      'label' => t('File Upload'),
+      'field types' => array('file'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+      'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
+      'description' => t('A plain file upload widget.'),
+    ),
+    'filefield_combo' => array(
+      'label' => 'Extensible File',
+      'field types' => array('file'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+      'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
+      'description' => t('(Experimental)An extensible file upload widget.'),
+    ),
+  );
+}
+
+/**
+ * Implementation of CCK's hook_field_formatter_info().
+ */
+function filefield_field_formatter_info() {
+  return array(
+    'filefield_default' => array(
+      'label' => t('Generic files'),
+      'suitability callback' => TRUE,
+      'field types' => array('file','image'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+      'description' => t('Displays all kinds of files with an icon and a linked file description.'),
+    ),
+    'filefield_dynamic' => array(
+      'label' => t('Dynamic file formatters'),
+      'suitability callback' => TRUE,
+      'field types' => array('file'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+      'description' => t('(experimental) An extensible formatter for filefield.'),
+    ),
+  );
+}
+
+
+
+
+/**
+ * Determine the most appropriate icon for the given file's mimetype.
+ *
+ * @return The URL of the icon image file, or FALSE if no icon could be found.
+ */
+function filefield_icon_url($file) {
+  include_once(drupal_get_path('module', 'filefield') .'/filefield.theme.inc');
+  return _filefield_icon_url($file);
+}
+
+
+/**
+ * Access callback for the JavaScript upload and deletion AHAH callbacks.
+ * The content_permissions module provides nice fine-grained permissions for
+ * us to check, so we can make sure that the user may actually edit the file.
+ */
+function filefield_edit_access($field_name) {
+  if (module_exists('content_permissions')) {
+    return user_access('edit '. $field_name);
+  }
+  // No content permissions to check, so let's fall back to a more general permission.
+  return user_access('access content');
+}
+
+/**
+ * Access callback that checks if the current user may view the filefield.
+ */
+function filefield_view_access($field_name) {
+  if (module_exists('content_permissions')) {
+    return user_access('view '. $field_name);
+  }
+  // No content permissions to check, so let's fall back to a more general permission.
+  return user_access('access content');
+}
+
