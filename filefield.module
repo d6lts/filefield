@@ -244,13 +244,28 @@ function filefield_field_info() {
  * Implementation of hook_field_settings().
  */
 function filefield_field_settings($op, $field) {
+  $return = array();
+
   module_load_include('inc','filefield','filefield_field_settings');
   $op = str_replace(' ', '_', $op);
   // add filefield specific handlers...
   $function = 'filefield_field_settings_'. $op;
   if (function_exists($function)) {
-    return $function($field);
+    $return = $function($field);
   }
+
+  if ($field['type'] == 'filefield')  return $return;
+
+  // dynamically load widgets file and callbacks.
+  module_load_include('inc', $field['module'], $field['type'] .'_field');
+
+  $function = $widget_type .'_field_settings_'. $op;
+  if (function_exists($function)) {
+    $return = array_merge($return, $function($widget));
+  }
+ 
+  return $return;
+
 }
 
 /**
@@ -289,9 +304,6 @@ function filefield_widget_settings($op, $widget) {
   $function = $widget_type .'_widget_settings_'. $op;
   if (function_exists($function)) {
     $return = array_merge($return, $function($widget));
-  }
-  if ($op == 'save') {
-    dsm($return);
   }
  
   return $return;
