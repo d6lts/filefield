@@ -225,7 +225,6 @@ function filefield_file_download($file) {
  * Implementation of CCK's hook_field_info().
  */
 function filefield_field_info() {
-  dsm('field info');
   return array(
     'filefield' => array(
       'label' => 'File',
