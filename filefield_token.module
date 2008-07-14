@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * Implementation of hook_token_list():
+ * Provide a user readable list of filefield tokens.
+ */
+function filefield_token_list($type = 'all') {
+  if ($type == 'field' || $type == 'all') {
+    $tokens = array();
+    $tokens['file']['fid']                = t("File ID");
+    $tokens['file']['description']        = t("File description");
+    $tokens['file']['filename']           = t("File name");
+    $tokens['file']['filepath']           = t("File path");
+    $tokens['file']['filemime']           = t("File MIME type");
+    $tokens['file']['filesize']           = t("File size (in bytes)");
+    $tokens['file']['filesize_formatted'] = t("File size (pretty printed)");
+    $tokens['file']['view']               = t("Fully formatted HTML file tag");
+    return $tokens;
+  }
+}
+
+/**
+ * Implementation of hook_token_values():
+ * Provide the concrete token values for a given file item.
+ */
+function filefield_token_values($type, $object = NULL) {
+  if ($type == 'field') {
+    $item = $object[0];
+    $tokens['fid']                = $item['fid'];
+    $tokens['description']        = $item['description'];
+    $tokens['filename']           = $item['filename'];
+    $tokens['filepath']           = $item['filepath'];
+    $tokens['filemime']           = $item['filemime'];
+    $tokens['filesize']           = $item['filesize'];
+    $tokens['filesize_formatted'] = format_size($item['filesize']);
+    $tokens['view']               = $item['view'];
+    return $tokens;
+  }
+}

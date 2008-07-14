@@ -1,0 +1,7 @@
+; $Id$
+name = FileField Tokens
+description = Token Integration for FileField.
+dependencies[] = filefield
+package = CCK
+core = 6.x
+php = 5.2
