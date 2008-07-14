@@ -22,8 +22,8 @@ function filefield_widget_value($element, $edit = FALSE) {
     $file = field_file_load($edit['fid']);
     $item = array(
       'fid' => $edit['fid'],
-      'alt' => $edit['alt'],
-      'title' => $edit['title'],
+      'description' => $edit['description'],
+      'list' => empty($edit['list']),
       'data' => '',
     );
   }
@@ -43,7 +43,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['fid'] = array('#type' => 'hidden', '#value' =>  $file['fid']);
 
   if ($file['fid'] != 0) {
-    $element['preview'] = array('#type' => 'markup', '#value' => theme('imagefield_item', $file));  
+    $element['preview'] = array('#type' => 'markup', '#value' => theme('filefield_file', $file));  
     if (empty($file['filepath'])) {
       //dsm($file);
     }
@@ -70,7 +70,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#name' => $field_name .'_'. $delta .'_remove_btn',
       '#type' => 'submit', 
       '#value' => t('Remove'),
-      '#submit' => array('imagefield_widget_submit_remove_btn'),
+      '#submit' => array('filefield_widget_submit_remove_btn'),
       '#field_name' => $field_name,
       '#delta' => $delta,
     );
@@ -90,7 +90,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#name' => $field_name .'_'. $delta .'_upload_btn',
       '#type' => 'submit', 
       '#value' => t('Upload'),
-      '#submit' => array('imagefield_widget_submit_upload_btn'),
+      '#submit' => array('filefield_widget_submit_upload_btn'),
       '#field_name' => $field_name,
       '#delta' => $delta,
     );
@@ -138,11 +138,7 @@ function filefield_widget_submit_upload_btn($form, &$form_state) {
     return $file;
   }
 
-  $validators = array(
-    'file_validate_extensions' => array($field['widget']['file_extensions']),
-    'file_validate_size' => array($field['widget']['max_filesize']),
-    'file_validate_image_resolution' => array($field['widget']['max_resolution']),
-  );
+  $validators = _filefield_filefield_validators($field, $field['widget'], $form_state['values'][$field_name]);
 
   if (!$file = field_file_save_upload($upload_name, $validators, $complete_file_path)) {
     watchdog('imagefield', 'The file upload failed. %upload', array('%upload' => $upload_name));
@@ -476,9 +472,7 @@ function _filefield_filefield_validators($field, $widget, $existing_files) {
 
   // Thanks to the php.ini restrictions, there is always a maximum file size.
   // Therefore we can rely on at least one restriction always being in force.
-  $max_filesize = _filefield_maximum_filesize(
-    $field, $widget, $existing_files
-  );
+  $max_filesize = _filefield_maximum_filesize($field, $widget, $existing_files);
   $filesize_message = ($max_filesize > 0)
     ? t('Maximum file size: !size.', array('!size' => format_size($max_filesize)))
     : t('The allowed maximum file size total has been exceeded.');
@@ -494,16 +488,6 @@ function _filefield_filefield_validators($field, $widget, $existing_files) {
       'validator arguments' => array($widget['file_extensions']),
       'requirement message' => t('Allowed extensions: %ext.', array(
         '%ext' => $widget['file_extensions'],
-      )),
-    );
-  }
-
-  $supported_file_widgets = _filefield_supported_file_widgets($widget);
-  if (!empty($supported_file_widgets)) {
-    $validators['filefield_validate_file_widget_support'] = array(
-      'validator arguments' => array($field, $widget, $supported_file_widgets),
-      'requirement message' => t('Uploads are restricted to the following categories: !widgets.', array(
-        '!widgets' => implode(', ', $supported_file_widgets),
       )),
     );
   }

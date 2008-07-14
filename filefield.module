@@ -85,18 +85,27 @@ function filefield_elements() {
  */
 function filefield_theme() {
   return array(
+    'filefield_file' => array(
+      'arguments' => array('file' => NULL),
+      'file' => 'filefield_formatter.inc',
+    ),
+    'filefield_icon' => array(
+      'arguments' => array('file' => NULL),
+      'file' => 'filefield.theme.inc',
+    ),
     'filefield_widget' => array(
       'arguments' => array('element' => NULL),
       'file' => 'filefield_widget.inc',
+    ),
+
+    'filefield_formatter_filefield_default' => array(
+      'arguments' => array('element' => NULL),
+      'file' => 'filefield_formatter.inc',
     ),
     
     // @todo: verify the need for the rest one by one.
     'filefield_container_item' => array(
       'arguments' => array('element' => NULL),
-      'file' => 'filefield.theme.inc',
-    ),
-    'filefield_icon' => array(
-      'arguments' => array('file' => NULL),
       'file' => 'filefield.theme.inc',
     ),
     'filefield_file_upload' => array(
@@ -113,21 +122,15 @@ function filefield_theme() {
     ),
     'filefield_formatter_default' => array(
       'arguments' => array('element' => NULL),
-      'file' => 'filefield.formatter.inc',
+      'file' => 'filefield_formatter.inc',
     ),
     'filefield_unguarded' => array(
       'arguments' => array('file' => NULL, 'field' => NULL),
-      'file' => 'filefield.formatter.inc',
+      'file' => 'filefield_formatter.inc',
     ),
     'filefield' => array(
       'arguments' => array('file' => NULL, 'field' => NULL),
-      'file' => 'filefield.formatter.inc',
-    ),
-    'filefield_file_formatter_generic' => array(
-      'arguments' => array(
-        'file' => NULL, 'field' => NULL, 'file_formatter_settings' => NULL,
-      ),
-      'file' => 'filefield.formatter.inc',
+      'file' => 'filefield_formatter.inc',
     ),
   );
 }
@@ -329,7 +332,7 @@ function filefield_field_formatter_info() {
     'filefield_default' => array(
       'label' => t('Generic files'),
       'suitability callback' => TRUE,
-      'field types' => array('file','image'),
+      'field types' => array('filefield','image'),
       'multiple values' => CONTENT_HANDLE_CORE,
       'description' => t('Displays all kinds of files with an icon and a linked file description.'),
     ),

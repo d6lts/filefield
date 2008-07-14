@@ -13,10 +13,9 @@
 /**
  * Theme function for the 'default' filefield formatter.
  */
-function theme_filefield_formatter_default($element) {
+function theme_filefield_formatter_filefield_default($element) {
   $file = $element['#item'];
-  $field = content_fields($element['#field_name']);
-  return theme('filefield', $file, $field);
+  return 'filefiedl' . theme('filefield', $file);
 }
 
 /**
@@ -77,10 +76,10 @@ function theme_filefield_unguarded($file, $field) {
 /**
  * Theme function for the 'generic' single file formatter.
  */
-function theme_filefield_file_formatter_generic($file, $field, $file_formatter_settings) {
-  $path = $file->filepath;
+function theme_filefield_file($file) {
+  $path = $file['filepath'];
   $url = file_create_url($path);
   $icon = theme('filefield_icon', $file);
-  $desc = $file->description;
-  return '<div class="filefield-formatter-generic">'. $icon . l($desc, $url) .'</div>';
+  $desc = $file['description'];
+  return '<div class="filefield-file">'. $icon . l($desc, $url) .'</div>';
 }
