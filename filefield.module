@@ -254,14 +254,11 @@ function filefield_field_settings($op, $field) {
     $return = $function($field);
   }
 
-  if ($field['type'] == 'filefield')  return $return;
-
   // dynamically load widgets file and callbacks.
   module_load_include('inc', $field['module'], $field['type'] .'_field');
-
-  $function = $widget_type .'_field_settings_'. $op;
+  $function = $field['module'] .'_'. $field['type'] .'_field_settings_'. $op;
   if (function_exists($function)) {
-    $return = array_merge($return, $function($widget));
+    $return = array_merge($return, $function($field));
   }
  
   return $return;
