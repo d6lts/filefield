@@ -11,9 +11,7 @@
  */
 
 function filefield_widget_value($element, $edit = FALSE) {
-  //dsm('imagefield_widget_value');
-  //dsm($edit);
-  
+  dsm($element['#default_value']);
   if (!$edit) { 
     $file =  field_file_load($element['#default_value']['fid']);
     $item = $element['#default_value'];

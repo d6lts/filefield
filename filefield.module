@@ -296,7 +296,8 @@ function filefield_widget_settings($op, $widget) {
   $widget_type = isset($widget['widget_type']) ? $widget['widget_type'] : $widget['type'];
 
   // dynamically load widgets file and callbacks.
-  module_load_include('inc', $widget['module'], $widget_type .'_widget');
+  $widget_module = isset($widget['widget_module']) ? $widget['widget_module'] : $widget['module'];
+  module_load_include('inc', $widget_module, $widget_type .'_widget');
 
   $function = $widget_type .'_widget_settings_'. $op;
   if (function_exists($function)) {
@@ -310,13 +311,16 @@ function filefield_widget_settings($op, $widget) {
  * Implementation of hook_widget().
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  $default =  array('fid' => 0, 'description' => '', 'list' => 0, 'data' => '');
+  // assign defaults..
   if (empty($items[$delta])) { 
-    $items[$delta] = array('fid' => 0, 'description' => '', 'list' => 0, 'data' => '');
+    $items[$delta] = array();
   }
+  
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
   $element = array(
     '#type' => $field['widget']['type'],
-    '#default_value' => $items[$delta],
+    '#default_value' => array_merge($default, $items[$delta]),
   );
   return $element;
 }
