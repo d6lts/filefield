@@ -67,16 +67,14 @@ function filefield_elements() {
     '#input' => TRUE,
     '#columns' => array('fid', 'description', 'list', 'data'),
     '#process' => array('filefield_widget_process'),
-    '#after_build' => array('filefield_widget_after_build'),
     '#value_callback' => 'filefield_widget_value',
     '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
   );
   $elements['filefield_extensible'] =  array(
     '#input' => TRUE,
     '#columns' => array('fid', 'description', 'list', 'data'),
-    '#process' => array('filefield_extensible_process'),
-    '#after_build' => array('filefield_extensible_after_build'),
-    '#value_callback' => 'filefield_extensible_value',
+    '#process' => array('filefield_process'),
+    '#value_callback' => 'filefield_value',
     '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
   );
   return $elements;
@@ -319,6 +317,7 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
   $element = array(
+    '#title' => $field['widget']['label'],
     '#type' => $field['widget']['type'],
     '#default_value' => array_merge($default, $items[$delta]),
   );

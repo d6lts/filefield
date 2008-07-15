@@ -11,7 +11,7 @@
  */
 
 function filefield_widget_value($element, $edit = FALSE) {
-  dsm($element['#default_value']);
+  //dsm($element['#default_value']);
   if (!$edit) { 
     $file =  field_file_load($element['#default_value']['fid']);
     $item = $element['#default_value'];
@@ -25,37 +25,36 @@ function filefield_widget_value($element, $edit = FALSE) {
       'data' => '',
     );
   }
-  return array_merge($item, $file);
+  $item = array_merge($item, $file);
+  // if this widget is another type and leaning on filefield to do the dirty work....
+  // pass it back home.
+  $function = $element['#type'] .'_widget_value';
+  if (function_exists($function)) {
+    $item = array_merge($item, $function($element, $edit));
+  }
+  return $item;
 }
 
 function filefield_widget_process($element, $edit, &$form_state, $form) {
-  //dsm('imagefield_widget_process');
-  //dsm($element);
-  //dsm($form_state);
-  $element['#theme'] = 'filefield_row';
-  $file = $element['#value'];
-  $delta = $element['#delta'];
-  $field_name = $element['#field_name'];
-
+  $element['#theme'] = $element['#type'] .'_item';
+  $item = $element['#value'];
+  $field = content_fields($element['#field_name'], $element['#type_name']);
   
-  $element['fid'] = array('#type' => 'hidden', '#value' =>  $file['fid']);
+  $element['fid'] = array('#type' => 'hidden', '#value' =>  $item['fid']);
 
-  if ($file['fid'] != 0) {
-    $element['preview'] = array('#type' => 'markup', '#value' => theme('filefield_file', $file));  
-    if (empty($file['filepath'])) {
-      //dsm($file);
-    }
+  if ($item['fid'] != 0) {
+    $element['preview'] = array('#type' => 'markup', '#value' => theme($element['#type'] .'_preview', $item));  
   }
   $element['description'] = array(
     '#type' => 'textfield', 
     '#title' => t('Description'),
-    '#default_value' => $file['description'],
+    '#default_value' => $item['description'],
   );
   
   $element['list'] = array(
     '#type' => 'checkbox',
     '#title' => t('List'),
-    '#default_value' => $file['list'],
+    '#default_value' => $item['list'],
     '#attributes' => array('class' => 'filefield-list'),
   );  
 
@@ -64,36 +63,43 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     '#value' => '',
   );
 
-  if ($file['fid'] != 0) {
+  if ($item['fid'] != 0) {
     $element['remove_btn'] = array(
-      '#name' => $field_name .'_'. $delta .'_remove_btn',
+      '#name' => $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn',
       '#type' => 'submit', 
       '#value' => t('Remove'),
       '#submit' => array('filefield_widget_submit_remove_btn'),
-      '#field_name' => $field_name,
-      '#delta' => $delta,
+      '#field_name' => $element['#field_name'],
+      '#delta' => $element['#delta'],
     );
-    return $element;
   }
 
-  if ($file['fid'] == 0) {
+  if ($item['fid'] == 0) {
     $element['description']['#type'] = 'hidden';
 
     $element['upload'] = array(
-      '#name' => 'files['. $field_name .'_'. $delta .']',
+      '#name' => 'files['. $element['#field_name'] .'_'. $element['#delta'] .']',
       '#type' => 'file',
       '#title' => t('New Upload'),
     );
 
     $element['upload_btn'] = array(
-      '#name' => $field_name .'_'. $delta .'_upload_btn',
+      '#name' => $element['#field_name'] .'_'. $element['#delta'] .'_upload_btn',
       '#type' => 'submit', 
       '#value' => t('Upload'),
       '#submit' => array('filefield_widget_submit_upload_btn'),
-      '#field_name' => $field_name,
-      '#delta' => $delta,
+      '#field_name' => $element['#field_name'],
+      '#delta' => $element['#delta'],
     );
   }
+
+  // if this widget is another type and leaning on filefield to do the dirty work....
+  // pass it back home.
+  $function = $element['#type'] .'_widget_process';
+  if (function_exists($function)) {
+    $element = array_merge($element, $function($element, $edit, $form_state, $form));
+  }
+  
   return $element;
 }
 
@@ -173,19 +179,6 @@ function filefield_widget_submit_reuse_btn($form, &$form_state) {
       $form_state['rebuild'] = true;
     }
   }
-}
-
-function filefield_widget_after_build($element) {
-  //dsm('imagefield_widget_after_build');
-  //dsm($element);
- 
-  $element['#value'] = array(
-    'fid' => $element['fid']['#value'],
-    'description' => $element['description']['#value'],
-    'list' => $element['list']['#value'],
-    'data' => $element['data']['#value'],
-  );
-  return $element;
 }
 
 function _filefield_widget_validate($element, &$form_state) {
