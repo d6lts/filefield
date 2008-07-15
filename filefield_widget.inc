@@ -102,13 +102,10 @@ function _filefield_widget_settings_max_filesize_per_node_validate($element, &$f
   }
 }
 
-
 /**
  * FileField widget element callbacks.
  */
-
 function filefield_widget_value($element, $edit = FALSE) {
-  //dsm($element['#default_value']);
   if (!$edit) { 
     $file =  field_file_load($element['#default_value']['fid']);
     $item = $element['#default_value'];
@@ -123,6 +120,7 @@ function filefield_widget_value($element, $edit = FALSE) {
     );
   }
   $item = array_merge($item, $file);
+
   // if this widget is another type and leaning on filefield to do the dirty work....
   // pass it back home.
   $function = $element['#type'] .'_widget_value';
@@ -133,12 +131,12 @@ function filefield_widget_value($element, $edit = FALSE) {
 }
 
 function filefield_widget_process($element, $edit, &$form_state, $form) {
-  $element['#theme'] = $element['#type'] .'_item';
+  $item  = empty($edit) ? $element['#default_value'] : $edit;
+  $item = array_merge($item, field_file_load($item['fid']));
   
-  $item = $element['#value'];
   $field = content_fields($element['#field_name'], $element['#type_name']);
   
-  $element['fid'] = array('#type' => 'hidden', '#value' =>  $item['fid']);
+  $element['fid'] = array('#type' => 'hidden', '#default_value' =>  $item['fid']);
 
   if ($item['fid'] != 0) {
     $element['preview'] = array('#type' => 'markup', '#value' => theme($element['#type'] .'_preview', $item));  
@@ -152,7 +150,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['list'] = array(
     '#type' => 'checkbox',
     '#title' => t('List'),
-    '#default_value' => $item['list'],
+    '#default_value' => !empty($item['list']),
     '#attributes' => array('class' => 'filefield-list'),
   );  
   if ($field['force_list']) $element['list']['#type'] = 'hidden';
@@ -192,22 +190,41 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     );
   }
 
-  // if this widget is another type and leaning on filefield to do the dirty work....
-  // pass it back home.
+  // call widget type specific callbacks.
   $function = $element['#type'] .'_widget_process';
   if (function_exists($function)) {
-    $element = array_merge($element, $function($element, $edit, $form_state, $form));
+    $element =  $function($element, $edit, $form_state, $form);
   }
-  
   return $element;
 }
 
+function filefield_widget_after_build($element) {
+  $element['#value'] = array(   
+    'fid' => $element['fid']['#value'],   
+    'description' => $element['description']['#value'],   
+    'list' => $element['list']['#value'],   
+    'data' => $element['data']['#value'],   
+  );    
+
+  // if this widget is another type and leaning on filefield to do the dirty work....
+  // pass it back home.
+  $function = $element['#type'] .'_widget_after_build';
+  if (function_exists($function)) {
+    $element = $function($element, $edit, $form_state, $form);
+  }
+ 
+  return $element;    
+}   
+
+   
+
 function filefield_widget_submit_remove_btn($form, &$form_state) {
-  //dsm ('imagefield_widget_submit_remove_btn');
+  dsm ('imagefield_widget_submit_remove_btn');
   //dsm($form);
-  //dsm($form_state);
   $field_name = $form_state['clicked_button']['#field_name'];
   $delta = $form_state['clicked_button']['#delta'];
+
+  dsm($form_state['values'][$field_name][$delta]);
   $form_state['values'][$field_name][$delta] = array(
     'fid' => 0,
     'alt' => '',

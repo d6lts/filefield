@@ -59,6 +59,7 @@ function filefield_elements() {
     '#columns' => array('fid', 'description', 'list', 'data'),
     '#process' => array('filefield_widget_process'),
     '#value_callback' => 'filefield_widget_value',
+    '#after_build' => 'filefield_widget_after_build',
     '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
   );
   $elements['filefield_extensible'] =  array(
@@ -286,9 +287,7 @@ function filefield_widget_settings($op, $widget) {
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   $default =  array('fid' => 0, 'description' => '', 'list' => 0, 'data' => '');
   // assign defaults..
-  if (empty($items[$delta])) { 
-    $items[$delta] = array();
-  }
+  if (empty($items[$delta])) $items[$delta] = $default;
   
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
   $element = array(
@@ -470,4 +469,10 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   // setting of the text/javascript HTTP header. So use this one instead.
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
+}
+
+// filefield defined widget default values.
+function filefield_default_value(&$form, &$form_state, $field, $delta) {
+  dsm('filefield_default_value');
+  return array('fid' => 0, 'list' => '', 'description' => 0, 'data' => '');
 }
