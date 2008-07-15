@@ -10,6 +10,103 @@
  * This file contains CCK widget related functionality.
  */
 
+/**
+ * @file 
+ * 
+ * FileField Widget Settings Hooks.
+ */
+
+function filefield_widget_settings_form($widget) {
+  $form = array();
+  $form['file_extensions'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Permitted upload file extensions'),
+    '#default_value' => is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt',
+    '#size' => 64,
+    '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
+    '#weight' => 1,
+  );
+  $form['path_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Path settings'),
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#weight' => 6,
+  );
+
+  $form['path_settings']['file_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('File path'),
+    '#default_value' => is_string($widget['file_path']) ? $widget['file_path'] : '',
+    '#description' => t('Optional subdirectory within the "%dir" directory where files will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))),
+    '#element_validate' => array('_filefield_widget_settings_file_path_validate'),
+    '#suffix' => theme('token_help', 'user'),
+  );
+
+  $form['max_filesize'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('File size restrictions'),
+    '#description' => t('Limits for the size of files that a user can upload. Note that these settings only apply to newly uploaded files, whereas existing files are not affected.'),
+    '#weight' => 6,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['max_filesize']['max_filesize_per_file'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum upload size per file'),
+    '#default_value' => is_string($widget['max_filesize_per_file'])
+                        ? $widget['max_filesize_per_file']
+                         : '',
+    '#description' => t('Specify the size limit that applies to each file separately. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the allowed file size. If you leave this this empty the file sizes will be limited only by PHP\'s maximum post and file upload sizes.'),
+    '#element_validate' => array('_filefield_widget_settings_max_filesize_per_file_validate'),
+  );
+  $form['max_filesize']['max_filesize_per_node'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum upload size per node'),
+    '#default_value' => is_string($widget['max_filesize_per_node'])
+                        ? $widget['max_filesize_per_node']
+                        : '',
+    '#description' => t('Specify the total size limit for all files in field on a given node. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the total size of a node. Leave this empty if there should be no size restriction.'),
+    '#element_validate' => array('_filefield_widget_settings_max_filesize_per_node_validate'),
+  );
+  return $form;
+}
+
+function filefield_widget_settings_save($widget) {
+  return array(
+    'file_extensions', 'file_path', 'max_filesize_per_file',
+    'max_filesize_per_node', 'file_widgets'
+  );
+}
+
+function _filefield_widget_settings_file_path_validate($element, &$form_state) {
+  // Strip slashes from the beginning and end of $widget['file_path']
+  $form_state['values']['file_path'] = trim($form_state['values']['file_path'], '\\/');
+}
+
+function _filefield_widget_settings_max_filesize_per_file_validate($element, &$form_state) {
+  if (empty($form_state['values']['max_filesize_per_file'])) {
+    return; // Empty means no size restrictions, so don't throw an error.
+  }
+  else if (!is_numeric(parse_size($form_state['values']['max_filesize_per_file']))) {
+    form_error($element, t('The "Maximum file size for each file" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).'));
+  }
+}
+
+function _filefield_widget_settings_max_filesize_per_node_validate($element, &$form_state) {
+  if (empty($form_state['values']['max_filesize_per_node'])) {
+    return; // Empty means no size restrictions, so don't throw an error.
+  }
+  else if (!is_numeric(parse_size($form_state['values']['max_filesize_per_node']))) {
+    form_error($element, t('The "Maximum file size per node" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).'));
+  }
+}
+
+
+/**
+ * FileField widget element callbacks.
+ */
+
 function filefield_widget_value($element, $edit = FALSE) {
   //dsm($element['#default_value']);
   if (!$edit) { 
@@ -155,37 +252,10 @@ function filefield_widget_submit_upload_btn($form, &$form_state) {
   $form_state['rebuild'] = true;
 }
 
-function filefield_widget_submit_reuse_btn($form, &$form_state) {
-  //dsm('imagefield_widget_submit_reuse_btn');
-  //dsm($form);
-  //dsm($form_state);
-
-  $field_name = $form_state['clicked_button']['#field_name'];
-  $delta = $form_state['clicked_button']['#delta'];
-
-  $reuse =  trim($form_state['values'][$field_name][$delta]['reuse']);
-  if (empty($reuse))  return;
-
-  // if numeric assume we got an fid and try to load it.
-  if (is_numeric($reuse) && $file = field_file_load($reuse)) {
-    $form_state['values'][$field_name][$delta]['fid'] = $file['fid'];
-    $form_state['rebuild'] = true;
-  } 
-  else {
-    // load fid from path..
-    $result = db_query("SELECT fid FROM {files} WHERE filepath='%s'", $reuse);
-    if ($fid = db_result($result)) {
-      $form_state['values'][$field_name][$delta]['fid'] = $fid;
-      $form_state['rebuild'] = true;
-    }
-  }
-}
-
 function _filefield_widget_validate($element, &$form_state) {
   //dsm('imagefield_validate');
   //dsm($element);
 }
-
 
 
 /**
@@ -195,7 +265,11 @@ function theme_filefield_widget($element) {
   return $element['#children'];
 }
 
-function theme_filefield_row($element) {
+function theme_filefield_widget_preview($item) {
+  return '<!-- filefield widget preview -->';
+}
+
+function theme_filefield_widget_item($element) {
   return '<div class="filefield-row clear-block">'.
               '<div class="filefield-info clear-block">'. 
                   '<div class="filefield-filename clear-block">'. drupal_render($element['preview']) . '</div>'.
@@ -209,6 +283,8 @@ function theme_filefield_row($element) {
               '</div>'.
          '</div>';
 }
+
+
 
 
 /**
@@ -305,87 +381,4 @@ function filefield_filefield_filesize_restrictions($field, $widget, $existing_fi
 
 
 
-/**
- * Shared AHAH callback for uploads and deletions. It just differs in a few
- * unimportant details (what happens to the file, and which form is used as
- * a replacement) so these details are taken care of by a form callback.
- */
-function filefield_js($field_name, $type_name, $delta, $form_callback) {
-  $field = content_fields($field_name, $type_name);
 
-  if (empty($field) || empty($_POST['form_build_id'])) {
-    // Invalid request.
-    print drupal_to_js(array('data' => ''));
-    exit;
-  }
-
-  // Build the new form.
-  $form_state = array('submitted' => FALSE);
-  $form_build_id = $_POST['form_build_id'];
-  $form = form_get_cache($form_build_id, $form_state);
-
-  if (!$form) {
-    // Invalid form_build_id.
-    print drupal_to_js(array('data' => ''));
-    exit;
-  }
-  // form_get_cache() doesn't yield the original $form_state,
-  // but form_builder() does. Needed for retrieving the file array.
-  $built_form = $form;
-  $built_form_state = $form_state;
-  $built_form += array('#post' => $_POST);
-  $built_form = form_builder($_POST['form_id'], $built_form, $built_form_state);
-
-  // Clean ids, so that the same element doesn't get a different element id
-  // when rendered once more further down.
-  form_clean_id(NULL, TRUE);
-
-  // Perform the action for this AHAH callback.
-  $form_callback($built_form, $built_form_state, $field, $delta);
-
-  // Ask CCK for the replacement form element. Going through CCK gets us
-  // the benefit of nice stuff like '#required' merged in correctly.
-  module_load_include('inc', 'content', 'includes/content.node_form');
-  $field_element = content_field_form($form, $built_form_state, $field, $delta);
-  $delta_element = $field_element[$field_name][0]; // there's only one element in there
-
-  // Add the new element at the right place in the form.
-  if (module_exists('fieldgroup') && ($group_name = _fieldgroup_field_get_group($type_name, $field_name))) {
-    $form[$group_name][$field_name][$delta] = $delta_element;
-  }
-  else {
-    $form[$field_name][$delta] = $delta_element;
-  }
-
-  // Write the (unbuilt, updated) form back to the form cache.
-  form_set_cache($form_build_id, $form, $form_state);
-
-  // Render the form for output.
-  $form += array(
-    '#post' => $_POST,
-    '#programmed' => FALSE,
-  );
-  drupal_alter('form', $form, array(), 'filefield_js');
-  $form_state = array('submitted' => FALSE);
-  $form = form_builder('filefield_js', $form, $form_state);
-  $field_form = empty($group_name) ? $form[$field_name] : $form[$group_name][$field_name];
-
-  // We add a div around the new content to tell AHAH to let this fade in.
-  $field_form[$delta]['#prefix'] = '<div class="ahah-new-content">'. (isset($field_form[$delta]['#prefix']) ? $field_form[$delta]['#prefix'] : '');
-  $field_form[$delta]['#suffix'] = (isset($field_form[$delta]['#suffix']) ? $field_form[$delta]['#suffix'] : '') .'</div>';
-
-  $output = theme('status_messages') . drupal_render($field_form[$delta]);
-
-  // AHAH is not being nice to us and doesn't know the "other" button (that is,
-  // either "Upload" or "Delete") yet. Which in turn causes it not to attach
-  // AHAH behaviours after replacing the element. So we need to tell it first.
-  $javascript = drupal_add_js(NULL, NULL);
-  if (isset($javascript['setting'])) {
-    $output .= '<script type="text/javascript">jQuery.extend(Drupal.settings, '. drupal_to_js(call_user_func_array('array_merge_recursive', $javascript['setting'])) .');</script>';
-  }
-
-  // For some reason, file uploads don't like drupal_json() with its manual
-  // setting of the text/javascript HTTP header. So use this one instead.
-  print drupal_to_js(array('status' => TRUE, 'data' => $output));
-  exit;
-}

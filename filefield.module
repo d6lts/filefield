@@ -12,24 +12,14 @@
  * Implementation of hook_init().
  */
 function filefield_init() {
-
-  /**
-   * include filefield dependecies.
-   * @todo: explore better dynamic loading.
-   */
-
   // field file api.
   module_load_include('inc', 'filefield', 'field_file');
-  
   // widget hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_widget');
-
   // formatter hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_formatter');
-
   // file hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_file');
-
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 }
 
@@ -60,6 +50,7 @@ function filefield_menu() {
 
 /**
  * Implementation of hook_elements().
+ * @todo: autogenerate element registry entries for widgets.
  */
 function filefield_elements() {
   $elements = array();
@@ -82,6 +73,7 @@ function filefield_elements() {
 
 /**
  * Implementation of hook_theme().
+ * @todo: autogenerate theme registry entrys for widgets.
  */
 function filefield_theme() {
   return array(
@@ -244,7 +236,7 @@ function filefield_field_info() {
 function filefield_field_settings($op, $field) {
   $return = array();
 
-  module_load_include('inc','filefield','filefield_field_settings');
+  module_load_include('inc','filefield','filefield_field');
   $op = str_replace(' ', '_', $op);
   // add filefield specific handlers...
   $function = 'filefield_field_settings_'. $op;
@@ -282,7 +274,7 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
 function filefield_widget_settings($op, $widget) {
   $return = array();
   // load our widget settings callbacks..
-  module_load_include('inc','filefield','filefield_widget_settings');
+  module_load_include('inc','filefield','filefield_widget');
   $op =  str_replace(' ', '_', $op);
   $function = 'filefield_widget_settings_'. $op;
   if (function_exists($function)) {
@@ -292,9 +284,9 @@ function filefield_widget_settings($op, $widget) {
   // sometimes widget_settings is called with widget, sometimes with field.
   // CCK needs to make up it's mind here or get with the new hook formats.
   $widget_type = isset($widget['widget_type']) ? $widget['widget_type'] : $widget['type'];
+  $widget_module = isset($widget['widget_module']) ? $widget['widget_module'] : $widget['module'];
 
   // dynamically load widgets file and callbacks.
-  $widget_module = isset($widget['widget_module']) ? $widget['widget_module'] : $widget['module'];
   module_load_include('inc', $widget_module, $widget_type .'_widget');
 
   $function = $widget_type .'_widget_settings_'. $op;
@@ -331,14 +323,8 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
  * the value of the field.
  */
 function filefield_content_is_empty($item, $field) {
-  if (empty($item['fid'])) {
-    return TRUE;
-  }
-  return FALSE;
+  return empty($item['fid']);
 }
-
-
-
 
 /**
  * Implementation of CCK's hook_widget_info().
@@ -384,9 +370,6 @@ function filefield_field_formatter_info() {
   );
 }
 
-
-
-
 /**
  * Determine the most appropriate icon for the given file's mimetype.
  *
@@ -396,7 +379,6 @@ function filefield_icon_url($file) {
   include_once(drupal_get_path('module', 'filefield') .'/filefield.theme.inc');
   return _filefield_icon_url($file);
 }
-
 
 /**
  * Access callback for the JavaScript upload and deletion AHAH callbacks.
@@ -422,3 +404,87 @@ function filefield_view_access($field_name) {
   return user_access('access content');
 }
 
+/**
+ * Shared AHAH callback for uploads and deletions. It just differs in a few
+ * unimportant details (what happens to the file, and which form is used as
+ * a replacement) so these details are taken care of by a form callback.
+ */
+function filefield_js($field_name, $type_name, $delta, $form_callback) {
+  $field = content_fields($field_name, $type_name);
+
+  if (empty($field) || empty($_POST['form_build_id'])) {
+    // Invalid request.
+    print drupal_to_js(array('data' => ''));
+    exit;
+  }
+
+  // Build the new form.
+  $form_state = array('submitted' => FALSE);
+  $form_build_id = $_POST['form_build_id'];
+  $form = form_get_cache($form_build_id, $form_state);
+
+  if (!$form) {
+    // Invalid form_build_id.
+    print drupal_to_js(array('data' => ''));
+    exit;
+  }
+  // form_get_cache() doesn't yield the original $form_state,
+  // but form_builder() does. Needed for retrieving the file array.
+  $built_form = $form;
+  $built_form_state = $form_state;
+  $built_form += array('#post' => $_POST);
+  $built_form = form_builder($_POST['form_id'], $built_form, $built_form_state);
+
+  // Clean ids, so that the same element doesn't get a different element id
+  // when rendered once more further down.
+  form_clean_id(NULL, TRUE);
+
+  // Perform the action for this AHAH callback.
+  $form_callback($built_form, $built_form_state, $field, $delta);
+
+  // Ask CCK for the replacement form element. Going through CCK gets us
+  // the benefit of nice stuff like '#required' merged in correctly.
+  module_load_include('inc', 'content', 'includes/content.node_form');
+  $field_element = content_field_form($form, $built_form_state, $field, $delta);
+  $delta_element = $field_element[$field_name][0]; // there's only one element in there
+
+  // Add the new element at the right place in the form.
+  if (module_exists('fieldgroup') && ($group_name = _fieldgroup_field_get_group($type_name, $field_name))) {
+    $form[$group_name][$field_name][$delta] = $delta_element;
+  }
+  else {
+    $form[$field_name][$delta] = $delta_element;
+  }
+
+  // Write the (unbuilt, updated) form back to the form cache.
+  form_set_cache($form_build_id, $form, $form_state);
+
+  // Render the form for output.
+  $form += array(
+    '#post' => $_POST,
+    '#programmed' => FALSE,
+  );
+  drupal_alter('form', $form, array(), 'filefield_js');
+  $form_state = array('submitted' => FALSE);
+  $form = form_builder('filefield_js', $form, $form_state);
+  $field_form = empty($group_name) ? $form[$field_name] : $form[$group_name][$field_name];
+
+  // We add a div around the new content to tell AHAH to let this fade in.
+  $field_form[$delta]['#prefix'] = '<div class="ahah-new-content">'. (isset($field_form[$delta]['#prefix']) ? $field_form[$delta]['#prefix'] : '');
+  $field_form[$delta]['#suffix'] = (isset($field_form[$delta]['#suffix']) ? $field_form[$delta]['#suffix'] : '') .'</div>';
+
+  $output = theme('status_messages') . drupal_render($field_form[$delta]);
+
+  // AHAH is not being nice to us and doesn't know the "other" button (that is,
+  // either "Upload" or "Delete") yet. Which in turn causes it not to attach
+  // AHAH behaviours after replacing the element. So we need to tell it first.
+  $javascript = drupal_add_js(NULL, NULL);
+  if (isset($javascript['setting'])) {
+    $output .= '<script type="text/javascript">jQuery.extend(Drupal.settings, '. drupal_to_js(call_user_func_array('array_merge_recursive', $javascript['setting'])) .');</script>';
+  }
+
+  // For some reason, file uploads don't like drupal_json() with its manual
+  // setting of the text/javascript HTTP header. So use this one instead.
+  print drupal_to_js(array('status' => TRUE, 'data' => $output));
+  exit;
+}
