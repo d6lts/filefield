@@ -134,6 +134,7 @@ function filefield_widget_value($element, $edit = FALSE) {
 
 function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['#theme'] = $element['#type'] .'_item';
+  
   $item = $element['#value'];
   $field = content_fields($element['#field_name'], $element['#type_name']);
   
@@ -154,6 +155,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     '#default_value' => $item['list'],
     '#attributes' => array('class' => 'filefield-list'),
   );  
+  if ($field['force_list']) $element['list']['#type'] = 'hidden';
 
   $element['data'] = array(
     '#type' => 'hidden', 
@@ -266,17 +268,17 @@ function theme_filefield_widget($element) {
 }
 
 function theme_filefield_widget_preview($item) {
-  return '<!-- filefield widget preview -->';
+  return '<div class="filefield-preview clear-block">'.
+           '<div class="filename">'. theme('filefield_file', $item) .'</div>'.
+           '<div class="filesize">'. format_size($item['filesize']) .'</div>'.
+           '<div class="filemime">'. $item['filemime'] .'</div>'.
+         '</div>';
 }
 
 function theme_filefield_widget_item($element) {
   return '<div class="filefield-row clear-block">'.
-              '<div class="filefield-info clear-block">'. 
-                  '<div class="filefield-filename clear-block">'. drupal_render($element['preview']) . '</div>'.
-                  //'<div class="filefield-filesize">filesize: 32Kb</div>'.
-                  //'<div class="filefield-filemime">mimetype: text/patch</div>'.
-              '</div>' .
-              '<div class="fielfield-edit clear-block"'.
+              '<div class="filefield-filename clear-block">'. drupal_render($element['preview']) . '</div>'.
+              '<div class="fielfield-edit clear-block">'.
                 '<div class="filefield-list">'. drupal_render($element['list']) . '</div>' .
                 '<div class="filefield-description">'. drupal_render($element['description']) . '</div>' .
                 '<div class="filefield-stuff">'. drupal_render($element) .'</div>'.

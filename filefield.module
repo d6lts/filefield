@@ -89,7 +89,11 @@ function filefield_theme() {
       'arguments' => array('element' => NULL),
       'file' => 'filefield_widget.inc',
     ),
-    'filefield_row' => array(
+    'filefield_widget_item' => array(
+      'arguments' => array('element' => NULL),
+      'file' => 'filefield_widget.inc',
+    ),
+    'filefield_widget_preview' => array(
       'arguments' => array('element' => NULL),
       'file' => 'filefield_widget.inc',
     ),
@@ -99,37 +103,16 @@ function filefield_theme() {
       'arguments' => array('element' => NULL),
       'file' => 'filefield_formatter.inc',
     ),
-    
-    // @todo: verify the need for the rest one by one.
-    'filefield_container_item' => array(
-      'arguments' => array('element' => NULL),
-      'file' => 'filefield.theme.inc',
-    ),
-    'filefield_file_upload' => array(
-      'arguments' => array('element' => NULL),
-      'file' => 'filefield_widget.inc',
-    ),
-    'filefield_file_edit' => array(
-      'arguments' => array('element' => NULL),
-      'file' => 'filefield_widget.inc',
-    ),
-    'filefield_generic_edit' => array(
-      'arguments' => array('element' => NULL),
-      //'file' => this one,
-    ),
-    'filefield_formatter_default' => array(
-      'arguments' => array('element' => NULL),
-      'file' => 'filefield_formatter.inc',
-    ),
-    'filefield_unguarded' => array(
+    'filefield_item' => array(
       'arguments' => array('file' => NULL, 'field' => NULL),
       'file' => 'filefield_formatter.inc',
     ),
-    'filefield' => array(
-      'arguments' => array('file' => NULL, 'field' => NULL),
+    'filefield_file' => array(
+      'arguments' => array('file' => NULL),
       'file' => 'filefield_formatter.inc',
     ),
-  );
+ 
+ );
 }
 
 /**

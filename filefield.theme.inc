@@ -11,61 +11,6 @@
  */
 
 /**
- * Theme function for a file formatter / file widget settings table.
- */
-function theme_filefield_draggable_settings_table($element) {
-  $settings_type = $element['#settings_type']; // 'widgets' or 'formatters'?
-  $table_id = 'filefield-file-'. $settings_type .'-table';
-  $order_class = 'filefield-file-'. $settings_type .'-weight';
-
-  $title = isset($element['#title']) ? $element['#title'] : '';
-  unset($element['#title']); // the header is used instead of the regular label
-
-  $required = !empty($element['#required'])
-    ? '<span class="form-required" title="'. t('This field is required.') .'">*</span>'
-    : '';
-
-  $title_column = t('@title: !required', array(
-    '@title' => $title, '!required' => $required,
-  ));
-  $header = array($title_column, t('Order'));
-  $rows = array();
-
-  foreach (element_children($element) as $key) {
-    $element[$key]['weight']['#attributes']['class'] = $order_class;
-    $delta_element = drupal_render($element[$key]['weight']);
-    $row = array(drupal_render($element[$key]), $delta_element);
-    $rows[] = array('data' => $row, 'class' => 'draggable');
-  }
-  $output = theme('table', $header, $rows, array('id' => $table_id));
-  $output = theme('form_element', $element, $output);
-
-  drupal_add_tabledrag($table_id, 'order', 'sibling', $order_class);
-
-  return $output;
-}
-
-/**
- * Render either an upload or edit container item so that the children elements
- * always appear inside a nice table, whatever $field['multiple'] might be.
- */
-function theme_filefield_container_item($element) {
-  $field = $element['#field'];
-  $children = !empty($element['#children']) ? $element['#children'] : '';
-
-  // CCK renders a nice table for multiple-value fields, that's just fine as is.
-  if ($field['multiple']) {
-    return $children;
-  }
-  // If the field is single-value, we still want to have a table, for the looks.
-  $header = array();
-  $rows = array(array($children));
-  $attributes = array('class' => 'filefield-file-container-table');
-  $table = theme('table', $header, $rows, $attributes);
-  return theme('form_element', $element, $table);
-}
-
-/**
  * Return an image with an appropriate icon for the given file.
  * Remember to pass a file object and not an array.
  */

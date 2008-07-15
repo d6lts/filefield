@@ -16,7 +16,7 @@
 function theme_filefield_formatter_filefield_default($element) {
   $file = $element['#item'];
   $field = content_fields($element['#field_name']);
-  $output = theme('filefield', $file, $field);
+  $output = theme('filefield_item', $file, $field);
   return $output;
 }
 
@@ -29,37 +29,15 @@ function theme_filefield_formatter_filefield_default($element) {
  * if viewing the file is not allowed for any reason. If you need to display it
  * in any case, please use theme('filefield') instead.
  */
-function theme_filefield($file, $field) {
+function theme_filefield_item($file, $field) {
   if (!filefield_view_access($field['field_name'])) {
-    return '<!-- you do not have access to view this file -->view_access_denied';
+    return '<!-- you do not have access to view this file -->';
   }
-  if ($field['force_list']) {
-    $file['list'] = 1; // always show the files if that option is enabled
+  if ($file['list'] || $field['force_list']) {
+    return theme('filefield_file', $file);
   }
-  if (empty($file['list'])) {
-    return '';
-  }
-  return theme('filefield_file', $file);
+  return '';
 }
-
-/**
- * Theme function for any file that is managed by filefield.
- * It doesn't really format stuff by itself but rather redirects to other
- * formatters that are telling us they want to handle the concerned file.
- *
- * This function does not check if the file may be shown, it returns markup
- * in any case (except if the file doesn't exist at all). If you need to check
- * permissions, please use theme('filefield_guarded') instead.
- */
-function theme_filefield_unguarded($file, $field) {
-  if (empty($file['fid']) || !is_file($file['filepath'])) {
-    return '';
-  }
-  drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
-
-  return '<div class="filefield-item filefield-item-empty"/>';
-}
-
 
 /**
  * Theme function for the 'generic' single file formatter.
@@ -68,5 +46,5 @@ function theme_filefield_file($file) {
   $path = $file['filepath'];
   $url = file_create_url($path);
   $icon = theme('filefield_icon', $file);
-  return '<div class="filefield-file">'. $icon . l($file['filename'], $url) .'</div>';
+  return '<div class="filefield-file clear-block">'. $icon . l($file['filename'], $url) .'</div>';
 }
