@@ -132,13 +132,18 @@ function filefield_widget_value($element, $edit = FALSE) {
   return $item;
 }
 
+
 function filefield_widget_process($element, $edit, &$form_state, $form) {
+  dsm('filefield_widget_process');
   $item = $element['#default_value'];
-  
+  // this should happen here, not in #value_callback? does #value_callback not happen the first time
+  // the form is built? or is item not fully loaded when returned from field?
   $item = array_merge($item, field_file_load($item['fid']));
-  
   $field = content_fields($element['#field_name'], $element['#type_name']);
-  
+
+  // figute out our fid...  
+  dsm($field['widget']['label']);
+  dsm($form_state);
   $element['fid'] = array('#type' => 'hidden', '#default_value' =>  $item['fid']);
 
   if ($item['fid'] != 0) {
@@ -220,6 +225,7 @@ function filefield_widget_submit_remove_btn($form, &$form_state) {
 }
 
 function filefield_widget_submit_upload_btn($form, &$form_state) {
+  /*
   $field_name = $form_state['clicked_button']['#field_name'];
   $delta = $form_state['clicked_button']['#delta'];
 
@@ -247,6 +253,7 @@ function filefield_widget_submit_upload_btn($form, &$form_state) {
     return;
   }
   $form_state['values'][$field_name][$delta]['fid'] = $file['fid'];
+  */
   $form_state['rebuild'] = true;
 }
 
@@ -376,5 +383,25 @@ function filefield_filefield_filesize_restrictions($field, $widget, $existing_fi
 }
 
 
+/**
+ * #require validation for filetype fields.
+ */
 
+function filefield_node_form_validate($form, &$form_state) {
+  dsm('filefield_node_validate');
+  $type = content_types($form['type']['#value']);
+  foreach ($type['fields'] as $field_name => $field) {
+    if (!$field['required']) continue;
+    $empty = $field['module'] .'_content_is_empty';
+    $valid = false;
+    foreach($form_state['values'][$field_name] as $delta => $item) {
+      if ($empty($item, $field)) continue;
+      $invalid = false;
+      break;
+    }
+
+    if ($valid) continue;
+    form_set_error($field_name, t('%title is a required field.', array('%title' => $field['widget']['label'])));
+  }
+}
 

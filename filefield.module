@@ -284,6 +284,13 @@ function filefield_widget_settings($op, $widget) {
  * Implementation of hook_widget().
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  // CCK doesn't give a validate callback at the field level...
+  // and FAPI's #require is naieve to complex structures...
+  // we validate at the field level ourselves.
+  if (!in_array('filefield_node_form_validate', $form['#validate'])) {
+    $form['#validate'][] = 'filefield_node_form_validate';
+  }
+
   $default =  array('fid' => 0, 'description' => '', 'list' => 0, 'data' => array());
   // assign defaults..
   if (empty($items[$delta])) $items[$delta] = $default;
