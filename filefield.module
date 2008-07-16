@@ -58,7 +58,7 @@ function filefield_elements() {
     '#columns' => array('fid', 'description', 'list', 'data'),
     '#process' => array('filefield_widget_process'),
     '#value_callback' => 'filefield_widget_value',
-    '#after_build' => 'filefield_widget_after_build',
+    '#element_validate' => array('filefield_widget_validate'),
     '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
   );
   $elements['filefield_extensible'] =  array(

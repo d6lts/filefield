@@ -196,31 +196,12 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   // placeholder.. will be serialized into the data column. this is a place for widgets
   // to put additional data.
   $element['data'] = array('#tree' => 'true');
-
-  // call widget type specific callbacks.
-  $function = $element['#type'] .'_widget_process';
-  if (function_exists($function)) {
-    $element =  $function($element, $edit, $form_state, $form);
-  }
   return $element;
 }
 
-function filefield_widget_after_build($element) {
-  $element['#value'] = array(   
-    'fid' => $element['fid']['#value'],   
-    'description' => $element['description']['#value'],   
-    'list' => $element['list']['#value'],   
-    'data' => array(),
-  );    
+function filefiele_widget_validate($element, &$form_state) {
 
-  // if this widget is another type and leaning on filefield to do the dirty work....
-  // pass it back home.
-  $function = $element['#type'] .'_widget_after_build';
-  if (function_exists($function)) {
-    $element = $function($element, $edit, $form_state, $form);
-  }
-  return $element;    
-}   
+}
 
 
 function filefield_widget_submit_remove_btn($form, &$form_state) {
