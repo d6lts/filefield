@@ -71,6 +71,7 @@ function filefield_field_load($node, $field, &$items, $teaser, $page) {
       unset($items[$delta]);
     }
     else {
+      $item['data'] = unserialize($item['data']);
       $items[$delta] = array_merge($item, $file);
     }
   }
@@ -83,6 +84,7 @@ function filefield_field_insert($node, $field, &$items, $teaser, $page) {
 }
 
 function filefield_field_update($node, $field, &$items, $teaser, $page) {
+  dsm($items);
   foreach ($items as $delta => $item) {
     $items[$delta] = field_file_save($node, $item);
     // Remove items from the array if they have been deleted.

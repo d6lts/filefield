@@ -12,14 +12,13 @@
  * Implementation of hook_init().
  */
 function filefield_init() {
-  // field file api.
-  module_load_include('inc', 'filefield', 'field_file');
+  // field hooks and callbacks.
+  module_load_include('inc', 'filefield', 'filefield_field');
   // widget hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_widget');
-  // formatter hooks and callbacks.
-  module_load_include('inc', 'filefield', 'filefield_formatter');
   // file hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_file');
+  module_load_include('inc', 'filefield', 'field_file');
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 }
 
@@ -271,7 +270,7 @@ function filefield_widget_settings($op, $widget) {
   $widget_module = isset($widget['widget_module']) ? $widget['widget_module'] : $widget['module'];
 
   // dynamically load widgets file and callbacks.
-  module_load_include('inc', $widget_module, $widget_type .'_widget');
+  module_load_include('inc', $widget_module, $widget_module .'_widget');
 
   $function = $widget_type .'_widget_settings_'. $op;
   if (function_exists($function)) {
@@ -285,16 +284,19 @@ function filefield_widget_settings($op, $widget) {
  * Implementation of hook_widget().
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
-  $default =  array('fid' => 0, 'description' => '', 'list' => 0, 'data' => '');
+  $default =  array('fid' => 0, 'description' => '', 'list' => 0, 'data' => array());
   // assign defaults..
   if (empty($items[$delta])) $items[$delta] = $default;
   
+  module_load_include('inc', 'filefield', 'field_widget');
+
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
   $element = array(
     '#title' => $field['widget']['label'],
     '#type' => $field['widget']['type'],
     '#default_value' => array_merge($default, $items[$delta]),
   );
+  module_load_include('inc', $field['widget']['module'], $field['widget']['module'] .'_widget');
   return $element;
 }
 
@@ -305,7 +307,7 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
  * the value of the field.
  */
 function filefield_content_is_empty($item, $field) {
-  return empty($item['fid']);
+  return empty($item['fid']) || (int)$item['fid'] == 0;
 }
 
 /**
@@ -473,6 +475,5 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
 
 // filefield defined widget default values.
 function filefield_default_value(&$form, &$form_state, $field, $delta) {
-  dsm('filefield_default_value');
-  return array('fid' => 0, 'list' => '', 'description' => 0, 'data' => '');
+  return array('fid' => 0, 'list' => '', 'description' => 0, 'data' => array());
 }

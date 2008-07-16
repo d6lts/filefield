@@ -14,6 +14,8 @@
  * @file 
  * 
  * FileField Widget Settings Hooks.
+ * @todo: move description property to filefield_widget widget callbacks
+ *        (filefield_widget_widget_{$op}).
  */
 
 function filefield_widget_settings_form($widget) {
@@ -116,7 +118,7 @@ function filefield_widget_value($element, $edit = FALSE) {
       'fid' => $edit['fid'],
       'description' => $edit['description'],
       'list' => empty($edit['list']),
-      'data' => '',
+      'data' => $edit['data'],
     );
   }
   $item = array_merge($item, $file);
@@ -131,7 +133,8 @@ function filefield_widget_value($element, $edit = FALSE) {
 }
 
 function filefield_widget_process($element, $edit, &$form_state, $form) {
-  $item  = empty($edit) ? $element['#default_value'] : $edit;
+  $item = $element['#default_value'];
+  
   $item = array_merge($item, field_file_load($item['fid']));
   
   $field = content_fields($element['#field_name'], $element['#type_name']);
@@ -157,7 +160,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
 
   $element['data'] = array(
     '#type' => 'hidden', 
-    '#value' => '',
+    '#value' => array(),
   );
 
   if ($item['fid'] != 0) {
@@ -189,6 +192,10 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#delta' => $element['#delta'],
     );
   }
+ 
+  // placeholder.. will be serialized into the data column. this is a place for widgets
+  // to put additional data.
+  $element['data'] = array('#tree' => 'true');
 
   // call widget type specific callbacks.
   $function = $element['#type'] .'_widget_process';
@@ -203,7 +210,7 @@ function filefield_widget_after_build($element) {
     'fid' => $element['fid']['#value'],   
     'description' => $element['description']['#value'],   
     'list' => $element['list']['#value'],   
-    'data' => $element['data']['#value'],   
+    'data' => array(),
   );    
 
   // if this widget is another type and leaning on filefield to do the dirty work....
@@ -212,34 +219,26 @@ function filefield_widget_after_build($element) {
   if (function_exists($function)) {
     $element = $function($element, $edit, $form_state, $form);
   }
- 
   return $element;    
 }   
 
-   
 
 function filefield_widget_submit_remove_btn($form, &$form_state) {
-  dsm ('imagefield_widget_submit_remove_btn');
-  //dsm($form);
   $field_name = $form_state['clicked_button']['#field_name'];
   $delta = $form_state['clicked_button']['#delta'];
 
-  dsm($form_state['values'][$field_name][$delta]);
   $form_state['values'][$field_name][$delta] = array(
     'fid' => 0,
     'alt' => '',
     'filepath' => '',
     'filename' => '',
     'title' => '',
-    'data' => '',
+    'data' => array(),
   ); 
   $form_state['rebuild'] = true;
 }
 
 function filefield_widget_submit_upload_btn($form, &$form_state) {
-  //dsm('imagefield_widget_submit_upload_btn');
-  //dsm($form);
-  //dsm($form_state);
   $field_name = $form_state['clicked_button']['#field_name'];
   $delta = $form_state['clicked_button']['#delta'];
 
@@ -266,14 +265,11 @@ function filefield_widget_submit_upload_btn($form, &$form_state) {
     form_set_error($upload_name, t('The Image upload failed.'));
     return;
   }
-  //dsm($file);
   $form_state['values'][$field_name][$delta]['fid'] = $file['fid'];
   $form_state['rebuild'] = true;
 }
 
 function _filefield_widget_validate($element, &$form_state) {
-  //dsm('imagefield_validate');
-  //dsm($element);
 }
 
 
