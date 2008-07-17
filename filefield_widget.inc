@@ -170,8 +170,15 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#name' => $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn',
       '#type' => 'submit', 
       '#value' => t('Remove'),
-      '#process' => array('filefield_widget_process_remove_btn'),
+      '#process' => array('filefield_widget_process_remove_btn', 'form_expand_ahah'),
       '#submit' => array('filefield_widget_submit_remove_btn'),
+      '#ahah' => array( // with JavaScript    
+         'path' => 'filefield/js/remove/'. $element['#field_name'] .'/'. $element['#type_name'] .'/'. $element['#delta'],    
+         'wrapper' => $element['#id'],   
+         'method' => 'replace',    
+         'effect' => 'fade',   
+      ),
+ 
       '#field_name' => $element['#field_name'],
       '#delta' => $element['#delta'],
     );
@@ -189,8 +196,14 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     $element['upload_btn'] = array(
       '#type' => 'submit', 
       '#value' => t('Upload'),
-      '#process' => array('filefield_widget_process_upload_btn'),
+      '#process' => array('filefield_widget_process_upload_btn', 'form_expand_ahah'),
       '#submit' => array('filefield_widget_submit_upload_btn'),
+      '#ahah' => array( // with JavaScript    
+         'path' => 'filefield/js/upload/'. $element['#field_name'] .'/'. $element['#type_name'] .'/'. $element['#delta'],    
+         'wrapper' => $element['#id'],   
+         'method' => 'replace',    
+         'effect' => 'fade',   
+      ),
       '#field_name' => $element['#field_name'],
       '#delta' => $element['#delta'],
       '#type_name' => $element['#type_name'],

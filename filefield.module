@@ -19,6 +19,8 @@ function filefield_init() {
   // file hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_file');
   module_load_include('inc', 'filefield', 'field_file');
+
+  drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 }
 
@@ -30,7 +32,7 @@ function filefield_menu() {
 
   $items['filefield/js/upload/%/%/%'] = array(
     'page callback' => 'filefield_js',
-    'page arguments' => array(3, 4, 5, 'filefield_file_upload_js'),
+    'page arguments' => array(3, 4, 5, '_filefield_file_upload'),
     'access callback' => 'filefield_edit_access',
     'access arguments' => array(3),
     'type' => MENU_CALLBACK,
@@ -38,7 +40,7 @@ function filefield_menu() {
   );
   $items['filefield/js/delete/%/%/%'] = array(
     'page callback' => 'filefield_js',
-    'page arguments' => array(3, 4, 5, 'filefield_file_edit_delete_js'),
+    'page arguments' => array(3, 4, 5, '_filefield_file_delete'),
     'access callback' => 'filefield_edit_access',
     'access arguments' => array(3),
     'type' => MENU_CALLBACK,
