@@ -300,10 +300,22 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   module_load_include('inc', 'filefield', 'field_widget');
 
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
+  $max_filesize = file_upload_max_size();
+  if (!empty($field['widget']['max_filesize_per_file']) 
+    && $field['widget']['max_filesize_per_file'] < $max_filesize) {
+    $max_filesize =  $field['widget']['max_filesize_per_file'];
+  }
+
   $element = array(
     '#title' => $field['widget']['label'],
     '#type' => $field['widget']['type'],
     '#default_value' => array_merge($default, $items[$delta]),
+    '#upload_validators' => array(
+      'file_validate_size' => array($max_filesize),
+      // override core since it excludes uid 1 on this.. I only want to 
+      // excuse uid 1 of quota requirements.
+      'filefield_validate_extensions' => array($field['widget']['file_extensions']),
+    ),
   );
   module_load_include('inc', $field['widget']['module'], $field['widget']['module'] .'_widget');
   return $element;
@@ -368,6 +380,7 @@ function filefield_field_formatter_info() {
  *
  * @return The URL of the icon image file, or FALSE if no icon could be found.
  */
+
 function filefield_icon_url($file) {
   include_once(drupal_get_path('module', 'filefield') .'/filefield.theme.inc');
   return _filefield_icon_url($file);
@@ -486,3 +499,39 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
 function filefield_default_value(&$form, &$form_state, $field, $delta) {
   return array('fid' => 0, 'list' => '', 'description' => 0, 'data' => array());
 }
+
+/**
+ * Check that the filename ends with an allowed extension. This check is 
+ * enforced for the user #1.
+ *
+ * @param $file
+ *   A Drupal file object.
+ * @param $extensions
+ *   A string with a space separated
+ * @return
+ *   An array. If the file extension is not allowed, it will contain an error message.
+ */
+function filefield_validate_extensions($file, $extensions) {
+  global $user;
+  $errors = array();
+
+  $regex = '/\.('. ereg_replace(' +', '|', preg_quote($extensions)) .')$/i';
+  if (!preg_match($regex, $file->filename)) {
+    $errors[] = t('Only files with the following extensions are allowed: %files-allowed.', array('%files-allowed' => $extensions));
+  }
+  return $errors;
+}
+
+
+
+// These two functions return messages for file_validate_size, and file_validate_extensions.
+// They're a neat hack that gets the job done.
+function filefield_validate_extensions_help($extensions) {
+  return t('Allowed Extensions: %ext', array('%ext' => $extensions));
+}
+
+function file_validate_size_help($size) {
+  return t('Maximum Filesize: %size', array('%size' => format_size($size)));
+}
+
+

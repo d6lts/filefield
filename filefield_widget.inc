@@ -53,6 +53,8 @@ function filefield_widget_settings_form($widget) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
+  // upload validator. @todo: consider replacing with global 
+  // && node validate.
   $form['max_filesize']['max_filesize_per_file'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum upload size per file'),
@@ -62,6 +64,8 @@ function filefield_widget_settings_form($widget) {
     '#description' => t('Specify the size limit that applies to each file separately. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the allowed file size. If you leave this this empty the file sizes will be limited only by PHP\'s maximum post and file upload sizes.'),
     '#element_validate' => array('_filefield_widget_settings_max_filesize_per_file_validate'),
   );
+
+  // node validate.
   $form['max_filesize']['max_filesize_per_node'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum upload size per node'),
@@ -140,7 +144,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $item = array_merge($item, field_file_load($item['fid']));
   $field = content_fields($element['#field_name'], $element['#type_name']);
 
-  
+
   // figute out our fid...  
   $element['fid'] = array('#type' => 'hidden', '#default_value' =>  $item['fid']);
 
@@ -189,10 +193,15 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   if ($item['fid'] == 0) {
     $element['description']['#type'] = 'hidden';
 
+    foreach ($element['#upload_validators'] as $callback => $arguments) {
+      $help_func = $callback .'_help';
+      $desc[] = call_user_func_array($help_func, $arguments);
+    }
     $element['upload'] = array(
       '#name' => 'files['. $element['#field_name'] .'_'. $element['#delta'] .']',
       '#type' => 'file',
       '#title' => t('New Upload'),
+      '#description' => implode('<br />', $desc),
     );
 
     $element['upload_btn'] = array(
@@ -210,6 +219,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#field_name' => $element['#field_name'],
       '#delta' => $element['#delta'],
       '#type_name' => $element['#type_name'],
+      '#upload_validators' => $element['#upload_validators'],
     );
   }
  
@@ -269,7 +279,7 @@ function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$fo
     return $element;
   }
 
-  $validators = _filefield_filefield_validators($field, $field['widget'], $form_state['values'][$field_name]);
+  $validators = $element['#upload_validators'];
 
   if (!$file = field_file_save_upload($upload_name, $validators, $complete_file_path)) {
     watchdog('imagefield', 'The file upload failed. %upload', array('%upload' => $upload_name));
@@ -296,7 +306,6 @@ function _filefield_widget_validate($element, &$form_state) {
 function theme_filefield_widget($element) {
   return theme('form_element', $element, $element['#children']);
 }
- 
 
 function theme_filefield_widget_preview($item) {
   return '<div class="filefield-preview clear-block">'.
@@ -316,102 +325,6 @@ function theme_filefield_widget_item($element) {
               '</div>'.
          '</div>';
 }
-
-
-
-
-/**
- * Implementation of hook_filefield_validators():
- * Upload restrictions for file size, file extension and supported file widgets.
- * Implemented as private function instead of as a real hook, because we want
- * to make an exception so that these requirements appear first in any list.
- */
-function _filefield_filefield_validators($field, $widget, $existing_files) {
-  $validators = array();
-
-  // Thanks to the php.ini restrictions, there is always a maximum file size.
-  // Therefore we can rely on at least one restriction always being in force.
-  $max_filesize = _filefield_maximum_filesize($field, $widget, $existing_files);
-  $filesize_message = ($max_filesize > 0)
-    ? t('Maximum file size: !size.', array('!size' => format_size($max_filesize)))
-    : t('The allowed maximum file size total has been exceeded.');
-
-  $validators['file_validate_size'] = array(
-    'validator arguments' => array($max_filesize),
-    'requirement message' => $filesize_message,
-    'upload possible' => ($max_filesize > 0),
-  );
-
-  if (!empty($widget['file_extensions'])) {
-    $validators['file_validate_extensions'] = array(
-      'validator arguments' => array($widget['file_extensions']),
-      'requirement message' => t('Allowed extensions: %ext.', array(
-        '%ext' => $widget['file_extensions'],
-      )),
-    );
-  }
-  return $validators;
-}
-
-
-
-/**
- * Get the maximum file size that is allowed for a new upload.
- *
- * @return
- *   -1 for "no more files allowed", or any positive value as the number
- *   of bytes that may still be uploaded. A result of 0 ("unlimited") will
- *   never happen because of PHP's upload limits.)
- */
-function _filefield_maximum_filesize($field, $widget, $existing_files) {
-  // Calculate the maximum file size - the least of all returned values.
-  $max_filesize = FALSE;
-  $restrictions = module_invoke_all(
-    'filefield_filesize_restrictions', $field, $widget, $existing_files
-  );
-  foreach ($restrictions as $value) {
-    if ($max_filesize === FALSE || $value < $max_filesize) {
-      $max_filesize = $value;
-    }
-  }
-
-  // Return -1 if any restriction value was not a positive number.
-  if ($max_filesize === FALSE || $max_filesize <= 0) {
-    return -1;
-  }
-  return $max_filesize;
-}
-
-/**
- * Implementation of hook_filefield_filesize_restrictions():
- * Specify how large a newly uploaded file may be, in bytes.
- * (The smallest size of all hook implementations will be applied in the end).
- */
-function filefield_filefield_filesize_restrictions($field, $widget, $existing_files) {
-  $filesize_restrictions = array(file_upload_max_size());
-
-  // Maximum file size for each file separately.
-  if (!empty($widget['max_filesize_per_file'])) {
-    $filesize_restrictions[] = parse_size($widget['max_filesize_per_file']);
-  }
-
-  // Maximum file size for all files in the node (for this field).
-  if (!empty($widget['max_filesize_per_node'])) {
-    $allowed_total_size = parse_size($widget['max_filesize_per_node']);
-    $total_size = 0;
-
-    foreach ($existing_files as $delta => $file) {
-      if (!empty($file->filesize)) {
-        $total_size += $file->filesize;
-      }
-    }
-    if (!empty($total_size)) {
-      $filesize_restrictions[] = $allowed_total_size - $total_size;
-    }
-  }
-  return $filesize_restrictions;
-}
-
 
 /**
  * #require validation for filetype fields.
