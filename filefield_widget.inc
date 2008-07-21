@@ -140,6 +140,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $item = array_merge($item, field_file_load($item['fid']));
   $field = content_fields($element['#field_name'], $element['#type_name']);
 
+  
   // figute out our fid...  
   $element['fid'] = array('#type' => 'hidden', '#default_value' =>  $item['fid']);
 
@@ -293,8 +294,9 @@ function _filefield_widget_validate($element, &$form_state) {
  * FormAPI theme function. Theme the output of an image field.
  */
 function theme_filefield_widget($element) {
-  return $element['#children'];
+  return theme('form_element', $element, $element['#children']);
 }
+ 
 
 function theme_filefield_widget_preview($item) {
   return '<div class="filefield-preview clear-block">'.
