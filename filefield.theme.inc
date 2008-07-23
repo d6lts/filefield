@@ -18,10 +18,12 @@ function theme_filefield_icon($file) {
   if (is_object($file)) {
     $file = (array) $file;
   }
-  $dashed_mime = check_plain(strtr($file['filemime'], array('/' => '-')));
+  $mime = check_plain($file['filemime']);
+
+  $dashed_mime = strtr($mime, array('/' => '-'));
 
   if ($icon_url = _filefield_icon_url($file)) {
-    $icon = '<img class="field-icon-'. $dashed_mime .'" src="'. $icon_url .'" />';
+    $icon = '<img class="field-icon-'. $dashed_mime .'"  alt="'. $mime .' icon" src="'. $icon_url .'" />';
   }
   return '<div class="filefield-icon field-icon-'. $dashed_mime .'">'. $icon .'</div>';
 }
