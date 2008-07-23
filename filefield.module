@@ -57,7 +57,7 @@ function filefield_elements() {
   $elements = array();
   $elements['filefield_widget'] =  array(
     '#input' => TRUE,
-    '#columns' => array('fid', 'description', 'list', 'data'),
+    '#columns' => array('fid', 'list', 'data'),
     '#process' => array('filefield_widget_process'),
     '#value_callback' => 'filefield_widget_value',
     '#element_validate' => array('filefield_widget_validate'),
@@ -65,7 +65,7 @@ function filefield_elements() {
   );
   $elements['filefield_extensible'] =  array(
     '#input' => TRUE,
-    '#columns' => array('fid', 'description', 'list', 'data'),
+    '#columns' => array('fid', 'list', 'data'),
     '#process' => array('filefield_process'),
     '#value_callback' => 'filefield_value',
     '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
@@ -293,7 +293,7 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
     $form['#validate'][] = 'filefield_node_form_validate';
   }
 
-  $default =  array('fid' => 0, 'description' => '', 'list' => 0, 'data' => array());
+  $default =  array('fid' => 0, 'list' => 0, 'data' => array('description' => ''));
   // assign defaults..
   if (empty($items[$delta])) $items[$delta] = $default;
   
@@ -497,7 +497,7 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
 
 // filefield defined widget default values.
 function filefield_default_value(&$form, &$form_state, $field, $delta) {
-  return array('fid' => 0, 'list' => '', 'description' => 0, 'data' => array());
+  return array('fid' => 0, 'list' => '', 'data' => array('description' => ''));
 }
 
 /**

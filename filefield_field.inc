@@ -7,27 +7,36 @@
 
 
 function filefield_field_settings_form($field) {
-      $form = array();
-      $form['force_list'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Always list files'),
-        '#default_value' => isset($field['force_list']) ? $field['force_list'] : 0,
-        '#description' => t('If enabled, the "List" checkbox will be hidden and files are always shown. Otherwise, the user can choose for each file whether it should be listed or not.'),
-      );
-      return $form;
+  $form = array();
+  $form['list_default'] = array(
+    '#type' => 'radios',
+    '#title' => t('Default list value'),
+    '#options' => array(1 => t('Listed'), 0 => t('Hidden')),
+    '#default_value' => isset($field['list_default']) ? $field['list_default'] : 1,
+    '#required' => true,
+    '#description' => t('The list option determines whether files are visible on node views. This will be used as the default value for the list option.'),
+  );
+  $form['force_list_default'] = array(
+    '#type' => 'radios',
+    '#title' => t('How should the list value be handled?'),
+    '#options' => array(0 => t('User Configurable. (Users will be able to set the list value per file.)'), 1 => t('Enforce Default. (The default list value will be used for all files, and the list checkbox will not be displayed to users.)')),
+    '#default_value' => isset($field['force_list_default']) ? $field['force_list_default'] : 0,
+    '#required' => true,
+  );
+
+  return $form;
 }
 
 function filefield_field_settings_validate($field) {
 }
 
 function filefield_field_settings_save($field) {
-  return array('force_list', 'file_formatters');
+  return array('force_list_default', 'list_default', 'file_formatters');
 }
 
 function filefield_field_settings_database_columns($field) {
   return array(
     'fid' => array('type' => 'int', 'not null' => FALSE),
-    'description' => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE, 'sortable' => TRUE),
     'list' => array('type' => 'int', 'size' => 'tiny', 'not null' => FALSE),
     'data' => array('type' => 'text', 'serialize' => true),
   );
@@ -94,7 +103,7 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
 
 function filefield_field_delete_revision($node, $field, &$items, $teaser, $page) {
   foreach ($items as $delta => $item) {
-    // For hook_file($op = 'references'), remember that this is being deleted.
+    // For hook_file_references, remember that this is being deleted.
     $item['field_name'] = $field['field_name'];
     if (field_file_delete($item)) unset($items[$delta]);
     $items = array_values($items); // compact deltas
@@ -104,7 +113,7 @@ function filefield_field_delete_revision($node, $field, &$items, $teaser, $page)
 
 function filefield_field_delete($node, $field, &$items, $teaser, $page) {
   foreach ($items as $delta => $item) {
-    // For hook_file($op = 'references'), remember that this is being deleted.
+    // For hook_file_references, remember that this is being deleted.
     $item['field_name'] = $field['field_name'];
     field_file_delete($item);
   }

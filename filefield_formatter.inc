@@ -33,11 +33,27 @@ function theme_filefield_item($file, $field) {
   if (!filefield_view_access($field['field_name'])) {
     return '<!-- you do not have access to view this file -->';
   }
-  if ($file['list'] || $field['force_list']) {
+
+  if (filefield_file_listed($file, $field)) {
     return theme('filefield_file', $file);
   }
   return '';
 }
+
+/**
+ * return whether a file is set to listed taking into consideration
+ * widget default value settings.
+ *
+ * @param $file a populated filefield item.
+ * @param $field a cck field instance array.
+ */
+function filefield_file_listed($file, $field) {
+  if ($field['force_list_default']) return (bool)$field['list_default'];
+  return (bool)$file['list'];
+}
+
+
+
 
 /**
  * Theme function for the 'generic' single file formatter.

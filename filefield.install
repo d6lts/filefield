@@ -123,32 +123,44 @@ function filefield_update_3() {
 
 function filefield_update_6001() {
   include_once(drupal_get_path('module','content') .'/includes/content.admin.inc');
-  // add data column to filefields.
-  $fields = content_fields();
-  foreach($fields as $field) {
-    if ($field['type'] != 'file') continue;
-    $new_field = $field;
-    $new_field['columns']['data'] =  array('type' => 'text');
-    content_alter_db($field, $new_field);
-  }
-  // clear that cache.
-  cache_clear_all('*', content_cache_tablename(), true);
-  return array();
-}
 
-
-function filefield_update_6002() {
-  $ret = array();
   // rename the field type from file to filefield. adhere to module namespace.
   $ret[] = update_sql("UPDATE {content_node_field} SET type='filefield' WHERE type='file'");
   // rename default widget to filefield_widget. adhere to module namespace.
   $ret[] = update_sql("UPDATE {content_node_field_instance} SET widget_type='filefield_widget' WHERE widget_type='file'");
-  // clear that cache.
-  cache_clear_all('*', content_cache_tablename(), true);
-  return $ret;
-}
 
-function filefield_update_6003() {
+  // update list default value and force list settings.
+  $result = db_query("SELECT * FROM {content_node_field} WHERE type = 'filefield'");
+  while ($field = db_fetch_object($result)) {
+    $updated = false;
+    $field_settings = unserialize($field->global_settings);
+    if (!isset($field_settings['list_default']) || !is_numeric($field_settings['list_default'])) {
+      $field_settings['list_default'] = 1;
+      $updated = true;
+     
+    }
+    // set behavior to match old force_list behavior.
+    // set imagefields to match force_list behavior since they also exhibit this behavior.
+    if (!empty($field_settings['force_list'])) {
+      $field_settings['list_default'] = 1;
+      $field_settings['force_list_default'] = 1;  
+      $updated = true;
+    }
+    if ($updated) {
+      $ret[] = update_sql("UPDATE {content_node_field} SET global_settings = '". serialize($field_settings) ."' WHERE field_name = '$field->field_name'");
+    }
+  }
+
+
+  // add data column to filefields.
+  $fields = content_fields();
+  foreach($fields as $field) {
+    if ($field['type'] != 'filefield') continue;
+    $new_field = $field;
+    $new_field['columns']['data'] =  array('type' => 'text');
+    content_alter_db($field, $new_field);
+  }
+  
   // Build a batch that migrates the data in each filefield
   $batch = array(
     'title' => t('Migrating filefield values'),
@@ -159,24 +171,27 @@ function filefield_update_6003() {
   foreach ($content_info['content types'] as $node_type => $node_info) {
     foreach ($node_info['fields'] as $field_name => $field) {
       if ($field['type'] == 'filefield') {
-        $batch['operations'][] = array('_filefield_update_6003_move_operation', array($field));
-        $batch['operations'][] = array('_filefield_update_6003_drop_operation', array($field));
+        $batch['operations'][] = array('_filefield_update_6001_move_operation', array($field));
+        $batch['operations'][] = array('_filefield_update_6001_drop_operation', array($field));
       }
     }
   }
   batch_set($batch);
 
+
+  // clear them caches.
+  cache_clear_all('*', content_cache_tablename(), true);
+  cache_clear_all('*', 'cache', true);
   return array();
 }
 
 /**
  * Move the list and descriptions column into the serialized data column.
  */
-function _filefield_update_6003_move_operation($field, &$context) {
+function _filefield_update_6001_move_operation($field, &$context) {
   // Setup the first through
   if (!isset($context['sandbox']['progress'])) {
     $db_info = content_database_info($field);
-
     $context['sandbox']['db_info'] = $db_info;
     $context['sandbox']['table'] = $db_info['table'];
     $context['sandbox']['col_data'] = $db_info['columns']['data']['column'];
@@ -185,7 +200,6 @@ function _filefield_update_6003_move_operation($field, &$context) {
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['current_node'] = 0;
   }
-
 
   // Work our way through the field values 50 rows at a time.
   $limit = 50;
@@ -220,9 +234,9 @@ function _filefield_update_6003_move_operation($field, &$context) {
 /**
  * Drop the list and description columns.
  */
-function _filefield_update_6003_drop_operation($field, &$context) {
+function _filefield_update_6001_drop_operation($field, &$context) {
   $db_info = content_database_info($field);
   // TODO: Now that the data has been migrated we can drop the columns.
-  db_query('ALTER TABLE '. $db_info['table'] .' DROP COLUMN '.  $db_info['columns']['description']['column'];
+  db_query('ALTER TABLE '. $db_info['table'] .' DROP COLUMN '.  $db_info['columns']['description']['column']);
   $context['finished'] = 1;
 }

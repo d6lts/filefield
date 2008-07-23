@@ -120,7 +120,7 @@ function filefield_widget_value($element, $edit = FALSE) {
     $file = field_file_load($edit['fid']);
     $item = array(
       'fid' => $edit['fid'],
-      'description' => $edit['description'],
+      'description' => isset($edit['description']) ? $edit['description'] : '',
       'list' => empty($edit['list']),
       'data' => empty($edit['data']) ? array() : $edit['data'],
     );
@@ -136,7 +136,6 @@ function filefield_widget_value($element, $edit = FALSE) {
   return $item;
 }
 
-
 function filefield_widget_process($element, $edit, &$form_state, $form) {
   $item = $element['#default_value'];
   // this should happen here, not in #value_callback? does #value_callback not happen the first time
@@ -151,19 +150,30 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   if ($item['fid'] != 0) {
     $element['preview'] = array('#type' => 'markup', '#value' => theme($element['#type'] .'_preview', $item));  
   }
-  $element['description'] = array(
+
+  // placeholder.. will be serialized into the data column. this is a place for widgets
+  // to put additional data.
+  $element['data'] = array('#tree' => 'true');
+  $element['data']['description'] = array(
     '#type' => 'textfield', 
     '#title' => t('Description'),
-    '#default_value' => $item['description'],
+    '#default_value' => $item['data']['description'],
   );
-  
-  $element['list'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('List'),
-    '#default_value' => !empty($item['list']),
-    '#attributes' => array('class' => 'filefield-list'),
-  );  
-  if ($field['force_list']) $element['list']['#type'] = 'hidden';
+
+  if ($field['force_list_default']) {
+    $element['list'] = array(
+      '#type' => 'hidden',
+      '#value' => $field['list_default'],
+    );
+  }
+  else {
+    $element['list'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('List'),
+      '#default_value' => isset($item['list']) ? $item['list'] : $field['list_default'],
+      '#attributes' => array('class' => 'filefield-list'),
+    );
+  }
 
   $element['data'] = array(
     '#type' => 'hidden', 
@@ -191,7 +201,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   }
 
   if ($item['fid'] == 0) {
-    $element['description']['#type'] = 'hidden';
+    $element['data']['description']['#type'] = 'hidden';
 
     foreach ($element['#upload_validators'] as $callback => $arguments) {
       $help_func = $callback .'_help';
@@ -223,9 +233,6 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     );
   }
  
-  // placeholder.. will be serialized into the data column. this is a place for widgets
-  // to put additional data.
-  $element['data'] = array('#tree' => 'true');
   return $element;
 }
 
