@@ -122,6 +122,7 @@ function filefield_update_3() {
 
 
 function filefield_update_6001() {
+  $ret = array();
   include_once(drupal_get_path('module','content') .'/includes/content.admin.inc');
 
   // rename the field type from file to filefield. adhere to module namespace.
@@ -140,7 +141,6 @@ function filefield_update_6001() {
      
     }
     // set behavior to match old force_list behavior.
-    // set imagefields to match force_list behavior since they also exhibit this behavior.
     if (!empty($field_settings['force_list'])) {
       $field_settings['list_default'] = 1;
       $field_settings['force_list_default'] = 1;  
@@ -182,7 +182,7 @@ function filefield_update_6001() {
   // clear them caches.
   cache_clear_all('*', content_cache_tablename(), true);
   cache_clear_all('*', 'cache', true);
-  return array();
+  return $ret;
 }
 
 /**

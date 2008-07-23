@@ -495,9 +495,31 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   exit;
 }
 
-// filefield defined widget default values.
+/** 
+ * set the default values for imagefield.
+ * This seems to work for all but add a new item on unlimited values which doesn't
+ * get assigned a proper default.
+ */
 function filefield_default_value(&$form, &$form_state, $field, $delta) {
-  return array('fid' => 0, 'list' => '', 'data' => array('description' => ''));
+  $items = array();
+  $field_name = $field['field_name'];
+
+  switch ($field['multiple']) {
+    case 0:
+      $max = 1;
+      break;
+    case 1:
+      $max =  isset($form_state['item_count'][$field_name]) ? $form_state['item_count'][$field_name] : 2;
+      break;
+    default:
+      $max = $field['multiple'];
+      break;
+  }
+  
+  for ($delta = 0; $delta < $max; $delta++) {
+    $items[$delta] = array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
+  }
+  return $items;
 }
 
 /**

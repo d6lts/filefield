@@ -175,10 +175,6 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     );
   }
 
-  $element['data'] = array(
-    '#type' => 'hidden', 
-    '#value' => array(),
-  );
 
   if ($item['fid'] != 0) {
     $element['remove_btn'] = array(
