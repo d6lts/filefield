@@ -336,7 +336,7 @@ function theme_filefield_widget_item($element) {
 function filefield_node_form_validate($form, &$form_state) {
   $type = content_types($form['type']['#value']);
   foreach ($type['fields'] as $field_name => $field) {
-    if (!$field['required']) continue;
+    if (!(in_array($field['module'], array('imagefield', 'filefield'))) || !$field['required']) continue;
     $empty = $field['module'] .'_content_is_empty';
     $valid = false;
     foreach($form_state['values'][$field_name] as $delta => $item) {
@@ -346,7 +346,7 @@ function filefield_node_form_validate($form, &$form_state) {
     }
 
     if ($valid) continue;
-    form_set_error($field_name, t('%title is a required field.', array('%title' => $field['widget']['label'])));
+    form_set_error($field_name, t('%title field is required.', array('%title' => $field['widget']['label'])));
   }
 }
 
