@@ -537,23 +537,27 @@ function filefield_validate_extensions($file, $extensions) {
   global $user;
   $errors = array();
 
-  $regex = '/\.('. ereg_replace(' +', '|', preg_quote($extensions)) .')$/i';
-  if (!preg_match($regex, $file->filename)) {
-    $errors[] = t('Only files with the following extensions are allowed: %files-allowed.', array('%files-allowed' => $extensions));
+  if (!empty($extensions)) {
+    $regex = '/\.('. ereg_replace(' +', '|', preg_quote($extensions)) .')$/i';
+    if (!preg_match($regex, $file->filename)) {
+      $errors[] = t('Only files with the following extensions are allowed: %files-allowed.', array('%files-allowed' => $extensions));
+    }
   }
+
   return $errors;
 }
-
-
 
 // These two functions return messages for file_validate_size, and file_validate_extensions.
 // They're a neat hack that gets the job done.
 function filefield_validate_extensions_help($extensions) {
-  return t('Allowed Extensions: %ext', array('%ext' => $extensions));
+  if (!empty($extensions)) {
+    return t('Allowed Extensions: %ext', array('%ext' => $extensions));
+  }
+  else {
+    return '';
+  }
 }
 
 function file_validate_size_help($size) {
   return t('Maximum Filesize: %size', array('%size' => format_size($size)));
 }
-
-
