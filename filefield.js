@@ -18,7 +18,7 @@ Drupal.behaviors.filefieldValidateAutoAttach = function(context) {
         );
         // what do I prepend this to?
         $(this).before('<div class="messages error filefield-js-error">' + error + '</div>');
-        this.files = '';
+        this.value = '';
         return false;
       }
     }

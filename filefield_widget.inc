@@ -208,6 +208,9 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#type' => 'file',
       '#title' => t('New Upload'),
       '#description' => implode('<br />', $desc),
+      '#attributes' => array(
+        'accept' => str_replace(' ', '|', trim($field['widget']['file_extensions']))
+      )
     );
 
     $element['upload_btn'] = array(
