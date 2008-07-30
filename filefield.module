@@ -547,8 +547,9 @@ function filefield_validate_extensions($file, $extensions) {
   return $errors;
 }
 
-// These two functions return messages for file_validate_size, and file_validate_extensions.
-// They're a neat hack that gets the job done.
+// These three functions return messages for file_validate_size, and file_validate_extensions.
+// They're a neat hack that gets the job done. Even though it's evil to put a 
+// function into a namespace not owned by your module...
 function filefield_validate_extensions_help($extensions) {
   if (!empty($extensions)) {
     return t('Allowed Extensions: %ext', array('%ext' => $extensions));
@@ -560,4 +561,18 @@ function filefield_validate_extensions_help($extensions) {
 
 function file_validate_size_help($size) {
   return t('Maximum Filesize: %size', array('%size' => format_size($size)));
+}
+
+function file_validate_image_resolution_help($max_size = '0', $min_size = '0') {
+  if (!empty($max_size)) {
+    if (!empty($min_size)) {
+      return t('Images must be between @max_size and @min_size pixels', array('@max_size' => $max_size, '@min_size' => $min_size));
+    }
+    else {
+      return t('Images must be smaller than @max_size pixels', array('@max_size' => $max_size));
+    }
+  }
+  if (!empty($min_size)) {
+    return t('Images must be bigger than @max_size pixels', array('@max_size' => $min_size));
+  }
 }

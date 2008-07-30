@@ -252,6 +252,10 @@ function filefield_widget_submit_remove_btn($form, &$form_state) {
     'data' => array(),
   ); 
   $form_state['rebuild'] = true;
+
+  node_form_submit_build_node($form, $form_state);
+
+  return $element;
 }
 
 function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$form) {
