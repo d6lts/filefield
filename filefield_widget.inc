@@ -235,7 +235,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   return $element;
 }
 
-function filefiele_widget_validate($element, &$form_state) {
+function filefield_widget_validate($element, &$form_state) {
 
 }
 
@@ -298,15 +298,13 @@ function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$fo
   }
 
   $form_state['values'][$field_name][$delta]['fid'] = $file['fid'];
-  if ($button != 'op') $form_state['rebuild'] = true;
-
-  node_form_submit_build_node($form, $form_state);
 
   return $element;
 }
 
 function filefield_widget_submit_upload_btn($form, &$form_state) {
   $form_state['rebuild'] = true;
+  node_form_submit_build_node($form, $form_state);
 }
 
 function _filefield_widget_validate($element, &$form_state) {
