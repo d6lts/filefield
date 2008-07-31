@@ -300,26 +300,39 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   module_load_include('inc', 'filefield', 'field_widget');
 
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
-  $max_filesize = file_upload_max_size();
-  if (!empty($field['widget']['max_filesize_per_file']) 
-    && $field['widget']['max_filesize_per_file'] < $max_filesize) {
-    $max_filesize =  $field['widget']['max_filesize_per_file'];
-  }
 
   $element = array(
     '#title' => $field['widget']['label'],
     '#type' => $field['widget']['type'],
     '#default_value' => array_merge($default, $items[$delta]),
-    '#upload_validators' => array(
-      'file_validate_size' => array($max_filesize),
-      // override core since it excludes uid 1 on this.. I only want to 
-      // excuse uid 1 of quota requirements.
-      'filefield_validate_extensions' => array($field['widget']['file_extensions']),
-    ),
+    '#upload_validators' => filefield_widget_upload_validators($field),
   );
   module_load_include('inc', $field['widget']['module'], $field['widget']['module'] .'_widget');
   return $element;
 }
+
+/**
+ * Get the upload validators for a file field.
+ *
+ * @param $field CCK Field
+ * @return array suitable for passing to file_save_upload() or the filefield
+ *   element's '#upload_validators' property.
+ */
+function filefield_widget_upload_validators($field) {
+  $max_filesize = file_upload_max_size();
+  if (!empty($field['widget']['max_filesize_per_file']) && $field['widget']['max_filesize_per_file'] < $max_filesize) {
+    $max_filesize = $field['widget']['max_filesize_per_file'];
+  }
+
+  $validators = array(
+    'file_validate_size' => array($max_filesize),
+    // override core since it excludes uid 1 on this.. I only want to 
+    // excuse uid 1 of quota requirements.
+    'filefield_validate_extensions' => array($field['widget']['file_extensions']),
+  );
+  return $validators;
+}
+
 
 /**
  * Implementation of CCK's hook_content_is_empty().
