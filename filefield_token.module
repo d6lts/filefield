@@ -7,14 +7,14 @@
 function filefield_token_list($type = 'all') {
   if ($type == 'field' || $type == 'all') {
     $tokens = array();
-    $tokens['file']['fid']                = t("File ID");
-    $tokens['file']['description']        = t("File description");
-    $tokens['file']['filename']           = t("File name");
-    $tokens['file']['filepath']           = t("File path");
-    $tokens['file']['filemime']           = t("File MIME type");
-    $tokens['file']['filesize']           = t("File size (in bytes)");
-    $tokens['file']['filesize_formatted'] = t("File size (pretty printed)");
-    $tokens['file']['view']               = t("Fully formatted HTML file tag");
+    $tokens['file']['filefield-fid']                = t("File ID");
+    $tokens['file']['filefield-description']        = t("File description");
+    $tokens['file']['filefield-filename']           = t("File name");
+    $tokens['file']['filefield-filepath']           = t("File path");
+    $tokens['file']['filefield-filemime']           = t("File MIME type");
+    $tokens['file']['filefield-filesize']           = t("File size (in bytes)");
+    $tokens['file']['filefield-filesize_formatted'] = t("File size (pretty printed)");
+    $tokens['file']['filefield-view']               = t("Fully formatted HTML file tag");
     return $tokens;
   }
 }
@@ -26,14 +26,14 @@ function filefield_token_list($type = 'all') {
 function filefield_token_values($type, $object = NULL) {
   if ($type == 'field') {
     $item = $object[0];
-    $tokens['fid']                = $item['fid'];
-    $tokens['description']        = $item['description'];
-    $tokens['filename']           = $item['filename'];
-    $tokens['filepath']           = $item['filepath'];
-    $tokens['filemime']           = $item['filemime'];
-    $tokens['filesize']           = $item['filesize'];
-    $tokens['filesize_formatted'] = format_size($item['filesize']);
-    $tokens['view']               = $item['view'];
+    $tokens['filefield-fid']                = $item['fid'];
+    $tokens['filefield-description']        = $item['description'];
+    $tokens['filefield-filename']           = $item['filename'];
+    $tokens['filefield-filepath']           = $item['filepath'];
+    $tokens['filefield-filemime']           = $item['filemime'];
+    $tokens['filefield-filesize']           = $item['filesize'];
+    $tokens['filefield-filesize_formatted'] = format_size($item['filesize']);
+    $tokens['filefield-view']               = $item['view'];
     return $tokens;
   }
 }
