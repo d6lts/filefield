@@ -252,13 +252,10 @@ function filefield_widget_submit_remove_btn($form, &$form_state) {
     'data' => array(),
   ); 
   $form_state['rebuild'] = true;
-
-  node_form_submit_build_node($form, $form_state);
-
-  return $element;
 }
 
 function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$form) {
+  dsm($form_state['values']);
   // nothing to do if nothing clicked.
   if (empty($form_state['clicked_button'])) return $element;
   $button = $form_state['clicked_button']['#name'];
@@ -270,7 +267,7 @@ function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$fo
 
   // Do not process uploads if some other button besides save or preview was 
   // pressed.
-  if ( !($button == 'op' && $_FILES['files']['name'][$upload_name])
+  if ( !($button == 'op' && !empty($_FILES['files']['name'][$upload_name]))
       || $button != $element['#name']) return $element;
 
   $field = content_fields($field_name, $node_type);
@@ -305,7 +302,6 @@ function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$fo
 
 function filefield_widget_submit_upload_btn($form, &$form_state) {
   $form_state['rebuild'] = true;
-  node_form_submit_build_node($form, $form_state);
 }
 
 function _filefield_widget_validate($element, &$form_state) {
