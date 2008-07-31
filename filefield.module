@@ -589,3 +589,7 @@ function file_validate_image_resolution_help($max_size = '0', $min_size = '0') {
     return t('Images must be bigger than @max_size pixels', array('@max_size' => $min_size));
   }
 }
+
+function file_validate_is_image_help($size) {
+  return t('Must be an  JPEG, PNG or GIF image');
+}
