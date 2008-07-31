@@ -298,6 +298,7 @@ function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$fo
   }
 
   $form_state['values'][$field_name][$delta]['fid'] = $file['fid'];
+  $form_state['values'][$field_name][$delta]['data'] = $file['data'];
 
   return $element;
 }
