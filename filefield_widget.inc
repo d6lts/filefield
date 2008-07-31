@@ -255,7 +255,6 @@ function filefield_widget_submit_remove_btn($form, &$form_state) {
 }
 
 function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$form) {
-  dsm($form_state['values']);
   // nothing to do if nothing clicked.
   if (empty($form_state['clicked_button'])) return $element;
   $button = $form_state['clicked_button']['#name'];
