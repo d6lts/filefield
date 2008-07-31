@@ -96,6 +96,106 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE, $
 }
 
 /**
+ * Save a file into a file node after running all the associated validators.
+ *
+ * @param $validators
+ *   An optional, associative array of callback functions used to validate the
+ *   file. The keys are function names and the values arrays of callback
+ *   parameters which will be passed in after the user and file objects. The
+ *   functions should return an array of error messages, an empty array
+ *   indicates that the file passed validation. The functions will be called in
+ *   the order specified.
+ * @param $dest
+ *   A string containing the directory $source should be copied to. If this is
+ *   not provided or is not writable, the temporary directory will be used.
+ * @param $replace
+ *   A boolean indicating whether an existing file of the same name in the
+ *   destination directory should overwritten. A false value will generate a
+ *   new, unique filename in the destination directory.
+ * @return
+ *   An array containing the file information, or 0 in the event of an error.
+ * 
+ */
+function field_file_save_file($filepath, $validators = array(), $dest = FALSE, $replace = FILE_EXISTS_RENAME) {
+  global $user;
+
+  // Add in our check of the the file name length.
+  $validators['file_validate_name_length'] = array();
+
+  // Build the list of non-munged extensions.
+  // @todo: this should not be here. we need to figure out the right place.
+  $extensions = '';
+  foreach ($user->roles as $rid => $name) {
+    $extensions .= ' '. variable_get("upload_extensions_$rid",
+    variable_get('upload_extensions_default', 'jpg jpeg gif png txt html doc xls pdf ppt pps odt ods odp'));
+  }
+
+  // Begin building file object.
+  $file = new stdClass();
+  $file->uid = $user->uid;
+  $file->filename = basename($filepath);
+  $file->filepath = $filepath;
+  $file->filemime = module_exists('mimedetect') ? mimedetect_mime($file) : 'text/plain';
+
+  // Rename potentially executable files, to help prevent exploits.
+  if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
+    $file->filemime = 'text/plain';
+    $file->filepath .= '.txt';
+    $file->filename .= '.txt';
+  }
+
+  // If the destination is not provided, or is not writable, then use the
+  // temporary directory.
+  if (empty($dest) || file_check_path($dest) === FALSE) {
+    $dest = file_directory_temp();
+  }
+
+  $file->source = 'field_file_save_file';
+  $file->destination = file_destination(file_create_path($dest .'/'. $file->filename), $replace);
+  $file->filesize = filesize($filepath);
+
+  // Call the validation functions.
+  $errors = array();
+  foreach ($validators as $function => $args) {
+    array_unshift($args, $file);
+    $errors = array_merge($errors, call_user_func_array($function, $args));
+  }
+
+  // Check for validation errors.
+  if (!empty($errors)) {
+    $message = t('The selected file %name could not be saved.', array('%name' => $file->filename));
+    if (count($errors) > 1) {
+      $message .= '<ul><li>'. implode('</li><li>', $errors) .'</li></ul>';
+    }
+    else {
+      $message .= ' '. array_pop($errors);
+    }
+    form_set_error($file->source, $message);
+    return 0;
+  }
+
+  if (!file_copy($file, $file->destination, FILE_EXISTS_RENAME)) {
+    form_set_error($source, t('File upload error. Could not move uploaded file.'));
+    watchdog('file', 'Upload error. Could not move file %file to destination %destination.', array('%file' => $file->filename, '%destination' => $file->filepath));
+    return 0;
+  }
+
+  // If we made it this far it's safe to record this file in the database.
+  $file->uid = $user->uid;
+  $file->status = FILE_STATUS_TEMPORARY;
+  $file->timestamp = time();
+  drupal_write_record('files', $file);
+
+  // Let modules add additional properties to the yet barebone file object.
+  foreach (module_implements('file_insert') as $module) {
+    $function =  $module .'_file_insert';
+    $function($file);
+  }
+  _field_file_cache($file); // cache the file in order to minimize load queries
+  return (array)$file;
+}
+
+/**
  * Update an field item file. Delete marked items if neccessary and set new items as permamant.
  *
  * @param $node
