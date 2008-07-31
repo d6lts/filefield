@@ -101,7 +101,7 @@ function filefield_theme() {
     ),
 
 
-    'filefield_formatter_filefield_default' => array(
+    'filefield_formatter_default' => array(
       'arguments' => array('element' => NULL),
       'file' => 'filefield_formatter.inc',
     ),
@@ -371,7 +371,7 @@ function filefield_widget_info() {
  */
 function filefield_field_formatter_info() {
   return array(
-    'filefield_default' => array(
+    'default' => array(
       'label' => t('Generic files'),
       'suitability callback' => TRUE,
       'field types' => array('filefield','image'),

@@ -13,7 +13,7 @@
 /**
  * Theme function for the 'default' filefield formatter.
  */
-function theme_filefield_formatter_filefield_default($element) {
+function theme_filefield_formatter_default($element) {
   $file = $element['#item'];
   $field = content_fields($element['#field_name']);
   $output = theme('filefield_item', $file, $field);
