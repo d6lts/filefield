@@ -108,6 +108,35 @@ function _filefield_widget_settings_max_filesize_per_node_validate($element, &$f
   }
 }
 
+function filefield_save_upload($element) {
+  $upload_name = $element['#field_name'] .'_'. $element['#delta'];
+  $field_instance = content_fields($element['#field_name'], $element['#type_name']);
+
+  if (empty($_FILES['files']['name'][$upload_name])) {
+    return 0;
+  }
+
+  $dest = $field_instance['widget']['file_path'];
+  if (module_exists('token')) {
+    global $user;
+    $dest = token_replace($dest, 'user', $user);
+  }
+
+  $dest = file_directory_path() .'/'. $dest;
+  if (!field_file_check_directory($dest, FILE_CREATE_DIRECTORY)) {
+    watchdog('imagefield', 'The upload directory %directory for the file field %field (content type %type) could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $dest, '%field' => $element['#field_name'], '%type' => $element['#type_name']));
+    form_set_error($upload_name, t('The file could not be uploaded.'));
+    return 0;
+  }
+
+  if (!$file = field_file_save_upload($upload_name, $element['#upload_validators'], $dest)) {
+    watchdog('imagefield', 'The file upload failed. %upload', array('%upload' => $upload_name));
+    form_set_error($upload_name, t('The Image upload failed.'));
+    return 0;
+  }
+  return $file['fid'];
+}
+
 /**
  * FileField widget element callbacks.
  */
@@ -117,14 +146,20 @@ function filefield_widget_value($element, $edit = FALSE) {
     $item = $element['#default_value'];
   }
   else {
+    // uploads take priority over value of fid text field.
+    if ($fid = filefield_save_upload($element)) {
+      $edit['fid'] = $fid;
+    }    
+
+    // load file.
     $file = field_file_load($edit['fid']);
     $item = array(
       'fid' => $edit['fid'],
-      'description' => isset($edit['description']) ? $edit['description'] : '',
       'list' => empty($edit['list']),
       'data' => empty($edit['data']) ? array() : $edit['data'],
     );
   }
+  // merge file and item data so it is available to all widgets.
   $item = array_merge($item, $file);
 
   // if this widget is another type and leaning on filefield to do the dirty work....
@@ -137,15 +172,26 @@ function filefield_widget_value($element, $edit = FALSE) {
 }
 
 function filefield_widget_process($element, $edit, &$form_state, $form) {
-  $item = $element['#default_value'];
+  
+  $item = $element['#value'];
+  $field_name = $element['#field_name'];
+  $delta = $element['#delta'];
+
+  // check remove buttons...
+  $remove_name = $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn';
+  if (isset($form_state['clicked_button']) && $form_state['clicked_button']['#name'] == $remove_name) {
+    $item['fid'] = 0;
+  }
+
   // this should happen here, not in #value_callback? does #value_callback not happen the first time
   // the form is built? or is item not fully loaded when returned from field?
-  $item = array_merge($item, field_file_load($item['fid']));
+  //$item = array_merge($item, field_file_load($item['fid']));
   $field = content_fields($element['#field_name'], $element['#type_name']);
 
 
+ 
   // figute out our fid...  
-  $element['fid'] = array('#type' => 'hidden', '#default_value' =>  $item['fid']);
+  $element['fid'] = array('#type' => 'hidden', '#value' =>  $item['fid']);
 
   if ($item['fid'] != 0) {
     $element['preview'] = array('#type' => 'markup', '#value' => theme($element['#type'] .'_preview', $item));  
@@ -157,7 +203,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['data']['description'] = array(
     '#type' => 'textfield', 
     '#title' => t('Description'),
-    '#default_value' => $item['data']['description'],
+    '#value' => isset($item['data']['description']) ? $item['data']['description'] : '',
   );
 
   if ($field['force_list_default']) {
@@ -170,68 +216,70 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     $element['list'] = array(
       '#type' => 'checkbox',
       '#title' => t('List'),
-      '#default_value' => isset($item['list']) ? $item['list'] : $field['list_default'],
+      '#value' => isset($item['list']) ? $item['list'] : $field['list_default'],
       '#attributes' => array('class' => 'filefield-list'),
     );
   }
 
 
+
+  foreach ($element['#upload_validators'] as $callback => $arguments) {
+    $help_func = $callback .'_help';
+    $desc[] = call_user_func_array($help_func, $arguments);
+  }
+  $element['upload'] = array(
+    '#name' => 'files['. $element['#field_name'] .'_'. $element['#delta'] .']',
+    '#type' => 'file',
+    '#title' => t('New Upload'),
+    '#description' => implode('<br />', $desc),
+    '#attributes' => array(
+      'accept' => str_replace(' ', '|', trim($field['widget']['file_extensions']))
+    )
+  );
+
+
+  if ($item['fid'] != 0) {
+    $element['upload']['#title'] = t('Replace');
+  }
+  $element['upload_btn'] = array(
+    '#type' => 'submit', 
+    '#value' => t('Upload'),
+    '#process' => array('filefield_widget_process_upload_btn', 'form_expand_ahah'),
+    '#process' => array('filefield_widget_process_upload_btn'),
+    '#submit' => array('node_form_submit_build_node'),
+    '#ahah' => array( // with JavaScript    
+       'path' => 'filefield/js/upload/'. $element['#field_name'] .'/'. $element['#type_name'] .'/'. $element['#delta'],    
+       'wrapper' => $element['#id'],   
+       'method' => 'replace',    
+       'effect' => 'fade',   
+    ),
+    '#field_name' => $element['#field_name'],
+    '#delta' => $element['#delta'],
+    '#type_name' => $element['#type_name'],
+    '#upload_validators' => $element['#upload_validators'],
+  );
   if ($item['fid'] != 0) {
     $element['remove_btn'] = array(
       '#name' => $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn',
       '#type' => 'submit', 
       '#value' => t('Remove'),
-      //'#process' => array('filefield_widget_process_remove_btn', 'form_expand_ahah'),
+      '#process' => array('filefield_widget_process_remove_btn', 'form_expand_ahah'),
       '#process' => array('filefield_widget_process_remove_btn'),
       '#submit' => array('filefield_widget_submit_remove_btn'),
+/*
       '#ahah' => array( // with JavaScript    
-         'path' => 'filefield/js/remove/'. $element['#field_name'] .'/'. $element['#type_name'] .'/'. $element['#delta'],    
+         'path' => 'filefield/js/delete/'. $element['#field_name'] .'/'. $element['#type_name'] .'/'. $element['#delta'],    
          'wrapper' => $element['#id'],   
          'method' => 'replace',    
          'effect' => 'fade',   
       ),
- 
+*/ 
       '#field_name' => $element['#field_name'],
       '#delta' => $element['#delta'],
     );
   }
 
-  if ($item['fid'] == 0) {
-    $element['data']['description']['#type'] = 'hidden';
 
-    foreach ($element['#upload_validators'] as $callback => $arguments) {
-      $help_func = $callback .'_help';
-      $desc[] = call_user_func_array($help_func, $arguments);
-    }
-    $element['upload'] = array(
-      '#name' => 'files['. $element['#field_name'] .'_'. $element['#delta'] .']',
-      '#type' => 'file',
-      '#title' => t('New Upload'),
-      '#description' => implode('<br />', $desc),
-      '#attributes' => array(
-        'accept' => str_replace(' ', '|', trim($field['widget']['file_extensions']))
-      )
-    );
-
-    $element['upload_btn'] = array(
-      '#type' => 'submit', 
-      '#value' => t('Upload'),
-      //'#process' => array('filefield_widget_process_upload_btn', 'form_expand_ahah'),
-      '#process' => array('filefield_widget_process_upload_btn'),
-      '#submit' => array('filefield_widget_submit_upload_btn'),
-      '#ahah' => array( // with JavaScript    
-         'path' => 'filefield/js/upload/'. $element['#field_name'] .'/'. $element['#type_name'] .'/'. $element['#delta'],    
-         'wrapper' => $element['#id'],   
-         'method' => 'replace',    
-         'effect' => 'fade',   
-      ),
-      '#field_name' => $element['#field_name'],
-      '#delta' => $element['#delta'],
-      '#type_name' => $element['#type_name'],
-      '#upload_validators' => $element['#upload_validators'],
-    );
-  }
- 
   return $element;
 }
 
@@ -240,68 +288,9 @@ function filefield_widget_validate($element, &$form_state) {
 }
 
 function filefield_widget_submit_remove_btn($form, &$form_state) {
-  $field_name = $form_state['clicked_button']['#field_name'];
-  $delta = $form_state['clicked_button']['#delta'];
-
-  $form_state['values'][$field_name][$delta] = array(
-    'fid' => 0,
-    'alt' => '',
-    'filepath' => '',
-    'filename' => '',
-    'title' => '',
-    'data' => array(),
-  ); 
-  $form_state['rebuild'] = true;
+  node_form_submit_build_node($form, $form_state);
 }
 
-function filefield_widget_process_upload_btn($element, $edit, &$form_state, &$form) {
-  // nothing to do if nothing clicked.
-  if (empty($form_state['clicked_button'])) return $element;
-  $button = $form_state['clicked_button']['#name'];
-
-  $field_name = $element['#field_name'];
-  $node_type =  $element['#type_name'];
-  $delta = $element['#delta'];
-  $upload_name = $field_name .'_'. $delta;
-
-  // Do not process uploads if some other button besides save or preview was 
-  // pressed.
-  if ( !($button == 'op' && !empty($_FILES['files']['name'][$upload_name]))
-      || $button != $element['#name']) return $element;
-
-  $field = content_fields($field_name, $node_type);
-
-  $widget_file_path = $field['widget']['file_path'];
-  if (module_exists('token')) {
-    global $user;
-    $widget_file_path = token_replace($widget_file_path, 'user', $user);
-  }
-
-  $complete_file_path = file_directory_path() .'/'. $widget_file_path;
-  $upload_name = $field_name .'_'. $delta;
-  if (!field_file_check_directory($complete_file_path, FILE_CREATE_DIRECTORY)) {
-    watchdog('imagefield', 'The upload directory %directory for the file field %field (content type %type) could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $widget_file_path, '%field' => $field_name, '%type' => $field['type_name']));
-    form_set_error($upload_name, t('The file could not be uploaded.'));
-    return $element;
-  }
-
-  $validators = $element['#upload_validators'];
-
-  if (!$file = field_file_save_upload($upload_name, $validators, $complete_file_path)) {
-    watchdog('imagefield', 'The file upload failed. %upload', array('%upload' => $upload_name));
-    form_set_error($upload_name, t('The Image upload failed.'));
-    return $element;
-  }
-
-  $form_state['values'][$field_name][$delta]['fid'] = $file['fid'];
-  $form_state['values'][$field_name][$delta]['data'] = $file['data'];
-
-  return $element;
-}
-
-function filefield_widget_submit_upload_btn($form, &$form_state) {
-  $form_state['rebuild'] = true;
-}
 
 function _filefield_widget_validate($element, &$form_state) {
 }
