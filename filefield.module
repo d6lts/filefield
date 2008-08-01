@@ -505,7 +505,7 @@ function _filefield_widget_form($node, $field, &$items) {
     '#description' => $upload_description,
     '#weight' => 9,
     '#tree' => FALSE,
-    '#attributes' => array('accept' => str_replace(' ', '|', trim($field['widget']['file_extensions']))),
+    '#attributes' => array('accept' => str_replace(' ', ',', trim($field['widget']['file_extensions']))),
   );
 
   $form[$fieldname]['new']['upload'] = array(

@@ -11,10 +11,11 @@ Drupal.filefieldValidateAutoAttach = function() {
      */
  
     if(this.accept.length>1){
-      v = new RegExp('\\.('+(this.accept?this.accept:'')+')$','gi');
+      accept = this.accept.replace(',', '|');
+      v = new RegExp('\\.('+(accept?accept:'')+')$','gi');
       if (!v.test(this.value)) {
         var error = 'The file ' + this.value + " is not supported.\n";
-        error += "Only the following file types are supported: \n" + this.accept.replace(/\|/g, ' ');
+        error += "Only the following file types are supported: \n" + accept.replace(/\|/g, ', ');
         alert(error);
         // what do I prepend this to? 
         // .prepend($('<div class="filefield-js-error>"' + error + '</div>'));
