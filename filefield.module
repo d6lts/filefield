@@ -860,6 +860,7 @@ function filefield_check_directory($directory, $form_element = array()) {
  * Menu callback for JavaScript-based uploads.
  */
 function filefield_js() {
+  
   // Parse fieldname from submit button.
   $matches = array();
   foreach(array_keys($_POST) as $key) {
@@ -896,6 +897,7 @@ function filefield_js() {
   $output = theme('status_messages') . drupal_render($form);
 
   // Send the updated file attachments form.
+  $GLOBALS['devel_shutdown'] = false;
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit();
 }
