@@ -11,7 +11,7 @@ Drupal.behaviors.filefieldValidateAutoAttach = function(context) {
      * Add client side validation for the input[@file] accept attribute.
      */
     if(this.accept.length > 1){
-      accept = this.accept.replace(',', '|');
+      accept = this.accept.replace(/,/g, '|');
       v = new RegExp('\\.(' + (accept ? accept : '') + ')$', 'gi');
       if (!v.test(this.value)) {
         var error = Drupal.t("The selected file %filename cannot not be uploaded. Only files with the following extensions are allowed: %extensions.",
