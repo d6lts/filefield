@@ -126,7 +126,7 @@ function filefield_file_download($file) {
   // and node it belongs to. Required for later access checking.
   $cck_files = array();
   foreach (content_fields() as $field) {
-    if ($field['type'] == 'file') {
+    if ($field['type'] == 'filefield') {
       $db_info = content_database_info($field);
       $table = $db_info['table'];
       $fid_column = $db_info['columns']['fid']['column'];
