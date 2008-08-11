@@ -498,6 +498,7 @@ function filefield_js($type_name, $field_name, $delta) {
 
   // For some reason, file uploads don't like drupal_json() with its manual
   // setting of the text/javascript HTTP header. So use this one instead.
+  $GLOBALS['devel_shutdown'] = false;
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
 }
