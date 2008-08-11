@@ -30,19 +30,11 @@ function filefield_init() {
 function filefield_menu() {
   $items = array();
 
-  $items['filefield/js/upload/%/%/%'] = array(
+  $items['filefield/ahah/%/%/%'] = array(
     'page callback' => 'filefield_js',
-    'page arguments' => array(3, 4, 5, '_filefield_file_upload'),
+    'page arguments' => array(2,3,4),
     'access callback' => 'filefield_edit_access',
-    'access arguments' => array(3),
-    'type' => MENU_CALLBACK,
-    'file' => 'filefield_widget.inc',
-  );
-  $items['filefield/js/delete/%/%/%'] = array(
-    'page callback' => 'filefield_js',
-    'page arguments' => array(3, 4, 5, '_filefield_file_delete'),
-    'access callback' => 'filefield_edit_access',
-    'access arguments' => array(3),
+    'access arguments' => array(2),
     'type' => MENU_CALLBACK,
     'file' => 'filefield_widget.inc',
   );
@@ -424,13 +416,14 @@ function filefield_view_access($field_name) {
 }
 
 /**
- * Shared AHAH callback for uploads and deletions. It just differs in a few
- * unimportant details (what happens to the file, and which form is used as
- * a replacement) so these details are taken care of by a form callback.
+ * Shared AHAH callback for uploads and deletions... It rebuilds the form element
+ * for a particular field item. As long as the form processing is properly 
+ * encapsulated in the widget element the form should rebuild correctly using 
+ * FAPI without the need for additional callbacks or processing.
  */
-function filefield_js($field_name, $type_name, $delta, $form_callback) {
+function filefield_js($type_name, $field_name, $delta) {
   $field = content_fields($field_name, $type_name);
-
+  
   if (empty($field) || empty($_POST['form_build_id'])) {
     // Invalid request.
     print drupal_to_js(array('data' => ''));
@@ -447,19 +440,18 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
     print drupal_to_js(array('data' => ''));
     exit;
   }
+
   // form_get_cache() doesn't yield the original $form_state,
   // but form_builder() does. Needed for retrieving the file array.
   $built_form = $form;
   $built_form_state = $form_state;
+
   $built_form += array('#post' => $_POST);
   $built_form = form_builder($_POST['form_id'], $built_form, $built_form_state);
 
   // Clean ids, so that the same element doesn't get a different element id
   // when rendered once more further down.
   form_clean_id(NULL, TRUE);
-
-  // Perform the action for this AHAH callback.
-  $form_callback($built_form, $built_form_state, $field, $delta);
 
   // Ask CCK for the replacement form element. Going through CCK gets us
   // the benefit of nice stuff like '#required' merged in correctly.
@@ -485,12 +477,12 @@ function filefield_js($field_name, $type_name, $delta, $form_callback) {
   );
   drupal_alter('form', $form, array(), 'filefield_js');
   $form_state = array('submitted' => FALSE);
-  $form = form_builder('filefield_js', $form, $form_state);
+  $form = form_builder('filefield_js', $form, $built_form_state);
   $field_form = empty($group_name) ? $form[$field_name] : $form[$group_name][$field_name];
 
   // We add a div around the new content to tell AHAH to let this fade in.
-  $field_form[$delta]['#prefix'] = '<div class="ahah-new-content">'. (isset($field_form[$delta]['#prefix']) ? $field_form[$delta]['#prefix'] : '');
-  $field_form[$delta]['#suffix'] = (isset($field_form[$delta]['#suffix']) ? $field_form[$delta]['#suffix'] : '') .'</div>';
+  $field_form[$delta]['#prefix'] = '<div class="ahah-new-content">';
+  $field_form[$delta]['#suffix'] = '</div>';
 
   $output = theme('status_messages') . drupal_render($field_form[$delta]);
 

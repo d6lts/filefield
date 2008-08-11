@@ -179,16 +179,14 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
 
   // check remove buttons...
   $remove_name = $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn';
-  if (isset($form_state['clicked_button']) && $form_state['clicked_button']['#name'] == $remove_name) {
-    $item['fid'] = 0;
+
+  if (isset($form_state['clicked_button'])) {
+    if ($form_state['clicked_button']['#name'] == $remove_name) {
+      $item['fid'] = 0;
+    }
   }
 
-  // this should happen here, not in #value_callback? does #value_callback not happen the first time
-  // the form is built? or is item not fully loaded when returned from field?
-  //$item = array_merge($item, field_file_load($item['fid']));
   $field = content_fields($element['#field_name'], $element['#type_name']);
-
-
  
   // figute out our fid...  
   $element['fid'] = array('#type' => 'hidden', '#value' =>  $item['fid']);
@@ -241,15 +239,17 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   if ($item['fid'] != 0) {
     $element['upload']['#title'] = t('Replace');
   }
+
+  $element['#prefix'] = '<div id="'. $element['#id'] .'-ahah-wrapper" class="filefield-ahah-wrapper">';
+  $element['#suffix'] = '</div>';
   $element['upload_btn'] = array(
     '#type' => 'submit', 
     '#value' => t('Upload'),
-    '#process' => array('filefield_widget_process_upload_btn', 'form_expand_ahah'),
-    '#process' => array('filefield_widget_process_upload_btn'),
+    '#process' => array('form_expand_ahah'),
     '#submit' => array('node_form_submit_build_node'),
     '#ahah' => array( // with JavaScript    
-       'path' => 'filefield/js/upload/'. $element['#field_name'] .'/'. $element['#type_name'] .'/'. $element['#delta'],    
-       'wrapper' => $element['#id'],   
+       'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],    
+       'wrapper' => $element['#id'] .'-ahah-wrapper',   
        'method' => 'replace',    
        'effect' => 'fade',   
     ),
@@ -264,16 +264,13 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#type' => 'submit', 
       '#value' => t('Remove'),
       '#process' => array('filefield_widget_process_remove_btn', 'form_expand_ahah'),
-      '#process' => array('filefield_widget_process_remove_btn'),
       '#submit' => array('filefield_widget_submit_remove_btn'),
-/*
       '#ahah' => array( // with JavaScript    
-         'path' => 'filefield/js/delete/'. $element['#field_name'] .'/'. $element['#type_name'] .'/'. $element['#delta'],    
-         'wrapper' => $element['#id'],   
-         'method' => 'replace',    
-         'effect' => 'fade',   
+        'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],    
+        'wrapper' => $element['#id'] .'-wrapper',   
+        'method' => 'replace',    
+        'effect' => 'fade',   
       ),
-*/ 
       '#field_name' => $element['#field_name'],
       '#delta' => $element['#delta'],
     );
