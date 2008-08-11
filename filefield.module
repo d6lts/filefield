@@ -221,7 +221,8 @@ function filefield_field_settings($op, $field) {
     $return = $function($field);
   }
 
-  // dynamically load widgets file and callbacks.
+  // dynamically load widgets file and callbacks for other fields utilizing 
+  // filefield's hook_field_settings implementation.
   module_load_include('inc', $field['module'], $field['type'] .'_field');
   $function = $field['module'] .'_'. $field['type'] .'_field_settings_'. $op;
   if (function_exists($function)) {
@@ -263,7 +264,8 @@ function filefield_widget_settings($op, $widget) {
   $widget_type = isset($widget['widget_type']) ? $widget['widget_type'] : $widget['type'];
   $widget_module = isset($widget['widget_module']) ? $widget['widget_module'] : $widget['module'];
 
-  // dynamically load widgets file and callbacks.
+  // dynamically load widgets file and callbacks for other fields and widgets utilizing 
+  // filefield's hook_widget_settings implementation.
   module_load_include('inc', $widget_module, $widget_module .'_widget');
 
   $function = $widget_type .'_widget_settings_'. $op;
@@ -311,15 +313,15 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
  *   element's '#upload_validators' property.
  */
 function filefield_widget_upload_validators($field) {
-  $max_filesize = file_upload_max_size();
-  if (!empty($field['widget']['max_filesize_per_file']) && $field['widget']['max_filesize_per_file'] < $max_filesize) {
-    $max_filesize = $field['widget']['max_filesize_per_file'];
+  $max_filesize = parse_size(file_upload_max_size());
+  if (!empty($field['widget']['max_filesize_per_file']) && parse_size($field['widget']['max_filesize_per_file']) < $max_filesize) {
+    $max_filesize = parse_size($field['widget']['max_filesize_per_file']);
   }
 
   $validators = array(
-    'file_validate_size' => array($max_filesize),
-    // override core since it excludes uid 1 on this.. I only want to 
-    // excuse uid 1 of quota requirements.
+    'filefield_validate_size' => array($max_filesize),
+    // override core since it excludes uid 1 on the extension check.. I only want to 
+    // excuse uid 1 of quota requirements. - dopry.
     'filefield_validate_extensions' => array($field['widget']['file_extensions']),
   );
   return $validators;
@@ -564,11 +566,67 @@ function filefield_validate_extensions_help($extensions) {
   }
 }
 
-function file_validate_size_help($size) {
-  return t('Maximum Filesize: %size', array('%size' => format_size($size)));
+
+function filefield_validate_size($file, $file_limit = 0, $user_limit = 0) {
+  global $user;
+
+  $errors = array();
+
+  if ($file_limit && $file->filesize > $file_limit) {
+    $errors[] = t('The file is %filesize exceeding the maximum file size of %maxsize.', array('%filesize' => format_size($file->filesize), '%maxsize' => format_size($file_limit)));
+  }
+
+  // Bypass user limits for uid  = 1.
+  if ($user->uid != 1) {
+    $total_size = file_space_used($user->uid) + $file->filesize;
+    if ($user_limit && $total_size > $user_limit) {
+      $errors[] = t('The file is %filesize which would exceed your disk quota of %quota.', array('%filesize' => format_size($file->filesize), '%quota' => format_size($user_limit)));
+    }
+  }
+  return $errors;
 }
 
-function file_validate_image_resolution_help($max_size = '0', $min_size = '0') {
+function filefield_validate_size_help($size) {
+  return t('Maximum Filesize: %size', array('%size' => format_size(parse_size($size))));
+}
+
+function filefield_validate_image_resolution(&$file, $maximum_dimensions = 0, $minimum_dimensions = 0) {
+  $errors = array();
+
+  // Check first that the file is an image.
+  if ($info = image_get_info($file->filepath)) {
+    if ($maximum_dimensions) {
+      // Check that it is smaller than the given dimensions.
+      list($width, $height) = explode('x', $maximum_dimensions);
+      if ($info['width'] > $width || $info['height'] > $height) {
+        // Try to resize the image to fit the dimensions.
+        if (image_get_toolkit() && image_scale($file->filepath, $file->filepath, $width, $height)) {
+          drupal_set_message(t('The image was resized to fit within the maximum allowed dimensions of %dimensions pixels.', array('%dimensions' => $maximum_dimensions)));
+
+          // Clear the cached filesize and refresh the image information.
+          clearstatcache();
+          $info = image_get_info($file->filepath);
+          $file->filesize = $info['file_size'];
+        }
+        else {
+          $errors[] = t('The image is too large; the maximum dimensions are %dimensions pixels.', array('%dimensions' => $maximum_dimensions));
+        }
+      }
+    }
+
+    if ($minimum_dimensions) {
+      // Check that it is larger than the given dimensions.
+      list($width, $height) = explode('x', $minimum_dimensions);
+      if ($info['width'] < $width || $info['height'] < $height) {
+        $errors[] = t('The image is too small; the minimum dimensions are %dimensions pixels.', array('%dimensions' => $minimum_dimensions));
+      }
+    }
+  }
+
+  return $errors;
+}
+
+function filefield_validate_image_resolution_help($max_size = '0', $min_size = '0') {
   if (!empty($max_size)) {
     if (!empty($min_size)) {
       return t('Images must be between @min_size pixels and @max_size', array('@max_size' => $max_size, '@min_size' => $min_size));
@@ -582,6 +640,18 @@ function file_validate_image_resolution_help($max_size = '0', $min_size = '0') {
   }
 }
 
-function file_validate_is_image_help($size) {
+function filefield_validate_is_image(&$file) {
+  $errors = array();
+
+  $info = image_get_info($file->filepath);
+  if (!$info || empty($info['extension'])) {
+    $errors[] = t('Only JPEG, PNG and GIF images are allowed.');
+  }
+
+  return $errors;
+}
+
+
+function filefield_validate_is_image_help($size) {
   return t('Must be an  JPEG, PNG or GIF image');
 }
