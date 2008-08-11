@@ -286,6 +286,11 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   if (!in_array('filefield_node_form_validate', $form['#validate'])) {
     $form['#validate'][] = 'filefield_node_form_validate';
   }
+  if (!in_array('filefield_node_form_submit', $form['#submit'])) {
+    $form['#submit'][] = 'filefield_node_form_submit';
+  }
+
+
 
   $default =  array('fid' => 0, 'list' => 0, 'data' => array('description' => ''));
   // assign defaults..

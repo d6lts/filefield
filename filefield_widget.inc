@@ -340,7 +340,7 @@ function filefield_node_form_validate($form, &$form_state) {
       form_set_error($field_name, t('%title field is required.', array('%title' => $field['widget']['label'])));
     }
     $max_filesize = parse_size($field['widget']['max_filesize_per_node']);
-    if ($total_filesize > $max_filesize) {
+    if ($max_filesize && $total_filesize > $max_filesize) {
       form_set_error($field_name, t('Total filesize for %title, %tsize,  exceeds field settings of %msize.', 
                                     array(
                                       '%title' => $field['widget']['label'], 
