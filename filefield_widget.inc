@@ -177,16 +177,13 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $field_name = $element['#field_name'];
   $delta = $element['#delta'];
 
+  $field = content_fields($element['#field_name'], $element['#type_name']);
+
   // check remove buttons...
   $remove_name = $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn';
-
-  if (isset($form_state['clicked_button'])) {
-    if ($form_state['clicked_button']['#name'] == $remove_name) {
-      $item['fid'] = 0;
-    }
+  if (isset($form_state['clicked_button']) && $form_state['clicked_button']['#name'] == $remove_name) {
+    $item = _filefield_default_value($field);
   }
-
-  $field = content_fields($element['#field_name'], $element['#type_name']);
  
   // figute out our fid...  
   $element['fid'] = array('#type' => 'hidden', '#value' =>  $item['fid']);
@@ -264,7 +261,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#type' => 'submit', 
       '#value' => t('Remove'),
       '#process' => array('filefield_widget_process_remove_btn', 'form_expand_ahah'),
-      '#submit' => array('filefield_widget_submit_remove_btn'),
+      '#submit' => array('node_form_submit_build_node'),
       '#ahah' => array( // with JavaScript    
         'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],    
         'wrapper' => $element['#id'] .'-wrapper',   
@@ -283,11 +280,6 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
 function filefield_widget_validate($element, &$form_state) {
 
 }
-
-function filefield_widget_submit_remove_btn($form, &$form_state) {
-  node_form_submit_build_node($form, $form_state);
-}
-
 
 function _filefield_widget_validate($element, &$form_state) {
 }
@@ -352,3 +344,10 @@ function filefield_node_form_validate($form, &$form_state) {
   }
 }
 
+function filefield_node_form_submit($form, $form_state) {
+  // we ignore all but the save button here.
+  if ($form_state['values']['op'] != t('Save')) {
+    return;
+  }
+  // @todo:  try to delete removed files.
+}

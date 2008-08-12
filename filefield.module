@@ -530,9 +530,13 @@ function filefield_default_value(&$form, &$form_state, $field, $delta) {
   }
   
   for ($delta = 0; $delta < $max; $delta++) {
-    $items[$delta] = array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
+    $items[$delta] = _filefield_default_value($field);
   }
   return $items;
+}
+
+function _filefield_default_value($field) {
+  return array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
 }
 
 /**
