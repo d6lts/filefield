@@ -114,7 +114,7 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE, $
  *   new, unique filename in the destination directory.
  * @return
  *   An array containing the file information, or 0 in the event of an error.
- * 
+ *
  */
 function field_file_save_file($filepath, $validators = array(), $dest = FALSE, $replace = FILE_EXISTS_RENAME) {
   global $user;
@@ -315,7 +315,7 @@ function _field_file_cache($file = NULL, $reset = FALSE) {
 function field_file_check_directory(&$directory, $mode = 0, $form_item = NULL) {
   $directory = rtrim($directory, '/\\');
 
-  // error if dir is a file. 
+  // error if dir is a file.
   if (is_file($directory)) {
     watchdog('file system',  'check_directory: The path  %directory is a file.',  array('%directory' => $directory), WATCHDOG_ERROR);
     if ($form_item)  form_set_error($form_item, t('The directory %directory is a file!', array('%directory' => $directory)));

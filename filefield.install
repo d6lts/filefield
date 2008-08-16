@@ -138,12 +138,12 @@ function filefield_update_6001() {
     if (!isset($field_settings['list_default']) || !is_numeric($field_settings['list_default'])) {
       $field_settings['list_default'] = 1;
       $updated = true;
-     
+
     }
     // set behavior to match old force_list behavior.
     if (!empty($field_settings['force_list'])) {
       $field_settings['list_default'] = 1;
-      $field_settings['force_list_default'] = 1;  
+      $field_settings['force_list_default'] = 1;
       $updated = true;
     }
     if ($updated) {
@@ -160,7 +160,7 @@ function filefield_update_6001() {
     $new_field['columns']['data'] =  array('type' => 'text');
     content_alter_db($field, $new_field);
   }
-  
+
   // Build a batch that migrates the data in each filefield
   $batch = array(
     'title' => t('Migrating filefield values'),

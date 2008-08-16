@@ -19,4 +19,4 @@ function filefield_file_references($file) {
 function filefield_file_delete($file) {
   // foreach  field... remove items referencing $file.
 }
- 
+

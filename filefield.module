@@ -105,7 +105,7 @@ function filefield_theme() {
       'arguments' => array('file' => NULL),
       'file' => 'filefield_formatter.inc',
     ),
- 
+
  );
 }
 
@@ -221,14 +221,14 @@ function filefield_field_settings($op, $field) {
     $return = $function($field);
   }
 
-  // dynamically load widgets file and callbacks for other fields utilizing 
+  // dynamically load widgets file and callbacks for other fields utilizing
   // filefield's hook_field_settings implementation.
   module_load_include('inc', $field['module'], $field['type'] .'_field');
   $function = $field['module'] .'_'. $field['type'] .'_field_settings_'. $op;
   if (function_exists($function)) {
     $return = array_merge($return, $function($field));
   }
- 
+
   return $return;
 
 }
@@ -264,7 +264,7 @@ function filefield_widget_settings($op, $widget) {
   $widget_type = isset($widget['widget_type']) ? $widget['widget_type'] : $widget['type'];
   $widget_module = isset($widget['widget_module']) ? $widget['widget_module'] : $widget['module'];
 
-  // dynamically load widgets file and callbacks for other fields and widgets utilizing 
+  // dynamically load widgets file and callbacks for other fields and widgets utilizing
   // filefield's hook_widget_settings implementation.
   module_load_include('inc', $widget_module, $widget_module .'_widget');
 
@@ -272,7 +272,7 @@ function filefield_widget_settings($op, $widget) {
   if (function_exists($function)) {
     $return = array_merge($return, $function($widget));
   }
- 
+
   return $return;
 }
 
@@ -295,7 +295,7 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   $default =  array('fid' => 0, 'list' => 0, 'data' => array('description' => ''));
   // assign defaults..
   if (empty($items[$delta])) $items[$delta] = $default;
-  
+
   module_load_include('inc', 'filefield', 'field_widget');
 
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
@@ -325,7 +325,7 @@ function filefield_widget_upload_validators($field) {
 
   $validators = array(
     'filefield_validate_size' => array($max_filesize),
-    // override core since it excludes uid 1 on the extension check.. I only want to 
+    // override core since it excludes uid 1 on the extension check.. I only want to
     // excuse uid 1 of quota requirements. - dopry.
     'filefield_validate_extensions' => array($field['widget']['file_extensions']),
   );
@@ -424,13 +424,13 @@ function filefield_view_access($field_name) {
 
 /**
  * Shared AHAH callback for uploads and deletions... It rebuilds the form element
- * for a particular field item. As long as the form processing is properly 
- * encapsulated in the widget element the form should rebuild correctly using 
+ * for a particular field item. As long as the form processing is properly
+ * encapsulated in the widget element the form should rebuild correctly using
  * FAPI without the need for additional callbacks or processing.
  */
 function filefield_js($type_name, $field_name, $delta) {
   $field = content_fields($field_name, $type_name);
-  
+
   if (empty($field) || empty($_POST['form_build_id'])) {
     // Invalid request.
     print drupal_to_js(array('data' => ''));
@@ -508,7 +508,7 @@ function filefield_js($type_name, $field_name, $delta) {
   exit;
 }
 
-/** 
+/**
  * set the default values for imagefield.
  * This seems to work for all but add a new item on unlimited values which doesn't
  * get assigned a proper default.
@@ -528,7 +528,7 @@ function filefield_default_value(&$form, &$form_state, $field, $delta) {
       $max = $field['multiple'];
       break;
   }
-  
+
   for ($delta = 0; $delta < $max; $delta++) {
     $items[$delta] = _filefield_default_value($field);
   }
@@ -540,7 +540,7 @@ function _filefield_default_value($field) {
 }
 
 /**
- * Check that the filename ends with an allowed extension. This check is 
+ * Check that the filename ends with an allowed extension. This check is
  * enforced for the user #1.
  *
  * @param $file
@@ -565,7 +565,7 @@ function filefield_validate_extensions($file, $extensions) {
 }
 
 // These three functions return messages for file_validate_size, and file_validate_extensions.
-// They're a neat hack that gets the job done. Even though it's evil to put a 
+// They're a neat hack that gets the job done. Even though it's evil to put a
 // function into a namespace not owned by your module...
 function filefield_validate_extensions_help($extensions) {
   if (!empty($extensions)) {

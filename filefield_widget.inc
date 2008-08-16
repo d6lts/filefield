@@ -11,8 +11,8 @@
  */
 
 /**
- * @file 
- * 
+ * @file
+ *
  * FileField Widget Settings Hooks.
  * @todo: move description property to filefield_widget widget callbacks
  *        (filefield_widget_widget_{$op}).
@@ -53,7 +53,7 @@ function filefield_widget_settings_form($widget) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  // upload validator. @todo: consider replacing with global 
+  // upload validator. @todo: consider replacing with global
   // && node validate.
   $form['max_filesize']['max_filesize_per_file'] = array(
     '#type' => 'textfield',
@@ -141,7 +141,7 @@ function filefield_save_upload($element) {
  * FileField widget element callbacks.
  */
 function filefield_widget_value($element, $edit = FALSE) {
-  if (!$edit) { 
+  if (!$edit) {
     $file =  field_file_load($element['#default_value']['fid']);
     $item = $element['#default_value'];
   }
@@ -149,7 +149,7 @@ function filefield_widget_value($element, $edit = FALSE) {
     // uploads take priority over value of fid text field.
     if ($fid = filefield_save_upload($element)) {
       $edit['fid'] = $fid;
-    }    
+    }
 
     // load file.
     $file = field_file_load($edit['fid']);
@@ -172,7 +172,7 @@ function filefield_widget_value($element, $edit = FALSE) {
 }
 
 function filefield_widget_process($element, $edit, &$form_state, $form) {
-  
+
   $item = $element['#value'];
   $field_name = $element['#field_name'];
   $delta = $element['#delta'];
@@ -184,19 +184,19 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   if (isset($form_state['clicked_button']) && $form_state['clicked_button']['#name'] == $remove_name) {
     $item = _filefield_default_value($field);
   }
- 
-  // figute out our fid...  
+
+  // figute out our fid...
   $element['fid'] = array('#type' => 'hidden', '#value' =>  $item['fid']);
 
   if ($item['fid'] != 0) {
-    $element['preview'] = array('#type' => 'markup', '#value' => theme($element['#type'] .'_preview', $item));  
+    $element['preview'] = array('#type' => 'markup', '#value' => theme($element['#type'] .'_preview', $item));
   }
 
   // placeholder.. will be serialized into the data column. this is a place for widgets
   // to put additional data.
   $element['data'] = array('#tree' => 'true');
   $element['data']['description'] = array(
-    '#type' => 'textfield', 
+    '#type' => 'textfield',
     '#title' => t('Description'),
     '#value' => isset($item['data']['description']) ? $item['data']['description'] : '',
   );
@@ -240,15 +240,15 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['#prefix'] = '<div id="'. $element['#id'] .'-ahah-wrapper" class="filefield-ahah-wrapper">';
   $element['#suffix'] = '</div>';
   $element['upload_btn'] = array(
-    '#type' => 'submit', 
+    '#type' => 'submit',
     '#value' => t('Upload'),
     '#process' => array('form_expand_ahah'),
     '#submit' => array('node_form_submit_build_node'),
-    '#ahah' => array( // with JavaScript    
-       'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],    
-       'wrapper' => $element['#id'] .'-ahah-wrapper',   
-       'method' => 'replace',    
-       'effect' => 'fade',   
+    '#ahah' => array( // with JavaScript
+       'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],
+       'wrapper' => $element['#id'] .'-ahah-wrapper',
+       'method' => 'replace',
+       'effect' => 'fade',
     ),
     '#field_name' => $element['#field_name'],
     '#delta' => $element['#delta'],
@@ -258,15 +258,15 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   if ($item['fid'] != 0) {
     $element['remove_btn'] = array(
       '#name' => $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn',
-      '#type' => 'submit', 
+      '#type' => 'submit',
       '#value' => t('Remove'),
       '#process' => array('filefield_widget_process_remove_btn', 'form_expand_ahah'),
       '#submit' => array('node_form_submit_build_node'),
-      '#ahah' => array( // with JavaScript    
-        'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],    
-        'wrapper' => $element['#id'] .'-wrapper',   
-        'method' => 'replace',    
-        'effect' => 'fade',   
+      '#ahah' => array( // with JavaScript
+        'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],
+        'wrapper' => $element['#id'] .'-wrapper',
+        'method' => 'replace',
+        'effect' => 'fade',
       ),
       '#field_name' => $element['#field_name'],
       '#delta' => $element['#delta'],
@@ -333,10 +333,10 @@ function filefield_node_form_validate($form, &$form_state) {
     }
     $max_filesize = parse_size($field['widget']['max_filesize_per_node']);
     if ($max_filesize && $total_filesize > $max_filesize) {
-      form_set_error($field_name, t('Total filesize for %title, %tsize,  exceeds field settings of %msize.', 
+      form_set_error($field_name, t('Total filesize for %title, %tsize,  exceeds field settings of %msize.',
                                     array(
-                                      '%title' => $field['widget']['label'], 
-                                      '%tsize' => format_size($total_filesize), 
+                                      '%title' => $field['widget']['label'],
+                                      '%tsize' => format_size($total_filesize),
                                       '%msize' => format_size($max_filesize)
                                     )
                                   ));
