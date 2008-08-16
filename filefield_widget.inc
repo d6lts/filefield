@@ -108,6 +108,22 @@ function _filefield_widget_settings_max_filesize_per_node_validate($element, &$f
   }
 }
 
+/**
+ * Determine the widget's files directory
+ *
+ * @param $field CCK field
+ * @return files directory path.
+ */
+function filefield_widget_file_path($field_instance) {
+  $dest = $field_instance['widget']['file_path'];
+  if (module_exists('token')) {
+    global $user;
+    $dest = token_replace($dest, 'user', $user);
+  }
+
+  return file_directory_path() .'/'. $dest;
+}
+
 function filefield_save_upload($element) {
   $upload_name = $element['#field_name'] .'_'. $element['#delta'];
   $field_instance = content_fields($element['#field_name'], $element['#type_name']);
@@ -116,13 +132,7 @@ function filefield_save_upload($element) {
     return 0;
   }
 
-  $dest = $field_instance['widget']['file_path'];
-  if (module_exists('token')) {
-    global $user;
-    $dest = token_replace($dest, 'user', $user);
-  }
-
-  $dest = file_directory_path() .'/'. $dest;
+  $dest = filefield_widget_file_path($field_instance);
   if (!field_file_check_directory($dest, FILE_CREATE_DIRECTORY)) {
     watchdog('imagefield', 'The upload directory %directory for the file field %field (content type %type) could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $dest, '%field' => $element['#field_name'], '%type' => $element['#type_name']));
     form_set_error($upload_name, t('The file could not be uploaded.'));
