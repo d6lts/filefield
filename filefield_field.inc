@@ -12,7 +12,7 @@ function filefield_field_settings_form($field) {
     '#type' => 'radios',
     '#title' => t('Default list value'),
     '#options' => array(1 => t('Listed'), 0 => t('Hidden')),
-    '#default_value' => isset($field['list_default']) ? $field['list_default'] : 1,
+    '#default_value' => empty($field['list_default']) ? 1 : $field['list_default'],
     '#required' => true,
     '#description' => t('The list option determines whether files are visible on node views. This will be used as the default value for the list option.'),
   );
@@ -20,8 +20,15 @@ function filefield_field_settings_form($field) {
     '#type' => 'radios',
     '#title' => t('How should the list value be handled?'),
     '#options' => array(0 => t('User Configurable. (Users will be able to set the list value per file.)'), 1 => t('Enforce Default. (The default list value will be used for all files, and the list checkbox will not be displayed to users.)')),
-    '#default_value' => isset($field['force_list_default']) ? $field['force_list_default'] : 0,
+    '#default_value' => empty($field['force_list_default']) ? 0 : $field['force_list_default'],
     '#required' => true,
+  );
+  $form['show_description'] = array(
+    '#type' => 'radios',
+    '#title' => t('Description field'),
+    '#default_value' => empty($field['show_description']) ? 1 : $field['show_description'],
+    '#options' => array(0 => t('Disabled'), 1 => t('Enabled')),
+    '#description' => t('When enabled, will display a text field where users may enter a description about the uploaded file.'),
   );
 
   return $form;
@@ -31,7 +38,7 @@ function filefield_field_settings_validate($field) {
 }
 
 function filefield_field_settings_save($field) {
-  return array('force_list_default', 'list_default', 'file_formatters');
+  return array('force_list_default', 'list_default', 'show_description', 'file_formatters');
 }
 
 function filefield_field_settings_database_columns($field) {
