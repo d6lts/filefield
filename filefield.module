@@ -662,6 +662,6 @@ function filefield_validate_is_image(&$file) {
 }
 
 
-function filefield_validate_is_image_help($size) {
+function filefield_validate_is_image_help() {
   return t('Must be an  JPEG, PNG or GIF image');
 }
