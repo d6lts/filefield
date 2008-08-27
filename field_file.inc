@@ -181,7 +181,6 @@ function field_file_save_file($filepath, $validators = array(), $dest = FALSE, $
   }
 
   // If we made it this far it's safe to record this file in the database.
-  $file->uid = $user->uid;
   $file->status = FILE_STATUS_TEMPORARY;
   $file->timestamp = time();
   drupal_write_record('files', $file);
