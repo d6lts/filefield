@@ -34,7 +34,7 @@ function filefield_menu() {
     'page callback' => 'filefield_js',
     'page arguments' => array(2,3,4),
     'access callback' => 'filefield_edit_access',
-    'access arguments' => array(2),
+    'access arguments' => array(3),
     'type' => MENU_CALLBACK,
     'file' => 'filefield_widget.inc',
   );
