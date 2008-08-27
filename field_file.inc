@@ -135,7 +135,7 @@ function field_file_save_file($filepath, $validators = array(), $dest = FALSE, $
   $file->uid = $user->uid;
   $file->filename = basename($filepath);
   $file->filepath = $filepath;
-  $file->filemime = module_exists('mimedetect') ? mimedetect_mime($file) : 'text/plain';
+  $file->filemime = module_exists('mimedetect') ? mimedetect_mime($file) : file_get_mimetype($file->filename);
 
   // Rename potentially executable files, to help prevent exploits.
   if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
