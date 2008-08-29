@@ -165,7 +165,7 @@ function filefield_widget_value($element, $edit = FALSE) {
     $file = field_file_load($edit['fid']);
     $item = array(
       'fid' => $edit['fid'],
-      'list' => empty($edit['list']),
+      'list' => !empty($edit['list']),
       'data' => empty($edit['data']) ? array() : $edit['data'],
     );
   }
