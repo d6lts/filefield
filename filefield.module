@@ -639,7 +639,12 @@ function filefield_validate_image_resolution(&$file, $maximum_dimensions = 0, $m
 function filefield_validate_image_resolution_help($max_size = '0', $min_size = '0') {
   if (!empty($max_size)) {
     if (!empty($min_size)) {
-      return t('Images must be between @min_size pixels and @max_size', array('@max_size' => $max_size, '@min_size' => $min_size));
+      if ($max_size == $min_size) {
+        return t('Images must be exactly @min_size pixels', array('@min_size' => $min_size));
+      }
+      else {
+        return t('Images must be between @min_size pixels and @max_size', array('@max_size' => $max_size, '@min_size' => $min_size));
+      }
     }
     else {
       if (image_get_toolkit()) {
