@@ -277,7 +277,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#submit' => array('node_form_submit_build_node'),
       '#ahah' => array( // with JavaScript
         'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],
-        'wrapper' => $element['#id'] .'-wrapper',
+        'wrapper' => $element['#id'] .'-ahah-wrapper',
         'method' => 'replace',
         'effect' => 'fade',
       ),
