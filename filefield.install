@@ -119,9 +119,11 @@ function filefield_update_3() {
   return $ret;
 }
 
-
-
 function filefield_update_6001() {
+  if ($abort = content_check_update('filefield')) {
+    return $abort;
+  }
+
   $ret = array();
   include_once(drupal_get_path('module','content') .'/includes/content.admin.inc');
 
