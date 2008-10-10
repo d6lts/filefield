@@ -357,7 +357,7 @@ function filefield_node_form_validate($form, &$form_state) {
   }
 }
 
-function filefield_node_form_submit($form, $form_state) {
+function filefield_node_form_submit($form, &$form_state) {
   // we ignore all but the save button here.
   if ($form_state['values']['op'] != t('Save')) {
     return;
