@@ -15,6 +15,7 @@ function filefield_init() {
   // file hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_file');
   module_load_include('inc', 'filefield', 'field_file');
+  module_load_include('inc', 'filefield', 'filefield_widget');
 
   drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
@@ -234,7 +235,6 @@ function filefield_field_settings($op, $field) {
  */
 function filefield_field($op, $node, $field, &$items, $teaser, $page) {
   module_load_include('inc', 'filefield', 'filefield_field');
-  module_load_include('inc', 'filefield', 'field_file');
   $op = str_replace(' ', '_', $op);
   // add filefield specific handlers...
   $function = 'filefield_field_'. $op;
@@ -247,7 +247,6 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
  * Implementation of CCK's hook_widget_settings().
  */
 function filefield_widget_settings($op, $widget) {
-  module_load_include('inc', 'filefield', 'filefield_widget');
   $return = array();
   // load our widget settings callbacks..
   $op =  str_replace(' ', '_', $op);
@@ -277,7 +276,6 @@ function filefield_widget_settings($op, $widget) {
  * Implementation of hook_widget().
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
-  module_load_include('inc', 'filefield', 'filefield_widget');
   // CCK doesn't give a validate callback at the field level...
   // and FAPI's #require is naieve to complex structures...
   // we validate at the field level ourselves.
