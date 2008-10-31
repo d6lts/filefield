@@ -175,8 +175,8 @@ function field_file_save_file($filepath, $validators = array(), $dest = FALSE, $
   }
 
   if (!file_copy($file, $file->destination, FILE_EXISTS_RENAME)) {
-    form_set_error($source, t('File upload error. Could not move uploaded file.'));
-    watchdog('file', 'Upload error. Could not move file %file to destination %destination.', array('%file' => $file->filename, '%destination' => $file->filepath));
+    form_set_error($file->source, t('File upload error. Could not move uploaded file.'));
+    watchdog('file', 'Upload error. Could not move file %file to destination %destination.', array('%file' => $file->filename, '%destination' => $file->destination));
     return 0;
   }
 
