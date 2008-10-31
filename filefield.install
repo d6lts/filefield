@@ -8,7 +8,7 @@
  * and Drupal's {files} table to store the actual file data.
  */
 
-include_once(drupal_get_path('module', 'filefield') .'/field_file.inc');
+include_once('field_file.inc');
 
 /**
  * Implementation of hook_install().
