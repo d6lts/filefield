@@ -286,12 +286,6 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
     $form['#submit'][] = 'filefield_node_form_submit';
   }
 
-
-
-  $default =  array('fid' => 0, 'list' => 0, 'data' => array('description' => ''));
-  // assign defaults..
-  if (empty($items[$delta])) $items[$delta] = $default;
-
   module_load_include('inc', 'filefield', 'field_widget');
 
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
@@ -299,7 +293,7 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   $element = array(
     '#title' => $field['widget']['label'],
     '#type' => $field['widget']['type'],
-    '#default_value' => array_merge($default, $items[$delta]),
+    '#default_value' => array_merge(_filefield_default_value($field), $items[$delta]),
     '#upload_validators' => filefield_widget_upload_validators($field),
   );
   module_load_include('inc', $field['widget']['module'], $field['widget']['module'] .'_widget');
