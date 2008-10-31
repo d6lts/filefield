@@ -518,7 +518,7 @@ function filefield_default_value(&$form, &$form_state, $field, $delta) {
       $max = 1;
       break;
     case 1:
-      $max =  isset($form_state['item_count'][$field_name]) ? $form_state['item_count'][$field_name] : 2;
+      $max =  isset($form_state['item_count'][$field_name]) ? $form_state['item_count'][$field_name] : 1;
       break;
     default:
       $max = $field['multiple'];
@@ -668,6 +668,6 @@ function filefield_validate_is_image(&$file) {
 }
 
 
-function filefield_validate_is_image_help() {
+function filefield_validate_is_image_help($arguments = null) {
   return t('Must be a JPEG, PNG or GIF image');
 }
