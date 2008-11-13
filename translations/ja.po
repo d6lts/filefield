@@ -34,7 +34,7 @@ msgstr "選択されたファイル %name を保存できませんでした。"
 
 #: field_file.inc:178
 msgid "File upload error. Could not move uploaded file."
-msgstr "ファイルアップロードエラーです。アップロードされたファイルを移動できませんでした。"
+msgstr "ファイルのアップロードエラー ： アップロードされたファイルを移動することができませんでした。"
 
 #: field_file.inc:320
 msgid "The directory %directory is a file!"
@@ -42,11 +42,11 @@ msgstr "ディレクトリ %directory はファイルです！"
 
 #: field_file.inc:327;326
 msgid "The directory %directory does not exist."
-msgstr "ディレクトリ %directory は存在しません。"
+msgstr "ディレクトリ %directory が存在しません。"
 
 #: field_file.inc:334
 msgid "The directory %directory is not writable"
-msgstr "ディレクトリ %directory は書き込みができません。"
+msgstr "ディレクトリ %directory が書き込み可能ではありません。"
 
 #: field_file.inc:346
 msgid "Security warning: Couldn't write .htaccess file. Please create a .htaccess file in your %directory directory which contains the following lines:<br /><code>!htaccess</code>"
@@ -70,7 +70,7 @@ msgstr "check_directory: パス  %directory はファイルです。"
 
 #: field_file.inc:333
 msgid "The directory %directory is not writable, because it does not have the correct permissions set."
-msgstr "適切な権限が設定されていないため、ディレクトリ %directory は書き込みが出来ません。"
+msgstr "パーミッションが正しく設定されていないため、ディレクトリ %directory は書き込み可能ではありません。"
 
 #: field_file.inc:347
 msgid "security"
@@ -271,7 +271,7 @@ msgstr "(試験的) 拡張可能なファイルフィールドのフォーマッ
 
 #: filefield.module:550
 msgid "Only files with the following extensions are allowed: %files-allowed."
-msgstr "次の拡張子のファイルのみ許されています: %files-allowed"
+msgstr "次の拡張子のファイルのみが許可されます： %files-allowed"
 
 #: filefield.module:562
 msgid "Allowed Extensions: %ext"
@@ -279,11 +279,11 @@ msgstr "アップロード可能な拡張子: %ext"
 
 #: filefield.module:576
 msgid "The file is %filesize exceeding the maximum file size of %maxsize."
-msgstr "ファイルは %filesize で最大ファイルサイズの %maxsize を超過しています。"
+msgstr "ファイル (%filesize) は、ファイルサイズの上限である %maxsize を超過しています。"
 
 #: filefield.module:583
 msgid "The file is %filesize which would exceed your disk quota of %quota."
-msgstr "ファイルは %filesize で %quota のディスク割り当てを超過しています。"
+msgstr "ファイル (%filesize) は、割り当てディスク容量の %quota を超過しています。"
 
 #: filefield.module:590
 msgid "Maximum Filesize: %size"
@@ -291,15 +291,15 @@ msgstr "最大ファイルサイズ: %size"
 
 #: filefield.module:604
 msgid "The image was resized to fit within the maximum allowed dimensions of %dimensions pixels."
-msgstr "最大許容寸法である %dimensions ピクセルに収まるように画像がリサイズされました。"
+msgstr "許容された最大画像サイズ %dimensions ピクセルの範囲内に収まるよう、画像のサイズが変更されました。"
 
 #: filefield.module:612
 msgid "The image is too large; the maximum dimensions are %dimensions pixels."
-msgstr "画像が大き過ぎます。最大寸法は %dimensions ピクセルです。"
+msgstr "画像のサイズが大きすぎます： 画像サイズの上限は %dimensions ピクセルです。"
 
 #: filefield.module:621
 msgid "The image is too small; the minimum dimensions are %dimensions pixels."
-msgstr "画像が小さ過ぎます。最小寸法は %dimensions ピクセルです。"
+msgstr "画像のサイズが小さすぎます： 画像サイズの下限は %dimensions ピクセルです。"
 
 #: filefield.module:633
 msgid "Images must be exactly @min_size pixels"
@@ -323,7 +323,7 @@ msgstr "画像は @max_size ピクセルより大きくなければなりませ�
 
 #: filefield.module:658
 msgid "Only JPEG, PNG and GIF images are allowed."
-msgstr "JPEG、PNG、GIF 画像のみ許可されています。"
+msgstr "JPEG/PNG/GIF 画像のみが使用できます。"
 
 #: filefield.module:666
 msgid "Must be a JPEG, PNG or GIF image"
