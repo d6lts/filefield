@@ -331,7 +331,7 @@ function theme_filefield_widget_item($element) {
 function filefield_node_form_validate($form, &$form_state) {
   $type = content_types($form['type']['#value']);
   foreach ($type['fields'] as $field_name => $field) {
-    if (!(in_array($field['module'], array('imagefield', 'filefield'))) || !$field['required']) continue;
+    if (!(in_array($field['module'], array('imagefield', 'filefield')))) continue;
     $empty = $field['module'] .'_content_is_empty';
     $valid = false;
     $total_filesize = 0;
@@ -341,7 +341,7 @@ function filefield_node_form_validate($form, &$form_state) {
       $total_filesize += (int)$item['filesize'];
     }
 
-    if (!$valid) {
+    if (!$valid && $field['required']) {
       form_set_error($field_name, t('%title field is required.', array('%title' => $field['widget']['label'])));
     }
     $max_filesize = parse_size($field['widget']['max_filesize_per_node']);
