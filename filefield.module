@@ -465,9 +465,6 @@ function filefield_js($type_name, $field_name, $delta) {
     $form[$field_name][$delta] = $delta_element;
   }
 
-  // Write the (unbuilt, updated) form back to the form cache.
-  form_set_cache($form_build_id, $form, $form_state);
-
   // Render the form for output.
   $form += array(
     '#post' => $_POST,
