@@ -316,7 +316,7 @@ function theme_filefield_widget_preview($item) {
 function theme_filefield_widget_item($element) {
   return '<div class="filefield-row clear-block">'.
               '<div class="filefield-filename clear-block">'. drupal_render($element['preview']) . '</div>'.
-              '<div class="fielfield-edit clear-block">'.
+              '<div class="fllefield-edit clear-block">'.
                 '<div class="filefield-list">'. drupal_render($element['list']) . '</div>' .
                 '<div class="filefield-description">'. drupal_render($element['description']) . '</div>' .
                 '<div class="filefield-stuff">'. drupal_render($element) .'</div>'.
