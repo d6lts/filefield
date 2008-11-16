@@ -134,13 +134,13 @@ function filefield_save_upload($element) {
 
   $dest = filefield_widget_file_path($field_instance);
   if (!field_file_check_directory($dest, FILE_CREATE_DIRECTORY)) {
-    watchdog('imagefield', 'The upload directory %directory for the file field %field (content type %type) could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $dest, '%field' => $element['#field_name'], '%type' => $element['#type_name']));
+    watchdog('filefield', 'The upload directory %directory for the file field %field (content type %type) could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $dest, '%field' => $element['#field_name'], '%type' => $element['#type_name']));
     form_set_error($upload_name, t('The file could not be uploaded.'));
     return 0;
   }
 
   if (!$file = field_file_save_upload($upload_name, $element['#upload_validators'], $dest)) {
-    watchdog('imagefield', 'The file upload failed. %upload', array('%upload' => $upload_name));
+    watchdog('filefield', 'The file upload failed. %upload', array('%upload' => $upload_name));
     form_set_error($upload_name, t('The Image upload failed.'));
     return 0;
   }
