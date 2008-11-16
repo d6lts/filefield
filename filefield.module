@@ -8,13 +8,14 @@
  * and Drupal's {files} table to store the actual file data.
  */
 
+include_once('field_file.inc');
+
 /**
  * Implementation of hook_init().
  */
 function filefield_init() {
   // file hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_file');
-  module_load_include('inc', 'filefield', 'field_file');
   module_load_include('inc', 'filefield', 'filefield_widget');
 
   drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
