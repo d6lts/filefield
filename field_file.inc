@@ -86,6 +86,10 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE, $
   if (!$file = file_save_upload($source, $validators, $dest, $replace)) {
     return 0;
   }
+  if (!@chmod($file->filepath, 0664)) {
+    watchdog('imageapi', 'Could not set permissons on destination file: %file', array('%file' => $file->filepath));
+  }
+  
   // Let modules add additional properties to the yet barebone file object.
   foreach (module_implements('file_insert') as $module) {
     $function =  $module .'_file_insert';
