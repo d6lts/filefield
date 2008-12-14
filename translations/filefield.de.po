@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2008-12-14 20:56+0100\n"
-"PO-Revision-Date: 2008-12-14 22:01+0100\n"
+"PO-Revision-Date: 2008-12-14 22:03+0100\n"
 "Last-Translator: Alexander Haß\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,7 +26,7 @@ msgstr "Die ausgewählte Datei %name konnte nicht gespeichert werden."
 
 #: field_file.inc:182
 msgid "File upload error. Could not move uploaded file."
-msgstr "Fehler beim hochladen der Datei. Die hochgeladene Datei konnte nicht verschoben werden."
+msgstr "Fehler beim Hochladen der Datei. Die hochgeladene Datei konnte nicht verschoben werden."
 
 #: field_file.inc:324
 msgid "The directory %directory is a file!"
@@ -52,7 +52,7 @@ msgstr "Dateifeld"
 
 #: field_file.inc:90
 msgid "Could not set permissons on destination file: %file"
-msgstr "Die Berechtigungen für die Zieldatei konnten nicht festgelegt werden: %file"
+msgstr "Die Berechtigungen für die Zieldatei konnten nicht gespeichert werden: %file"
 
 #: field_file.inc:183
 msgid "file"
