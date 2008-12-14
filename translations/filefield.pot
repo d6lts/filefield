@@ -1,26 +1,23 @@
 # $Id$
 #
-# LANGUAGE translation of Drupal (general)
+# LANGUAGE translation of Drupal (root)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
 # Generated from files:
 #  field_file.inc,v 1.22 2008/12/03 23:22:11 drewish
 #  filefield_widget.inc,v 1.44 2008/11/16 08:25:13 dopry
 #  filefield.module,v 1.159 2008/12/03 23:22:11 drewish
 #  filefield_field.inc: n/a
-#  filefield_token/filefield_token.module: n/a
 #  filefield.install,v 1.18 2008/11/16 06:57:21 dopry
 #  filefield.info,v 1.8 2008/06/27 23:36:31 jpetso
 #  filefield_meta.info,v 1.5 2008/07/31 01:02:15 drewish
 #  filefield_token.info,v 1.1 2008/10/10 17:13:23 drewish
 #  filefield.js,v 1.12 2008/12/03 21:50:52 drewish
-#  filefield_meta.module,v 1.6 2008/10/10 01:03:09 drewish
-#  filefield_meta.install,v 1.4 2008/07/31 01:02:15 drewish
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2008-12-14 15:32+0100\n"
+"POT-Creation-Date: 2008-12-14 20:56+0100\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -143,10 +140,6 @@ msgstr ""
 
 #: filefield_widget.inc:33
 msgid "Path settings"
-msgstr ""
-
-#: filefield_widget.inc:41 filefield_token/filefield_token.module:13
-msgid "File path"
 msgstr ""
 
 #: filefield_widget.inc:43
@@ -351,77 +344,5 @@ msgstr ""
 
 #: filefield.js:0
 msgid "The selected file %filename cannot not be uploaded. Only files with the following extensions are allowed: %extensions."
-msgstr ""
-
-#: filefield_meta/filefield_meta.module:0
-msgid "filefield_meta"
-msgstr ""
-
-#: filefield_meta/filefield_meta.install:25
-msgid "The table for meta data about filefield files."
-msgstr ""
-
-#: filefield_meta/filefield_meta.install:28
-msgid "The file id."
-msgstr ""
-
-#: filefield_meta/filefield_meta.install:34
-msgid "Width of a video or image file in pixels."
-msgstr ""
-
-#: filefield_meta/filefield_meta.install:40
-msgid "Height of a video or image file in pixels."
-msgstr ""
-
-#: filefield_meta/filefield_meta.install:46
-msgid "The duration of audio or video files, in seconds."
-msgstr ""
-
-#: filefield_meta/filefield_meta.info:0
-msgid "FileField Meta"
-msgstr ""
-
-#: filefield_meta/filefield_meta.info:0
-msgid "Add metadata gathering and storage to FileField."
-msgstr ""
-
-#: filefield_token/filefield_token.module:10
-msgid "File ID"
-msgstr ""
-
-#: filefield_token/filefield_token.module:11
-msgid "File description"
-msgstr ""
-
-#: filefield_token/filefield_token.module:12
-msgid "File name"
-msgstr ""
-
-#: filefield_token/filefield_token.module:14
-msgid "File MIME type"
-msgstr ""
-
-#: filefield_token/filefield_token.module:15
-msgid "File size (in bytes)"
-msgstr ""
-
-#: filefield_token/filefield_token.module:16
-msgid "File size (pretty printed)"
-msgstr ""
-
-#: filefield_token/filefield_token.module:17
-msgid "Fully formatted HTML file tag"
-msgstr ""
-
-#: filefield_token/filefield_token.module:0
-msgid "filefield_token"
-msgstr ""
-
-#: filefield_token/filefield_token.info:0
-msgid "FileField Tokens"
-msgstr ""
-
-#: filefield_token/filefield_token.info:0
-msgid "Token Integration for FileField."
 msgstr ""
 
