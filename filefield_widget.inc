@@ -182,6 +182,8 @@ function filefield_widget_value($element, $edit = FALSE) {
 }
 
 function filefield_widget_process($element, $edit, &$form_state, $form) {
+  // The widget is being presented, so apply the JavaScript.
+  drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
 
   $item = $element['#value'];
   $field_name = $element['#field_name'];

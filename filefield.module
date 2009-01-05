@@ -16,8 +16,6 @@ include_once('field_file.inc');
 function filefield_init() {
   // file hooks and callbacks.
   module_load_include('inc', 'filefield', 'filefield_widget');
-
-  drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 }
 
