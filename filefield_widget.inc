@@ -194,7 +194,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   // check remove buttons...
   $remove_name = $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn';
   if (isset($form_state['clicked_button']) && $form_state['clicked_button']['#name'] == $remove_name) {
-    $item = _filefield_default_value($field);
+    $item = array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
   }
 
   // figute out our fid...
