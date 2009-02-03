@@ -114,8 +114,16 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
   }
   $items = array_values($items); // compact deltas
 
+
+  // if this is a new node... there are no
+  // old items to worry about.
+  if ($node->is_new) {
+    return;
+  } 
+
   // try to delete items from original node 
   $orig = node_load($node->nid); 
+  // if there are, figure out which ones must go.
   foreach($orig->$field['field_name'] as $oitem) {
     if (!in_array($oitem['fid'], $curfids))  {
       field_file_delete($oitem); 
