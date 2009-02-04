@@ -61,6 +61,10 @@ function filefield_file_listed($file, $field) {
 function theme_filefield_file($file) {
   $path = $file['filepath'];
   $url = file_create_url($path);
-  $icon = theme('filefield_icon', $file);
-  return '<div class="filefield-file clear-block">'. $icon . l($file['filename'], $url) .'</div>';
+  $icon = theme('filefield_icon', $file); // . '<pre>' .  print_r($file,1) . '</pre>';
+  // set options as per anchor format described on http://microformats.org/wiki/file-format-examples
+  // until I move to the more complex microformat described 
+  // @ http://darrelopry.com/story/microformats-and-media-rfc-if-you-js-or-css
+  $options = array('attributes' => array('type' => $file['filemime'], 'length' => $file['filesize']));
+  return '<div class="filefield-file clear-block">'. $icon . l($file['filename'], $url, $options) .'</div>';
 }
