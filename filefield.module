@@ -31,7 +31,6 @@ function filefield_menu() {
     'access callback' => 'filefield_edit_access',
     'access arguments' => array(3),
     'type' => MENU_CALLBACK,
-    'file' => 'filefield_widget.inc',
   );
   return $items;
 }
