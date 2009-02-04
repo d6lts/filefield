@@ -66,5 +66,6 @@ function theme_filefield_file($file) {
   // until I move to the more complex microformat described 
   // @ http://darrelopry.com/story/microformats-and-media-rfc-if-you-js-or-css
   $options = array('attributes' => array('type' => $file['filemime'], 'length' => $file['filesize']));
+  $options['attributes']['title'] =  (isset($file['data']['description'])) ? $file['data']['description'] : $file['filename'];
   return '<div class="filefield-file clear-block">'. $icon . l($file['filename'], $url, $options) .'</div>';
 }
