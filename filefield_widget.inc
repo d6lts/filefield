@@ -230,7 +230,9 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
 
   foreach ($element['#upload_validators'] as $callback => $arguments) {
     $help_func = $callback .'_help';
-    $desc[] = call_user_func_array($help_func, $arguments);
+    if (function_exists($help_func)) {
+      $desc[] = call_user_func_array($help_func, $arguments);
+    }
   }
   $element['upload'] = array(
     '#name' => 'files['. $element['#field_name'] .'_'. $element['#delta'] .']',

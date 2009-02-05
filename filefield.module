@@ -327,9 +327,11 @@ function filefield_widget_upload_validators($field) {
   }
 
   $validators = array(
+    // associate the field to the file on validation.
+    'filefield_validate_associate_field' => array($field),
     'filefield_validate_size' => array($max_filesize),
-    // override core since it excludes uid 1 on the extension check.. I only want to
-    // excuse uid 1 of quota requirements. - dopry.
+    // Override core since it excludes uid 1 on the extension check. 
+    // Filefield only excuses uid 1 of quota requirements.
     'filefield_validate_extensions' => array($field['widget']['file_extensions']),
   );
   return $validators;
@@ -597,7 +599,6 @@ function filefield_validate_extensions_help($extensions) {
   }
 }
 
-
 function filefield_validate_size($file, $file_limit = 0, $user_limit = 0) {
   global $user;
 
@@ -683,15 +684,21 @@ function filefield_validate_image_resolution_help($max_size = '0', $min_size = '
 
 function filefield_validate_is_image(&$file) {
   $errors = array();
-
   $info = image_get_info($file->filepath);
   if (!$info || empty($info['extension'])) {
     $errors[] = t('Only JPEG, PNG and GIF images are allowed.');
   }
-
   return $errors;
 }
 
+/** 
+ * This validation function adds the field to the file object, for later 
+ * use in field aware modules implementing hook_file.
+ */
+function filefield_validate_associate_field(&$file, $field) {
+  $file->field = $field;
+  return array();
+}
 
 function filefield_validate_is_image_help($arguments = null) {
   return t('Must be a JPEG, PNG or GIF image');
