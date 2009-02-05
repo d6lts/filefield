@@ -13,6 +13,12 @@ function filefield_meta_theme() {
     'filefield_meta_duration' => array(
       'arguments' => array('duration' => NULL),
     ),
+    'filefield_meta_samplerate' => array(
+      'arguments' => array('samplerate' => NULL),
+    ),
+    'filefield_meta_bitrate' => array(
+      'arguments' => array('bitrate' => NULL),
+    ),
   );
 }
 
@@ -68,6 +74,11 @@ function filefield_meta(&$file) {
     }
   }
   $file->data['duration'] = $info['playtime_seconds'];
+  $file->data['audio_format'] = $info['audio']['dataformat']; //e.g. mp3
+  $file->data['audio_sample_rate'] = $info['audio']['sample_rate']; //e.g. 44100
+  $file->data['audio_channel_mode'] = $info['audio']['channelmode']; // e.g. mono
+  $file->data['audio_bitrate'] = $info['audio']['bitrate']; //e.g. 64000
+  $file->data['audio_bitrate_mode'] = $info['audio']['bitrate_mode']; //e.g. cbr
 };
 
 /**
@@ -85,3 +96,17 @@ function theme_filefield_meta_duration($duration) {
   return intval($minutes).':'.str_pad($seconds, 2, 0, STR_PAD_LEFT);
 }
 
+
+/**
+ * Formats audio sample rate.
+ */
+function theme_filefield_meta_samplerate($samplerate) {
+  return sprintf("%.1f kHz", $samplerate/1000);
+}
+ 
+/**
+ * Formats audio bit rate.
+ */
+function theme_filefield_meta_bitrate($bitrate) {
+  return sprintf("%d Kbps", $bitrate/1000);
+}
