@@ -156,18 +156,13 @@ function filefield_widget_value($element, $edit = FALSE) {
     $item = $element['#default_value'];
   }
   else {
+    $item = array_merge($element['#default_value'], $edit);
     // uploads take priority over value of fid text field.
     if ($fid = filefield_save_upload($element)) {
-      $edit['fid'] = $fid;
+      $item['fid'] = $fid;
     }
-
     // load file.
-    $file = field_file_load($edit['fid']);
-    $item = array(
-      'fid' => $edit['fid'],
-      'list' => !empty($edit['list']),
-      'data' => empty($edit['data']) ? array() : $edit['data'],
-    );
+    $file = field_file_load($item['fid']);
   }
   // merge file and item data so it is available to all widgets.
   $item = array_merge($item, $file);
