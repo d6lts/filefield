@@ -62,6 +62,7 @@ function filefield_meta_file_delete($file) {
  */
 function filefield_meta(&$file) {
   $info = getid3_analyze($file->filepath);
+
   $file->data['width'] = $file->data['height'] = $file->data['duration'] = 0;
   if (isset($info['video']['resolution_x'])) {
     $file->data['width'] = $info['video']['resolution_x'];
@@ -73,12 +74,22 @@ function filefield_meta(&$file) {
       $file->data['height'] = max($file->data['height'], $stream['resolution_y']);
     }
   }
-  $file->data['duration'] = $info['playtime_seconds'];
-  $file->data['audio_format'] = $info['audio']['dataformat']; //e.g. mp3
-  $file->data['audio_sample_rate'] = $info['audio']['sample_rate']; //e.g. 44100
-  $file->data['audio_channel_mode'] = $info['audio']['channelmode']; // e.g. mono
-  $file->data['audio_bitrate'] = $info['audio']['bitrate']; //e.g. 64000
-  $file->data['audio_bitrate_mode'] = $info['audio']['bitrate_mode']; //e.g. cbr
+
+  if (isset($info['playtime_seconds']))  {
+    $file->data['duration'] = $info['playtime_seconds'];
+  }
+
+  // initialize fields. 
+  $file->data['audio_format'] = $file->data['audio_channel_mode'] = $file->data['audio_bitrate_mode'] = '';
+  $file->data['audio_sample_rate'] = $file->data['audio_bitrate'] = 0;
+ 
+  if (isset($info['audio']))  { 
+    $file->data['audio_format'] = $info['audio']['dataformat']; //e.g. mp3
+    $file->data['audio_sample_rate'] = $info['audio']['sample_rate']; //e.g. 44100
+    $file->data['audio_channel_mode'] = $info['audio']['channelmode']; // e.g. mono
+    $file->data['audio_bitrate'] = $info['audio']['bitrate']; //e.g. 64000
+    $file->data['audio_bitrate_mode'] = $info['audio']['bitrate_mode']; //e.g. cbr
+  }
 };
 
 /**
