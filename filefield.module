@@ -188,6 +188,17 @@ function filefield_file_download($file) {
   );
 }
 
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Set the appropriate attibutes to allow file uploads on the field settings
+ * form.
+ */
+function filefield_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'content_field_edit_form') {
+    $form['#attributes'] = array('enctype' => 'multipart/form-data');
+  }
+}
 
 /**
  * Implementation of CCK's hook_field_info().
