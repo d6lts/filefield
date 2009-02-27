@@ -796,7 +796,7 @@ function theme_filefield($file) {
     $icon = theme('filefield_icon', $file);
     $url = file_create_url($path);
     $desc = $file['description'];
-    return '<div class="filefield-item">'. $icon . l($desc, $url) .'</div>';
+    return '<div class="filefield-item clear-block">'. $icon . l($desc, $url) .'</div>';
   }
   return '';
 }
