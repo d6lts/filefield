@@ -336,10 +336,12 @@ function filefield_node_form_validate($form, &$form_state) {
     $empty = $field['module'] .'_content_is_empty';
     $valid = false;
     $total_filesize = 0;
-    foreach($form_state['values'][$field_name] as $delta => $item) {
-      if ($empty($item, $field)) continue;
-      $valid = true;
-      $total_filesize += (int)$item['filesize'];
+    if (!empty($form_state['values'][$field_name])) {
+      foreach($form_state['values'][$field_name] as $delta => $item) {
+        if ($empty($item, $field)) continue;
+        $valid = TRUE;
+        $total_filesize += (int)$item['filesize'];
+      }
     }
 
     if (!$valid && $field['required']) {
