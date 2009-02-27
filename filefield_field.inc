@@ -121,15 +121,16 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
     return;
   } 
 
-  // try to delete items from original node 
+  // Try to delete items from original node.
   $orig = node_load($node->nid); 
-  // if there are, figure out which ones must go.
-  foreach($orig->$field['field_name'] as $oitem) {
-    if (!in_array($oitem['fid'], $curfids))  {
-      field_file_delete($oitem); 
+  // If there are, figure out which ones must go.
+  if (!empty($orig->$field['field_name'])) {
+    foreach ($orig->$field['field_name'] as $oitem) {
+      if (!in_array($oitem['fid'], $curfids))  {
+        field_file_delete($oitem); 
+      }
     }
   }
-  
 }
 
 function filefield_field_delete_revision($node, $field, &$items, $teaser, $page) {
