@@ -141,7 +141,7 @@ function filefield_save_upload($element) {
 
   if (!$file = field_file_save_upload($upload_name, $element['#upload_validators'], $dest)) {
     watchdog('filefield', 'The file upload failed. %upload', array('%upload' => $upload_name));
-    form_set_error($upload_name, t('The Image upload failed.'));
+    form_set_error($upload_name, t('The file in the @field field was unable to be uploaded.', array('@field' => $element['#title'])));
     return 0;
   }
   return $file['fid'];
