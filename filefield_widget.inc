@@ -249,8 +249,15 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     $element['upload']['#title'] = t('Replace');
   }
 
+  if (isset($element['#attributes']['class']) && strlen($element['#attributes']['class'])) {
+    $element['#attributes']['class'] .= 'filefield-element clear-block';
+  }
+  else {
+    $element['#attributes']['class'] = 'filefield-element clear-block';
+  }
+
   $element['#attributes']['id'] = $element['#id'] .'-ahah-wrapper';
-  $element['#attributes']['class'] = (isset($element['#attributes']['class']) ? $element['#attributes']['class'] : '') .' filefield-ahah-wrapper';
+  $element['#attributes']['class'] = $element['#attributes']['class'];
   $element['#prefix'] = '<div '. drupal_attributes($element['#attributes']) .'>';
   $element['#suffix'] = '</div>';
   $element['upload_btn'] = array(
