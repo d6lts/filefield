@@ -1,3 +1,5 @@
+/* $Id$ */
+
 /**
  * Overall styles
  */
@@ -12,35 +14,31 @@
   margin-right: 0.4em;
 }
 
-/* End formatter styles */
+/* End formatter styles. */
 
 /**
- * General widget form styles (applicable to all widgets)
+ * General widget form styles (applicable to all widgets).
  */
 .filefield-row {
 }
 
 .filefield-row .filefield-info  {
-  float : left;
+  float: left;
   padding-right: 1em;
 }
 
 .filefield-row .filefield-edit {
-  float : left;
+  float: left;
   width: 70%;
 }
-
-
 
 .filefield-row .filefield-description  {
   width: 70%;
 }
 
-
 .filefield-row .filefield-list  {
-  float : right;
+  float: right;
 }
-
 
 .filefield-file-edit-widget {
  float: left;
@@ -62,7 +60,7 @@
   white-space: normal;
 }
 
-/* End general widget form styles */
+/* End general widget form styles. */
 
 /**
  * Generic file edit widget styles. Not applicable to other widgets that
@@ -79,14 +77,15 @@
   margin-right: 6em;
 }
 
-/* The text field is made unnecessarily long by node.css - shorten it */
+/* The text field is made unnecessarily long by node.css - shorten it. */
 .filefield-generic-edit .form-text {
   width: 99%;
 }
+
 .filefield-generic-edit .description {
   white-space: normal;
   margin-bottom: 0;
-  overflow: auto; /* indent on line wraps, don't float around the icon */
+  overflow: auto; /* Indent on line wraps, don't float around the icon. */
 }
 
-/* End widget form styles */
+/* End widget form styles. */
