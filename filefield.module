@@ -85,6 +85,10 @@ function filefield_theme() {
       'arguments' => array('element' => NULL),
       'file' => 'filefield_widget.inc',
     ),
+    'filefield_widget_file' => array(
+      'arguments' => array('element' => NULL),
+      'file' => 'filefield_widget.inc',
+    ),
 
 
     'filefield_formatter_default' => array(
