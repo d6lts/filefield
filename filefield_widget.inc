@@ -209,7 +209,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   // to put additional data.
   $element['data'] = array('#tree' => 'true');
 
-  if ($field['show_description']) {
+  if ($field['description_field']) {
     $element['data']['description'] = array(
       '#type' => 'textfield',
       '#title' => t('Description'),
@@ -218,19 +218,19 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     );
   }
 
-  if ($field['force_list_default']) {
-    $element['list'] = array(
-      '#type' => 'hidden',
-      '#value' => $field['list_default'],
-    );
-  }
-  else {
+  if ($field['list_field']) {
     $element['list'] = array(
       '#type' => 'checkbox',
       '#title' => t('List'),
       '#value' => isset($item['list']) ? $item['list'] : $field['list_default'],
       '#attributes' => array('class' => 'filefield-list'),
       '#access' => !empty($item['fid']),
+    );
+  }
+  else {
+    $element['list'] = array(
+      '#type' => 'hidden',
+      '#value' => '1',
     );
   }
 

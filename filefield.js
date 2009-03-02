@@ -30,4 +30,24 @@ Drupal.behaviors.filefieldValidateAutoAttach = function(context) {
      */
     /* @todo */
   });
-}
+};
+
+/**
+ * Admin enhancement: only show the "Files listed by default" when needed.
+ */
+Drupal.behaviors.filefieldAdmin = function(context) {
+  var $listField = $('div.filefield-list-field', context);
+  if ($listField.size()) {
+    $listField.find('input').change(function() {
+      if (this.checked) {
+        if (this.value == 0) {
+          $('#edit-list-default-wrapper').css('display', 'none');
+        }
+        else {
+          $('#edit-list-default-wrapper').css('display', 'block');
+        }
+      }
+    }).change();
+  }
+};
+

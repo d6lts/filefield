@@ -192,6 +192,28 @@ function filefield_update_6001() {
 }
 
 /**
+ * Migrate field settings from 'force_list_default' and 'show_description'.
+ */
+function filefield_update_6100() {
+  $ret = array();
+
+  module_load_include('inc', 'content', 'includes/content.crud');
+
+  $fields = content_fields();
+  foreach ($fields as $field) {
+    if ($field['type'] == 'filefield') {
+      $field['list_field'] = empty($field['force_list_default']);
+      $field['description_field'] = $field['show_description'];
+      _content_field_write($field);
+      $ret[] = array('success' => TRUE, 'query' => t('The File field %field has been updated with new settings.', array('%field' => $field['field_name'])));
+    }
+  }
+
+  return $ret;
+}
+
+
+/**
  * Move the list and descriptions column into the serialized data column.
  */
 function _filefield_update_6001_move_operation($field, &$context) {
