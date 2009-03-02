@@ -193,7 +193,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   }
 
   // Check if a remove button was clicked.
-  $remove_name = $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn';
+  $remove_name = $element['#field_name'] .'_'. $element['#delta'] .'_filefield_remove';
   if (isset($form_state['clicked_button']) && $form_state['clicked_button']['#name'] == $remove_name) {
     $item = array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
   }
@@ -254,7 +254,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['#attributes']['id'] = $element['#id'] .'-ahah-wrapper';
   $element['#prefix'] = '<div '. drupal_attributes($element['#attributes']) .'>';
   $element['#suffix'] = '</div>';
-  $element['upload_btn'] = array(
+  $element['filefield_upload'] = array(
     '#type' => 'submit',
     '#value' => t('Upload'),
     '#process' => array('form_expand_ahah'),
@@ -272,11 +272,11 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     '#access' => empty($item['fid']),
   );
 
-  $element['remove_btn'] = array(
-    '#name' => $element['#field_name'] .'_'. $element['#delta'] .'_remove_btn',
+  $element['filefield_remove'] = array(
+    '#name' => $element['#field_name'] .'_'. $element['#delta'] .'_filefield_remove',
     '#type' => 'submit',
     '#value' => t('Remove'),
-    '#process' => array('filefield_widget_process_remove_btn', 'form_expand_ahah'),
+    '#process' => array('form_expand_ahah'),
     '#submit' => array('node_form_submit_build_node'),
     '#ahah' => array( // with JavaScript
       'path' => 'filefield/ahah/'.   $element['#type_name'] .'/'. $element['#field_name'] .'/'. $element['#delta'],
@@ -315,7 +315,7 @@ function theme_filefield_widget_preview($item) {
 
 function theme_filefield_widget_item($element) {
   // Put the upload button directly after the upload field.
-  $element['upload']['#field_suffix'] = drupal_render($element['upload_btn']);
+  $element['upload']['#field_suffix'] = drupal_render($element['filefield_upload']);
   $element['upload']['#theme'] = 'filefield_widget_file';
 
   $output = '';
