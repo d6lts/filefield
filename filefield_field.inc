@@ -1,10 +1,10 @@
 <?php
+// $Id$
 
 /**
  * @file
  * FileField field hooks and callbacks.
  */
-
 
 function filefield_field_settings_form($field) {
   drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
