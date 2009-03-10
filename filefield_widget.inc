@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * FileField: Defines a CCK file field type.
@@ -207,14 +208,16 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
 
   // placeholder.. will be serialized into the data column. this is a place for widgets
   // to put additional data.
-  $element['data'] = array('#tree' => 'true');
+  $element['data'] = array(
+    '#tree' => 'true',
+    '#access' => !empty($item['fid']),
+  );
 
   if ($field['description_field']) {
     $element['data']['description'] = array(
       '#type' => 'textfield',
       '#title' => t('Description'),
       '#value' => isset($item['data']['description']) ? $item['data']['description'] : '',
-      '#access' => !empty($item['fid']),
     );
   }
 
