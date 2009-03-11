@@ -94,7 +94,6 @@ function filefield_field_load($node, $field, &$items, $teaser, $page) {
       $items[$delta] = array_merge($item, $file);
     }
   }
-  $items = array_values($items); // compact deltas
   return array($field['field_name'] => $items);
 }
 
@@ -113,8 +112,6 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
     if (empty($items[$delta])) unset($items[$delta]);
     $curfids[] = $item['fid'];
   }
-  $items = array_values($items); // compact deltas
-
 
   // if this is a new node... there are no
   // old items to worry about.
@@ -140,8 +137,9 @@ function filefield_field_delete_revision($node, $field, &$items, $teaser, $page)
   foreach ($items as $delta => $item) {
     // For hook_file_references, remember that this is being deleted.
     $item['field_name'] = $field['field_name'];
-    if (field_file_delete($item)) unset($items[$delta]);
-    $items = array_values($items); // compact deltas
+    if (field_file_delete($item)) {
+      unset($items[$delta]);
+    }
   }
 }
 
