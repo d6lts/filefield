@@ -266,35 +266,12 @@ function filefield_field($op, $node, $field, &$items, $teaser, $page) {
  * Implementation of CCK's hook_widget_settings().
  */
 function filefield_widget_settings($op, $widget) {
-  $return = array();
-  // load our widget settings callbacks..
-  $op =  str_replace(' ', '_', $op);
-  $function = 'filefield_widget_settings_'. $op;
-  if (function_exists($function)) {
-    $result = $function($widget);
-    if (isset($result) && is_array($result)) {
-      $return = $result;
-    }
+  switch ($op) {
+    case 'form':
+      return filefield_widget_settings_form($widget);
+    case 'save':
+      return filefield_widget_settings_save($widget);
   }
-
-  // sometimes widget_settings is called with widget, sometimes with field.
-  // CCK needs to make up it's mind here or get with the new hook formats.
-  $widget_type = isset($widget['widget_type']) ? $widget['widget_type'] : $widget['type'];
-  $widget_module = isset($widget['widget_module']) ? $widget['widget_module'] : $widget['module'];
-
-  // dynamically load widgets file and callbacks for other fields and widgets utilizing
-  // filefield's hook_widget_settings implementation.
-  module_load_include('inc', $widget_module, $widget_module .'_widget');
-
-  $function = $widget_type .'_widget_settings_'. $op;
-  if (function_exists($function)) {
-    $result = $function($widget);
-    if (isset($result) && is_array($result)) {
-      $return = array_merge($return, $result);
-    }
-  }
-
-  return $return;
 }
 
 /**
@@ -393,17 +370,9 @@ function filefield_field_formatter_info() {
   return array(
     'default' => array(
       'label' => t('Generic files'),
-      'suitability callback' => TRUE,
-      'field types' => array('filefield','image'),
+      'field types' => array('filefield'),
       'multiple values' => CONTENT_HANDLE_CORE,
       'description' => t('Displays all kinds of files with an icon and a linked file description.'),
-    ),
-    'filefield_dynamic' => array(
-      'label' => t('Dynamic file formatters'),
-      'suitability callback' => TRUE,
-      'field types' => array('file'),
-      'multiple values' => CONTENT_HANDLE_CORE,
-      'description' => t('(experimental) An extensible formatter for filefield.'),
     ),
   );
 }
@@ -543,35 +512,6 @@ function filefield_js($type_name, $field_name, $delta) {
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
 }
-
-/**
- * set the default values for imagefield.
- * This seems to work for all but add a new item on unlimited values which doesn't
- * get assigned a proper default.
- */
-function filefield_default_value(&$form, &$form_state, $field, $delta) {
-  $items = array();
-  $field_name = $field['field_name'];
-
-  switch ($field['multiple']) {
-    case 0:
-      $max = 1;
-      break;
-    case 1:
-      $max =  isset($form_state['item_count'][$field_name]) ? $form_state['item_count'][$field_name] : 1;
-      break;
-    default:
-      $max = $field['multiple'];
-      break;
-  }
-
-  for ($delta = 0; $delta < $max; $delta++) {
-    $items[$delta] = array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
-  }
-  return $items;
-}
-
-
 
 /**
  * Implementation of hook_file_references().

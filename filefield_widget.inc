@@ -168,12 +168,6 @@ function filefield_widget_value($element, $edit = FALSE) {
   // merge file and item data so it is available to all widgets.
   $item = array_merge($item, $file);
 
-  // if this widget is another type and leaning on filefield to do the dirty work....
-  // pass it back home.
-  $function = $element['#type'] .'_widget_value';
-  if (function_exists($function)) {
-    $item = array_merge($item, $function($element, $edit));
-  }
   return $item;
 }
 
