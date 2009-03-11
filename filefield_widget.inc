@@ -315,9 +315,11 @@ function theme_filefield_widget($element) {
 }
 
 function theme_filefield_widget_preview($item) {
-  return '<div class="filename">'. theme('filefield_file', $item) .'</div>'.
-         '<div class="filesize">'. format_size($item['filesize']) .'</div>'.
-         '<div class="filemime">'. $item['filemime'] .'</div>';
+  return '<div class="filefield-file-info">'.
+           '<div class="filename">'. theme('filefield_file', $item) .'</div>'.
+           '<div class="filesize">'. format_size($item['filesize']) .'</div>'.
+           '<div class="filemime">'. $item['filemime'] .'</div>'.
+         '</div>';
 }
 
 function theme_filefield_widget_item($element) {
@@ -329,12 +331,12 @@ function theme_filefield_widget_item($element) {
   $output .= '<div class="filefield-element clear-block">';
 
   if ($element['fid']['#value'] != 0) {
-    $output .= '<div class="filefield-preview">';
+    $output .= '<div class="widget-preview">';
     $output .= drupal_render($element['preview']);
     $output .= '</div>';
   }
 
-  $output .= '<div class="filefield-edit">';
+  $output .= '<div class="widget-edit">';
   $output .=  drupal_render($element);
   $output .= '</div>';
   $output .= '</div>';

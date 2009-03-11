@@ -24,18 +24,23 @@
   white-space: normal;
 }
 
-.filefield-element .filefield-preview {
+.filefield-element .widget-preview {
   float: left;
-  width: 180px;
-  overflow: hidden;
+  padding-right: 10px;
+  border-right: 1px solid #CCC;
   margin-right: 10px;
 }
 
-.filefield-element .filefield-edit {
+.filefield-element .widget-edit {
   float: left;
 }
 
-.filefield-element .filefield-edit .form-item {
+.filefield-element .filefield-preview {
+  width: 16em;
+  overflow: hidden;
+}
+
+.filefield-element .widget-edit .form-item {
   margin: 0 0 1em 0;
 }
 
