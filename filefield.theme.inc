@@ -12,7 +12,9 @@
 
 /**
  * Return an image with an appropriate icon for the given file.
- * Remember to pass a file object and not an array.
+ *
+ * @param $file
+ *   A file object for which to make an icon.
  */
 function theme_filefield_icon($file) {
   if (is_object($file)) {
@@ -22,23 +24,50 @@ function theme_filefield_icon($file) {
 
   $dashed_mime = strtr($mime, array('/' => '-'));
 
-  if ($icon_url = _filefield_icon_url($file)) {
+  if ($icon_url = filefield_icon_url($file)) {
     $icon = '<img class="field-icon-'. $dashed_mime .'"  alt="'. $mime .' icon" src="'. $icon_url .'" />';
   }
   return '<div class="filefield-icon field-icon-'. $dashed_mime .'">'. $icon .'</div>';
 }
 
-function _filefield_icon_url($file) {
+/**
+ * Given a file object, create a URL to a matching icon.
+ *
+ * @param $file
+ *   A file object.
+ * @param $theme
+ *   Optional. The theme to be used for the icon. Defaults to the value of
+ *   the "filefield_icon_theme" variable.
+ * @return
+ *   A URL string to the icon, or FALSE if an appropriate icon could not be
+ *   found.
+ */
+function filefield_icon_url($file, $theme = NULL) {
   global $base_url;
-  $theme = variable_get('filefield_icon_theme', 'protocons');
 
-  if ($iconpath = _filefield_icon_path($file, $theme)) {
+  if ($iconpath = filefield_icon_path($file, $theme)) {
     return $base_url .'/'. $iconpath;
   }
   return FALSE;
 }
 
-function _filefield_icon_path($file, $theme = 'protocons') {
+/**
+ * Given a file object, create a URL to a matching icon.
+ *
+ * @param $file
+ *   A file object.
+ * @param $theme
+ *   Optional. The theme to be used for the icon. Defaults to the value of
+ *   the "filefield_icon_theme" variable.
+ * @return
+ *   A string to the icon as a local path, or FALSE if an appropriate icon could
+ *   not be found.
+ */
+function filefield_icon_path($file, $theme = NULL) {
+  if (!isset($theme)) {
+    $theme = variable_get('filefield_icon_theme', 'protocons');
+  }
+
   // If there's an icon matching the exact mimetype, go for it.
   $dashed_mime = strtr($file['filemime'], array('/' => '-'));
   if ($iconpath = _filefield_create_icon_path($dashed_mime, $theme)) {
