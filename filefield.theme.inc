@@ -42,10 +42,10 @@ function theme_filefield_icon($file) {
  *   A URL string to the icon, or FALSE if an appropriate icon could not be
  *   found.
  */
-function filefield_icon_url($file, $theme = NULL) {
+function _filefield_icon_url($file, $theme = NULL) {
   global $base_url;
 
-  if ($iconpath = filefield_icon_path($file, $theme)) {
+  if ($iconpath = _filefield_icon_path($file, $theme)) {
     return $base_url .'/'. $iconpath;
   }
   return FALSE;
@@ -63,7 +63,7 @@ function filefield_icon_url($file, $theme = NULL) {
  *   A string to the icon as a local path, or FALSE if an appropriate icon could
  *   not be found.
  */
-function filefield_icon_path($file, $theme = NULL) {
+function _filefield_icon_path($file, $theme = NULL) {
   if (!isset($theme)) {
     $theme = variable_get('filefield_icon_theme', 'protocons');
   }

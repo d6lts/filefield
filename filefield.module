@@ -380,9 +380,11 @@ function filefield_field_formatter_info() {
 /**
  * Determine the most appropriate icon for the given file's mimetype.
  *
- * @return The URL of the icon image file, or FALSE if no icon could be found.
+ * @param $file
+ *   A file object.
+ * @return
+ *   The URL of the icon image file, or FALSE if no icon could be found.
  */
-
 function filefield_icon_url($file) {
   include_once(drupal_get_path('module', 'filefield') .'/filefield.theme.inc');
   return _filefield_icon_url($file);
