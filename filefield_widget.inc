@@ -345,7 +345,10 @@ function theme_filefield_widget_item($element) {
 }
 
 /**
- * Render the #field_suffix for file elements.
+ * Custom theme function for FileField upload elements.
+ *
+ * This function allows us to put the "Upload" button immediately after the
+ * file upload field by respecting the #field_suffix property.
  */
 function theme_filefield_widget_file($element) {
   $output = '';
