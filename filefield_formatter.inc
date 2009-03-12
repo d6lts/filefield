@@ -67,10 +67,26 @@ function theme_filefield_file($file) {
   $path = $file['filepath'];
   $url = file_create_url($path);
   $icon = theme('filefield_icon', $file);
-  // set options as per anchor format described on http://microformats.org/wiki/file-format-examples
-  // until I move to the more complex microformat described 
-  // @ http://darrelopry.com/story/microformats-and-media-rfc-if-you-js-or-css
-  $options = array('attributes' => array('type' => $file['filemime'], 'length' => $file['filesize']));
-  $options['attributes']['title'] =  (isset($file['data']['description'])) ? $file['data']['description'] : $file['filename'];
-  return '<div class="filefield-file clear-block">'. $icon . l($file['filename'], $url, $options) .'</div>';
+
+  // Set options as per anchor format described at
+  // http://microformats.org/wiki/file-format-examples
+  // TODO: Possibly move to until I move to the more complex format described 
+  // at http://darrelopry.com/story/microformats-and-media-rfc-if-you-js-or-css
+  $options = array(
+    'attributes' => array(
+      'type' => $file['filemime'],
+      'length' => $file['filesize'],
+    ),
+  );
+
+  // Use the description as the link text if available.
+  if (empty($file['data']['description'])) {
+    $link_text = $file['filename'];
+  }
+  else {
+    $link_text = $file['data']['description'];
+    $options['attributes']['title'] = $file['filename'];
+  }
+
+  return '<div class="filefield-file clear-block">'. $icon . l($link_text, $url, $options) .'</div>';
 }
