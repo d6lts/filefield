@@ -10,8 +10,8 @@
  */
 
 .filefield-icon {
-  float: left;
-  margin-right: 0.4em;
+  float: left; /* RTL */
+  margin-right: 0.4em; /* RTL */
 }
 
 /* End formatter styles. */
@@ -25,14 +25,14 @@
 }
 
 .filefield-element .widget-preview {
-  float: left;
-  padding-right: 10px;
-  border-right: 1px solid #CCC;
-  margin-right: 10px;
+  float: left; /* RTL */
+  padding-right: 10px; /* RTL */
+  border-right: 1px solid #CCC; /* RTL */
+  margin-right: 10px; /* RTL */
 }
 
 .filefield-element .widget-edit {
-  float: left;
+  float: left; /* RTL */
 }
 
 .filefield-element .filefield-preview {
@@ -58,7 +58,7 @@
 .filefield-element div.throbber {
   display: inline;
   float: none;
-  padding: 1px 13px 2px 3px;
+  padding: 1px 13px 2px 3px; /* RTL */
 }
 
 
@@ -71,13 +71,13 @@
  */
 
 .filefield-generic-edit .filefield-icon {
-  float: left;
-  margin-right: 0.7em;
+  float: left; /* RTL */
+  margin-right: 0.7em; /* RTL */
   margin-top: 0.3em;
 }
 
 .filefield-generic-edit-description {
-  margin-right: 6em;
+  margin-right: 6em; /* RTL */
 }
 
 /* The text field is made unnecessarily long by node.css - shorten it. */
