@@ -59,9 +59,14 @@ function filefield_file_listed($file, $field) {
  * Theme function for the 'generic' single file formatter.
  */
 function theme_filefield_file($file) {
+  // Views may call this function with a NULL value, return an empty string.
+  if (empty($file['fid'])) {
+    return '';
+  }
+
   $path = $file['filepath'];
   $url = file_create_url($path);
-  $icon = theme('filefield_icon', $file); // . '<pre>' .  print_r($file,1) . '</pre>';
+  $icon = theme('filefield_icon', $file);
   // set options as per anchor format described on http://microformats.org/wiki/file-format-examples
   // until I move to the more complex microformat described 
   // @ http://darrelopry.com/story/microformats-and-media-rfc-if-you-js-or-css
