@@ -449,7 +449,12 @@ function filefield_js($type_name, $field_name, $delta) {
 
   // Update the cached form with the new element at the right place in the form.
   if (module_exists('fieldgroup') && ($group_name = _fieldgroup_field_get_group($type_name, $field_name))) {
-    $form_element = $form[$group_name][$field_name][$delta];
+    if (isset($form['#multigroups']) && isset($form['#multigroups'][$group_name][$field_name])) {
+      $form_element = $form[$group_name][$delta][$field_name];
+    }
+    else {
+      $form_element = $form[$group_name][$field_name][$delta];
+    }
   }
   else {
     $form_element = $form[$field_name][$delta];
