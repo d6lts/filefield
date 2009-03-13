@@ -829,7 +829,7 @@ function filefield_file_download($file) {
   $name = mime_header_encode($file->filename);
   $type = mime_header_encode($file->filemime);
   // Serve images and text inline for the browser to display rather than download.
-  $disposition = ereg('^(text/|image/)', $file->filemime) ? 'inline' : 'attachment';
+  $disposition = (ereg('^(text/|image/)', $file->filemime) || ereg('flash$', $file->filemime)) ? 'inline' : 'attachment';
   return array(
     'Content-Type: '. $type .'; name='. $name,
     'Content-Length: '. $file->filesize,
