@@ -202,7 +202,7 @@ function field_file_save_file($filepath, $validators = array(), $dest = FALSE) {
  */
 function field_file_save($node, &$file) {
   // If this item is marked for deletion.
-  if (!empty($file['delete'])) {
+  if (!empty($file['delete']) || !empty($file['_remove'])) {
     // If we're creating a new revision, return an empty array so CCK will
     // remove the item.
     if (!empty($node->old_vid)) {
