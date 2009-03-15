@@ -238,10 +238,13 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['filefield_remove']['#access'] = !empty($item['fid']);
 
   // Figure out our fid...
-  $element['fid'] = array('#type' => 'hidden', '#value' =>  $item['fid']);
+  $element['fid'] = array('#type' => 'hidden', '#value' => $item['fid']);
 
   if ($item['fid'] != 0) {
-    $element['preview'] = array('#type' => 'markup', '#value' => theme($element['#type'] .'_preview', $item));
+    $element['preview'] = array(
+      '#type' => 'markup',
+      '#value' => theme('filefield_widget_preview', $item),
+    );
   }
 
   // placeholder.. will be serialized into the data column. this is a place for widgets
