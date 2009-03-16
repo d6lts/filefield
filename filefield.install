@@ -161,7 +161,7 @@ function filefield_update_6101() {
         $table = $db_info['table'];
         $fid_column = $db_info['columns']['fid']['column'];
         $list_column = $db_info['columns']['list']['column'];
-        $ret[] = update_sql("UPDATE {$table} SET $fid_column = NULL, $list_column = NULL WHERE $fid_column NOT IN (SELECT fid FROM {files})");
+        $ret[] = update_sql("UPDATE {" . $table . "} SET $fid_column = NULL, $list_column = NULL WHERE $fid_column NOT IN (SELECT fid FROM {files})");
       }
     }
   }
