@@ -341,7 +341,7 @@ function field_file_check_directory(&$directory, $mode = 0, $form_item = NULL) {
     else {
       $repl = array('%directory' => $directory, '!htaccess' => nl2br(check_plain($htaccess_lines)));
       form_set_error($form_item, t("Security warning: Couldn't write .htaccess file. Please create a .htaccess file in your %directory directory which contains the following lines:<br /><code>!htaccess</code>", $repl));
-      watchdog('security', "Security warning: Couldn't write .htaccess file.  Please create a .htaccess file in your %directory directory which contains the following lines:<br /><code>!htaccess</code>", $repl, WATCHDOG_ERROR);
+      watchdog('security', "Security warning: Couldn't write .htaccess file. Please create a .htaccess file in your %directory directory which contains the following lines:<br /><code>!htaccess</code>", $repl, WATCHDOG_ERROR);
     }
   }
 
