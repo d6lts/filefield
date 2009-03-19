@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * A special handler that properly formats duration fields as minutes:seconds.
+ */
+
+/**
  * Render a field as a readable value in hours, minutes, and seconds.
  *
  * @ingroup views_field_handlers

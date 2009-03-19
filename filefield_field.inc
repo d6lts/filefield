@@ -46,7 +46,7 @@ function filefield_field_settings_database_columns($field) {
   return array(
     'fid' => array('type' => 'int', 'not null' => FALSE),
     'list' => array('type' => 'int', 'size' => 'tiny', 'not null' => FALSE),
-    'data' => array('type' => 'text', 'serialize' => true),
+    'data' => array('type' => 'text', 'serialize' => TRUE),
   );
 }
 

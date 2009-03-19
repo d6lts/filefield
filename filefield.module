@@ -28,7 +28,7 @@ function filefield_menu() {
 
   $items['filefield/ahah/%/%/%'] = array(
     'page callback' => 'filefield_js',
-    'page arguments' => array(2,3,4),
+    'page arguments' => array(2, 3, 4),
     'access callback' => 'filefield_edit_access',
     'access arguments' => array(3),
     'type' => MENU_CALLBACK,
@@ -486,7 +486,7 @@ function filefield_js($type_name, $field_name, $delta) {
 
   // For some reason, file uploads don't like drupal_json() with its manual
   // setting of the text/javascript HTTP header. So use this one instead.
-  $GLOBALS['devel_shutdown'] = false;
+  $GLOBALS['devel_shutdown'] = FALSE;
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
 }
@@ -496,7 +496,7 @@ function filefield_js($type_name, $field_name, $delta) {
  */
 function filefield_file_references($file) {
   $references = 0;
-  foreach(content_fields() as $field) {
+  foreach (content_fields() as $field) {
     if ($field['type'] != 'filefield') {
       continue;
     }
@@ -652,6 +652,6 @@ function filefield_validate_associate_field(&$file, $field) {
   return array();
 }
 
-function filefield_validate_is_image_help($arguments = null) {
+function filefield_validate_is_image_help($arguments = NULL) {
   return t('Must be a JPEG, PNG or GIF image');
 }
