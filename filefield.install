@@ -223,6 +223,20 @@ function filefield_update_6102(&$sandbox) {
 }
 
 /**
+ * Convert "Extensible File" to a normal "File" widget.
+ */
+function filefield_update_6103() {
+  $ret = array();
+
+  $ret[] = update_sql("UPDATE {". content_instance_tablename() ."} SET widget_type = 'filefield_widget' WHERE widget_type = 'filefield_combo'");
+
+  cache_clear_all('*', content_cache_tablename(), TRUE);
+  cache_clear_all('*', 'cache', TRUE);
+
+  return $ret;
+}
+
+/**
  * Move the list and descriptions column into the serialized data column.
  */
 function _filefield_update_6001_move_operation($field, &$context) {

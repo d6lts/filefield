@@ -50,13 +50,6 @@ function filefield_elements() {
     '#element_validate' => array('filefield_widget_validate'),
     '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
   );
-  $elements['filefield_extensible'] =  array(
-    '#input' => TRUE,
-    '#columns' => array('fid', 'list', 'data'),
-    '#process' => array('filefield_process'),
-    '#value_callback' => 'filefield_value',
-    '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
-  );
   return $elements;
 }
 
@@ -356,13 +349,6 @@ function filefield_widget_info() {
       'multiple values' => CONTENT_HANDLE_CORE,
       'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
       'description' => t('A plain file upload widget.'),
-    ),
-    'filefield_combo' => array(
-      'label' => 'Extensible File',
-      'field types' => array('filefield'),
-      'multiple values' => CONTENT_HANDLE_CORE,
-      'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
-      'description' => t('(Experimental)An extensible file upload widget.'),
     ),
   );
 }
