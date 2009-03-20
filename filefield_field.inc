@@ -91,6 +91,12 @@ function filefield_field_load($node, $field, &$items, $teaser, $page) {
     }
     else {
       $item['data'] = unserialize($item['data']);
+      // Temporary fix to unserialize data serialized multiple times.
+      // See the FileField issue http://drupal.org/node/402860.
+      // And the CCK issue http://drupal.org/node/407446.
+      while (!empty($item['data']) && is_string($item['data'])) {
+        $item['data'] = unserialize($item['data']);
+      }
       $items[$delta] = array_merge($item, $file);
     }
   }
