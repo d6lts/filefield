@@ -89,6 +89,14 @@ function filefield_theme() {
       'arguments' => array('element' => NULL),
       'file' => 'filefield_formatter.inc',
     ),
+    'filefield_formatter_url_plain' => array(
+      'arguments' => array('element' => NULL),
+      'file' => 'filefield_formatter.inc',
+    ),
+    'filefield_formatter_path_plain' => array(
+      'arguments' => array('element' => NULL),
+      'file' => 'filefield_formatter.inc',
+    ),
     'filefield_item' => array(
       'arguments' => array('file' => NULL, 'field' => NULL),
       'file' => 'filefield_formatter.inc',
@@ -363,6 +371,16 @@ function filefield_field_formatter_info() {
       'field types' => array('filefield'),
       'multiple values' => CONTENT_HANDLE_CORE,
       'description' => t('Displays all kinds of files with an icon and a linked file description.'),
+    ),
+    'path_plain' => array(
+      'label' => t('Path to file'),
+      'field types' => array('filefield'),
+      'description' => t('Displays the file system path to the file.'),
+    ),
+    'url_plain' => array(
+      'label' => t('URL to file'),
+      'field types' => array('filefield'),
+      'description' => t('Displays a full URL to the file.'),
     ),
   );
 }

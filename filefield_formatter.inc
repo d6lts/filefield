@@ -21,6 +21,52 @@ function theme_filefield_formatter_default($element) {
 }
 
 /**
+ * Theme function for the 'path_plain' formatter.
+ */
+function theme_filefield_formatter_path_plain($element) {
+  // Inside a View this function may be called with null data. In that case,
+  // just return.
+  if (empty($element['#item'])) {
+    return '';
+  }
+
+  $field = content_fields($element['#field_name']);
+  $item = $element['#item'];
+  // If there is no image on the database, use default.
+  if (empty($item['fid']) && $field['use_default_file']) {
+    $item = $field['default_file'];
+  }
+  if (empty($item['filepath']) && !empty($item['fid'])) {
+    $item = array_merge($item, field_file_load($item['fid']));
+  }
+
+  return empty($item['filepath']) ? '' : file_create_path($item['filepath']);
+}
+
+/**
+ * Theme function for the 'url_plain' formatter.
+ */
+function theme_filefield_formatter_url_plain($element) {
+  // Inside a View this function may be called with null data. In that case,
+  // just return.
+  if (empty($element['#item'])) {
+    return '';
+  }
+
+  $field = content_fields($element['#field_name']);
+  $item = $element['#item'];
+  // If there is no image on the database, use default.
+  if (empty($item['fid']) && $field['use_default_file']) {
+    $item = $field['default_file'];
+  }
+  if (empty($item['filepath']) && !empty($item['fid'])) {
+    $item = array_merge($item, field_file_load($item['fid']));
+  }
+
+  return empty($item['filepath']) ? '' : file_create_url($item['filepath']);
+}
+
+/**
  * Theme function for any file that is managed by filefield.
  * It doesn't really format stuff by itself but rather redirects to other
  * formatters that are telling us they want to handle the concerned file.
