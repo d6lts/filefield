@@ -41,7 +41,7 @@ function filefield_widget_settings_form($widget) {
     '#type' => 'textfield',
     '#title' => t('File path'),
     '#default_value' => is_string($widget['file_path']) ? $widget['file_path'] : '',
-    '#description' => t('Optional subdirectory within the "%dir" directory where files will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))),
+    '#description' => t('Optional subdirectory within the "%directory" directory where files will be stored. Do not include preceding or trailing slashes.', array('%directory' => variable_get('file_directory_path', 'files') . '/')),
     '#element_validate' => array('_filefield_widget_settings_file_path_validate'),
     '#suffix' => theme('token_help', 'user'),
   );
