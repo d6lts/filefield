@@ -60,12 +60,12 @@ function filefield_update_6001() {
   $ret = array();
   include_once(drupal_get_path('module', 'content') .'/includes/content.admin.inc');
 
-  // rename the field type from file to filefield. adhere to module namespace.
-  $ret[] = update_sql("UPDATE {content_node_field} SET type='filefield' WHERE type='file'");
-  // rename default widget to filefield_widget. adhere to module namespace.
-  $ret[] = update_sql("UPDATE {content_node_field_instance} SET widget_type='filefield_widget' WHERE widget_type='file'");
+  // Rename the field type from file to filefield. adhere to module namespace.
+  $ret[] = update_sql("UPDATE {content_node_field} SET type = 'filefield', module = 'filefield', active = 1 WHERE type = 'file'");
+  // Rename default widget to filefield_widget. adhere to module namespace.
+  $ret[] = update_sql("UPDATE {content_node_field_instance} SET widget_type = 'filefield_widget', widget_module = 'filefield', widget_active = 1 WHERE widget_type = 'file'");
 
-  // update list default value and force list settings.
+  // Update list default value and force list settings.
   $result = db_query("SELECT * FROM {content_node_field} WHERE type = 'filefield'");
   while ($field = db_fetch_object($result)) {
     $updated = FALSE;
@@ -73,9 +73,9 @@ function filefield_update_6001() {
     if (!isset($field_settings['list_default']) || !is_numeric($field_settings['list_default'])) {
       $field_settings['list_default'] = 1;
       $updated = TRUE;
-
     }
-    // set behavior to match old force_list behavior.
+
+    // Set behavior to match old force_list behavior.
     if (!empty($field_settings['force_list'])) {
       $field_settings['list_default'] = 1;
       $field_settings['force_list_default'] = 1;
@@ -86,11 +86,22 @@ function filefield_update_6001() {
     }
   }
 
+  // Re-enable all the FileFields on the site.
+  content_associate_fields('filefield');
 
-  // add data column to filefields.
-  $fields = content_fields();
+  // Build a list of fields that need data updating.
+  $fields = array();
+  foreach (content_types_install() as $type_name => $type_fields) {
+    foreach ($type_fields as $field) {
+      if ($field['type'] == 'filefield') {
+        // We only process a given field once.
+        $fields[$field['field_name']] = $field;
+      }
+    }
+  }
+
+  // Add data column to FileFields.
   foreach ($fields as $field) {
-    if ($field['type'] != 'filefield') continue;
     $new_field = $field;
     $new_field['columns']['data'] =  array('type' => 'text');
     content_alter_db($field, $new_field);
@@ -102,19 +113,16 @@ function filefield_update_6001() {
     'operations' => array(),
     'file' => drupal_get_path('module', 'filefield') .'/filefield.install',
   );
-  $content_info = _content_type_info();
-  foreach ($content_info['content types'] as $node_type => $node_info) {
-    foreach ($node_info['fields'] as $field_name => $field) {
-      if ($field['type'] == 'filefield') {
-        $batch['operations'][] = array('_filefield_update_6001_move_operation', array($field));
-        $batch['operations'][] = array('_filefield_update_6001_drop_operation', array($field));
-      }
+  foreach ($fields as $field_name => $field) {
+    if ($field['type'] == 'filefield') {
+      $batch['operations'][] = array('_filefield_update_6001_move_operation', array($field));
+      $batch['operations'][] = array('_filefield_update_6001_drop_operation', array($field));
     }
   }
   batch_set($batch);
 
 
-  // clear them caches.
+  // Clear caches.
   cache_clear_all('*', content_cache_tablename(), TRUE);
   cache_clear_all('*', 'cache', TRUE);
   return $ret;
