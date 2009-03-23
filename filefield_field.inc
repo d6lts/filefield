@@ -134,7 +134,7 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
   // If there are, figure out which ones must go.
   if ($node->revision == 0 && !empty($orig->$field['field_name'])) {
     foreach ($orig->$field['field_name'] as $oitem) {
-      if (!in_array($oitem['fid'], $curfids)) {
+      if (isset($oitem['fid']) && !in_array($oitem['fid'], $curfids)) {
         // For hook_file_references, remember that this is being deleted.
         $oitem['field_name'] = $field['field_name'];
         field_file_delete($oitem); 
