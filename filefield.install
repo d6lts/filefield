@@ -100,10 +100,23 @@ function filefield_update_6001() {
     }
   }
 
-  // Add data column to FileFields.
+  // Update database storage (add data column, remove description, set NOT NULL).
   foreach ($fields as $field) {
     $new_field = $field;
-    $new_field['columns']['data'] =  array('type' => 'text');
+
+    // Setup the previous definition.
+    $field['columns']['description'] = array('type' => 'varchar');
+    $field['columns']['fid']['not null'] = TRUE;
+    $field['columns']['list']['not null'] = TRUE;
+    unset($field['columns']['data']);
+
+    // Setup the new definition.
+    $new_field['columns']['data'] = array('type' => 'text', 'serialize' => TRUE);
+    $new_field['columns']['fid']['not null'] = FALSE;
+    $new_field['columns']['list']['size'] = 'tiny';
+    $new_field['columns']['list']['not null'] = FALSE;
+    unset($new_field['columns']['description']);
+
     content_alter_db($field, $new_field);
   }
 
