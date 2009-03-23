@@ -183,6 +183,18 @@ function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
     // Add nid so formatters can create a link to the node.
     $items[$delta]['nid'] = $node->nid;
 
+    // TODO: This is only necessary for Views, which doesn't call the "load"
+    // $op. It might be preferable to move this to Views integration somehow.
+    if (!empty($items['data']) && is_string($items[$delta]['data'])) {
+      $item['data'] = unserialize($item['data']);
+    }
+    // Temporary fix to unserialize data serialized multiple times.
+    // See the FileField issue http://drupal.org/node/402860.
+    // And the CCK issue http://drupal.org/node/407446.
+    while (!empty($items[$delta]['data']) && is_string($items[$delta]['data'])) {
+      $items[$delta]['data'] = unserialize($items[$delta]['data']);
+    }
+
     // Verify the file exists on the server.
     if (!empty($item['filepath']) && !file_exists($item['filepath'])) {
       watchdog('filefield', 'FileField was trying to display the file %file, but it does not exist.', array('%file' => $item['filepath']));
