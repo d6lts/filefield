@@ -153,19 +153,27 @@ function filefield_save_upload($element) {
  */
 function filefield_widget_value($element, $edit = FALSE) {
   if (!$edit) {
-    $file =  field_file_load($element['#default_value']['fid']);
+    $file = field_file_load($element['#default_value']['fid']);
     $item = $element['#default_value'];
   }
   else {
     $item = array_merge($element['#default_value'], $edit);
-    // uploads take priority over value of fid text field.
+    $field = content_fields($element['#field_name'], $element['#type_name']);
+
+    // Uploads take priority over value of fid text field.
     if ($fid = filefield_save_upload($element)) {
       $item['fid'] = $fid;
     }
-    // load file.
+    // Load file if the FID has changed so that it can be saved by CCK.
     $file = field_file_load($item['fid']);
+
+    // Checkboxes loose their value when empty.
+    // If the list field is present make sure its unchecked value is saved.
+    if ($field['list_field'] && empty($edit['list'])) {
+      $item['list'] = 0;
+    }
   }
-  // merge file and item data so it is available to all widgets.
+  // Merge file and item data so it is available to all widgets.
   $item = array_merge($item, $file);
 
   return $item;
