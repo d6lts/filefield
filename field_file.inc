@@ -383,9 +383,20 @@ function field_file_references($file, $field) {
   ));
 
   // If a field_name is present in the file object, the file is being deleted
-  // from this field, decrement the number of total references by one.
+  // from this field.
   if (isset($file->field_name) && $field['field_name'] == $file->field_name) {
-    --$references;
+    // If deleting the entire node, count how many references to decrement.
+    if (isset($file->delete_nid)) {
+      $node_references = db_result(db_query(
+        'SELECT count('. $db_info['columns']['fid']['column'] .')
+          FROM {'. $db_info['table'] .'}
+          WHERE '. $db_info['columns']['fid']['column'] .' = %d AND nid = %d', $file->fid, $file->delete_nid
+      ));
+      $references = $references - $node_references;
+    }
+    else {
+      $references = $references - 1;
+    }
   }
   return $references;
 }

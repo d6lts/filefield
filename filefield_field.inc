@@ -156,8 +156,11 @@ function filefield_field_delete_revision($node, $field, &$items, $teaser, $page)
 
 function filefield_field_delete($node, $field, &$items, $teaser, $page) {
   foreach ($items as $delta => $item) {
-    // For hook_file_references, remember that this is being deleted.
+    // For hook_file_references(), remember that this is being deleted.
     $item['field_name'] = $field['field_name'];
+    // Pass in the nid of the node that is being removed so all references can
+    // be counted in hook_file_references().
+    $item['delete_nid'] = $node->nid;
     field_file_delete($item);
   }
 }
