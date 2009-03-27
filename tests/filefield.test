@@ -10,13 +10,7 @@ class FileFieldTestCase extends DrupalWebTestCase {
   function setUp() {
     // Views and ImageCache are included here just so that they don't whine
     // when CCK tries to clear thier caches.
-    $modules = array('content', 'filefield', 'mimedetect');
-    if (module_exists('token')) {
-      $modules = array_merge($modules, array('token', 'filefield_token'));
-    }
-    if (module_exists('views')) {
-      $modules[] = 'views';
-    }
+    $modules = array('content', 'filefield', 'mimedetect', 'token', 'views');
     call_user_func_array(array($this, 'parent::setUp'), $modules);
 
     // Create and login user
@@ -562,7 +556,7 @@ class FileFieldPathTestCase extends FileFieldTestCase {
     $this->assertPathMatch(file_directory_path() . '/foo/bar/baz/' . $test_file->filename, $node_file['filepath'], t('The file %file was uploaded to the correct path.', array('%file' => $node_file['filepath'])));
 
     // Check the path when used with tokens.
-    if (module_exists('token') && module_exists('filefield_token')) {
+    if (module_exists('token')) {
       // Change the path to contain multiple token directories.
       $field = $this->updateFileField($field['field_name'], $type->name, array(), array('file_path' => '[uid]/[user-raw]'));
 

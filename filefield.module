@@ -15,9 +15,14 @@ include_once('field_file.inc');
  * Implementation of hook_init().
  */
 function filefield_init() {
-  // file hooks and callbacks.
+  // File hooks and callbacks may be used by any module.
   module_load_include('inc', 'filefield', 'filefield_widget');
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
+
+  // Conditional module support.
+  if (module_exists('token')) {
+    module_load_include('inc', 'filefield', 'filefield.token');
+  }
 }
 
 /**
