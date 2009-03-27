@@ -215,6 +215,17 @@ function filefield_update_6103() {
 }
 
 /**
+ * Delete the filefield_token module entry in the system table.
+ */
+function filefield_update_6104() {
+  $ret = array();
+
+  $ret[] = update_sql("DELETE FROM {system} WHERE type = 'module' AND name = 'filefield_token'");
+
+  return $ret;
+}
+
+/**
  * Move the list and descriptions column into the serialized data column.
  */
 function _filefield_update_6001_move_operation($field, &$context) {
