@@ -561,7 +561,7 @@ function filefield_validate_extensions($file, $extensions) {
       if (module_exists('mimedetect')) {
         $type = mimedetect_mime($file);
         if ($type != $file->filemime) {
-          $errors[] = t('The file contents (@type) do not match it\'s extension (@extension).', array('@type' => $type, '@extension' => $extension));
+          $errors[] = t('The file contents (@type) do not match its extension (@extension).', array('@type' => $type, '@extension' => $extension));
         }
       }
     }
