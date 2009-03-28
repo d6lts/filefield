@@ -9,7 +9,8 @@
  * and Drupal's {files} table to store the actual file data.
  */
 
-include_once('field_file.inc');
+// FileField API hooks should always be available.
+include_once dirname(__FILE__) .'/field_file.inc';
 
 /**
  * Implementation of hook_init().
