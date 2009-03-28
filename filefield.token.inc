@@ -1,8 +1,10 @@
 <?php
+// $Id$
 
 /**
- * Implementation of hook_token_list():
- * Provide a user readable list of filefield tokens.
+ * Implementation of hook_token_list().
+ *
+ * Provide a user readable list of FileField tokens.
  */
 function filefield_token_list($type = 'all') {
   if ($type == 'field' || $type == 'all') {
@@ -22,8 +24,9 @@ function filefield_token_list($type = 'all') {
 }
 
 /**
- * Implementation of hook_token_values():
- * Provide the concrete token values for a given file item.
+ * Implementation of hook_token_values().
+ *
+ * Provide the token values for a given file item.
  */
 function filefield_token_values($type, $object = NULL) {
   if ($type == 'field') {
