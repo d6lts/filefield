@@ -372,9 +372,8 @@ function field_file_strip_path($path) {
 
 
 /**
- * return references to a file by a single field.
+ * Return all the references to a file by a single field.
  */
-
 function field_file_references($file, $field) {
   $db_info = content_database_info($field);
   $references = db_result(db_query(
