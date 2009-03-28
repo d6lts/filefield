@@ -10,7 +10,7 @@ class FileFieldTestCase extends DrupalWebTestCase {
   function setUp() {
     // Views and ImageCache are included here just so that they don't whine
     // when CCK tries to clear thier caches.
-    $modules = array('content', 'filefield', 'mimedetect', 'token', 'views');
+    $modules = array_merge(func_get_args(), array('content', 'filefield', 'mimedetect', 'token', 'views'));
     call_user_func_array(array($this, 'parent::setUp'), $modules);
 
     // Create and login user
@@ -310,8 +310,8 @@ class FileFieldDisplayTestCase extends FileFieldTestCase {
  * Test class to check for various validations.
  */
 class FileFieldValidateTestCase extends FileFieldTestCase {
-  private $field;
-  private $node_type;
+  protected $field;
+  protected $node_type;
 
   function getInfo() {
     return array(
@@ -325,7 +325,8 @@ class FileFieldValidateTestCase extends FileFieldTestCase {
    * Implementation of setUp().
    */
   function setUp() {
-    parent::setUp('content', 'views', 'imagecache', 'filefield');
+    $modules = array_merge(func_get_args(), array('content', 'filefield', 'mimedetect', 'token', 'views'));
+    call_user_func_array(array($this, 'parent::setUp'), $modules);
 
     $this->node_type = $this->drupalCreateContentType();
     $this->node_type->url_name = str_replace('_', '-', $this->node_type->name);
@@ -343,7 +344,7 @@ class FileFieldValidateTestCase extends FileFieldTestCase {
     // Make our field required.
     $this->updateFileField($field['field_name'], $type->name, array('required' => '1'));
 
-    $test_file = $this->getTestFile('text');
+    $test_file = $this->getTestFile('image');
 
     // Try to post a new node without uploading a file.
     $edit = array('title' => $this->randomName());
@@ -474,27 +475,27 @@ class FileFieldValidateTestCase extends FileFieldTestCase {
     $field = $this->field;
 
     // Setup files for extension checking.
-    $text_file = $this->getTestFile('text', 131072); // 128KB.
-    $wrong_extension_file = drupal_clone($text_file);
-    $wrong_extension_file->filename = str_replace('.txt', '.jpg', $text_file->filename);
+    $test_file = $this->getTestFile('image');
+    $wrong_extension_file = drupal_clone($test_file);
+    $wrong_extension_file->filename = str_replace('.png', '.jpg', $test_file->filename);
     $wrong_extension_file->filepath = file_directory_path() .'/'. $wrong_extension_file->filename;
-    $original_path = $text_file->filepath;
+    $original_path = $test_file->filepath;
     file_copy($original_path, $wrong_extension_file->filepath);
 
     $this->updateFileField($field['field_name'], $type->name, array(), array('file_extensions' => ''));
 
     // Check that the file can be uploaded with no extension checking.
-    $nid = $this->uploadNodeFile($text_file, $field['field_name'], $type->name);
+    $nid = $this->uploadNodeFile($test_file, $field['field_name'], $type->name);
     $node = node_load($nid, NULL, TRUE);
     $node_file = $node->{$field['field_name']}[0];
     $this->assertFileExists($node_file, t('File exists after uploading a file with no extension checking.'));
     $this->assertFileEntryExists($node_file, t('File entry exists after uploading a file with no extension checking.'));
 
     // Enable extension checking.
-    $this->updateFileField($field['field_name'], $type->name, array(), array('file_extensions' => 'txt jpg'));
+    $this->updateFileField($field['field_name'], $type->name, array(), array('file_extensions' => 'txt png jpg'));
 
     // Check that the file can be uploaded with extension checking.
-    $nid = $this->uploadNodeFile($text_file, $field['field_name'], $type->name);
+    $nid = $this->uploadNodeFile($test_file, $field['field_name'], $type->name);
     $node = node_load($nid, NULL, TRUE);
     $node_file = $node->{$field['field_name']}[0];
     $this->assertFileExists($node_file, t('File exists after uploading a file with extension checking.'));
