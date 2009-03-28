@@ -14,16 +14,16 @@
 function filefield_token_list($type = 'all') {
   if ($type == 'field' || $type == 'all') {
     $tokens = array();
-    $tokens['file']['filefield-fid']                = t("File ID");
-    $tokens['file']['filefield-description']        = t("File description");
-    $tokens['file']['filefield-filename']           = t("File name");
-    $tokens['file']['filefield-filepath']           = t("File path");
-    $tokens['file']['filefield-filemime']           = t("File MIME type");
-    $tokens['file']['filefield-filesize']           = t("File size (in bytes)");
-    $tokens['file']['filefield-filesize_formatted'] = t("File size (pretty printed)");
-    $tokens['file']['filefield-view']               = t("Fully formatted HTML file tag");
-    $tokens['file']['filefield-onlyname']           = t("File name without extension.");
-    $tokens['file']['filefield-extension']          = t("File extension");
+    $tokens['file']['filefield-fid']                = t('File ID');
+    $tokens['file']['filefield-description']        = t('File description');
+    $tokens['file']['filefield-filename']           = t('File name');
+    $tokens['file']['filefield-filepath']           = t('File path');
+    $tokens['file']['filefield-filemime']           = t('File MIME type');
+    $tokens['file']['filefield-filesize']           = t('File size (in bytes)');
+    $tokens['file']['filefield-filesize_formatted'] = t('File size (pretty printed)');
+    $tokens['file']['filefield-view']               = t('Fully formatted HTML file tag');
+    $tokens['file']['filefield-onlyname']           = t('File name without extension');
+    $tokens['file']['filefield-extension']          = t('File extension');
     return $tokens;
   }
 }
