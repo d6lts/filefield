@@ -319,8 +319,10 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
 /**
  * Get the upload validators for a file field.
  *
- * @param $field CCK Field
- * @return array suitable for passing to file_save_upload() or the filefield
+ * @param $field
+ *   A CCK field array.
+ * @return
+ *   An array suitable for passing to file_save_upload() or the file field
  *   element's '#upload_validators' property.
  */
 function filefield_widget_upload_validators($field) {
@@ -340,12 +342,14 @@ function filefield_widget_upload_validators($field) {
   return $validators;
 }
 
-
 /**
  * Implementation of CCK's hook_content_is_empty().
  *
- * The result of this determines whether content.module will save
- * the value of the field.
+ * The result of this determines whether content.module will save the value of
+ * the field. Note that content module has some interesting behaviors for empty
+ * values. It will always save at least one record for every node revision,
+ * even if the values are all NULL. If it is a multi-value field with an
+ * explicit limit, CCK will save that number of empty entries.
  */
 function filefield_content_is_empty($item, $field) {
   return empty($item['fid']) || (int)$item['fid'] == 0;
@@ -405,6 +409,7 @@ function filefield_icon_url($file) {
 
 /**
  * Access callback for the JavaScript upload and deletion AHAH callbacks.
+ *
  * The content_permissions module provides nice fine-grained permissions for
  * us to check, so we can make sure that the user may actually edit the file.
  */
@@ -428,10 +433,12 @@ function filefield_view_access($field_name) {
 }
 
 /**
- * Shared AHAH callback for uploads and deletions... It rebuilds the form element
- * for a particular field item. As long as the form processing is properly
- * encapsulated in the widget element the form should rebuild correctly using
- * FAPI without the need for additional callbacks or processing.
+ * Menu callback; Shared AHAH callback for uploads and deletions.
+ *
+ * This rebuilds the form element for a particular field item. As long as the
+ * form processing is properly encapsulated in the widget element the form
+ * should rebuild correctly using FAPI without the need for additional callbacks
+ * or processing.
  */
 function filefield_js($type_name, $field_name, $delta) {
   $field = content_fields($field_name, $type_name);
@@ -535,18 +542,18 @@ function filefield_file_delete($file) {
   // foreach  field... remove items referencing $file.
 }
 
-
-
 /**
- * Check that the filename ends with an allowed extension. This check is
- * enforced for the user #1.
+ * An #upload_validators callback. Check the file matches an allowed extension.
+ *
+ * If the mimedetect module is available, this will also validate that the
+ * content of the file matches the extension. User #1 is included in this check.
  *
  * @param $file
  *   A Drupal file object.
  * @param $extensions
- *   A string with a space separated
+ *   A string with a space separated list of allowed extensions.
  * @return
- *   An array. If the file extension is not allowed, it will contain an error message.
+ *   An array of any errors cause by this file if it failed validation.
  */
 function filefield_validate_extensions($file, $extensions) {
   global $user;
@@ -573,9 +580,9 @@ function filefield_validate_extensions($file, $extensions) {
   return $errors;
 }
 
-// These three functions return messages for file_validate_size, and file_validate_extensions.
-// They're a neat hack that gets the job done. Even though it's evil to put a
-// function into a namespace not owned by your module...
+/**
+ * Help text automatically appended to fields that have extension validation.
+ */
 function filefield_validate_extensions_help($extensions) {
   if (!empty($extensions)) {
     return t('Allowed Extensions: %ext', array('%ext' => $extensions));
@@ -585,6 +592,19 @@ function filefield_validate_extensions_help($extensions) {
   }
 }
 
+/**
+ * An #upload_validators callback. Check the file size does not exceed a limit.
+ *
+ * @param $file
+ *   A Drupal file object.
+ * @param $file_limit
+ *   An integer value limiting the maximum file size in bytes.
+ * @param $file_limit
+ *   An integer value limiting the maximum size in bytes a user can upload on
+ *   the entire site.
+ * @return
+ *   An array of any errors cause by this file if it failed validation.
+ */
 function filefield_validate_size($file, $file_limit = 0, $user_limit = 0) {
   global $user;
 
@@ -604,10 +624,27 @@ function filefield_validate_size($file, $file_limit = 0, $user_limit = 0) {
   return $errors;
 }
 
+/**
+ * Automatic help text appended to fields that have file size validation.
+ */
 function filefield_validate_size_help($size) {
   return t('Maximum Filesize: %size', array('%size' => format_size(parse_size($size))));
 }
 
+/**
+ * An #upload_validators callback. Check an image resolution.
+ *
+ * @param $file
+ *   A Drupal file object.
+ * @param $max_size
+ *   A string in the format WIDTHxHEIGHT. If the image is larger than this size
+ *   the image will be scaled to fit within these dimensions.
+ * @param $min_size
+ *   A string in the format WIDTHxHEIGHT. If the image is smaller than this size
+ *   a validation error will be returned.
+ * @return
+ *   An array of any errors cause by this file if it failed validation.
+ */
 function filefield_validate_image_resolution(&$file, $maximum_dimensions = 0, $minimum_dimensions = 0) {
   $errors = array();
 
@@ -644,6 +681,9 @@ function filefield_validate_image_resolution(&$file, $maximum_dimensions = 0, $m
   return $errors;
 }
 
+/**
+ * Automatic help text appended to fields that have image resolution validation.
+ */
 function filefield_validate_image_resolution_help($max_size = '0', $min_size = '0') {
   if (!empty($max_size)) {
     if (!empty($min_size)) {
@@ -668,6 +708,22 @@ function filefield_validate_image_resolution_help($max_size = '0', $min_size = '
   }
 }
 
+
+/**
+ * An #upload_validators callback. Check that a file is an image.
+ *
+ * This check should allow any image that PHP can identify, including png, jpg,
+ * gif, tif, bmp, psd, swc, iff, jpc, jp2, jpx, jb2, xbm, and wbmp.
+ *
+ * This check should be combined with filefield_validate_extensions() to ensure
+ * only web-based images are allowed, however it provides a better check than
+ * extension checking alone if the mimedetect module is not available.
+ *
+ * @param $file
+ *   A Drupal file object.
+ * @return
+ *   An array of any errors cause by this file if it failed validation.
+ */
 function filefield_validate_is_image(&$file) {
   $errors = array();
   $info = image_get_info($file->filepath);
@@ -677,9 +733,13 @@ function filefield_validate_is_image(&$file) {
   return $errors;
 }
 
-/** 
- * This validation function adds the field to the file object, for later 
- * use in field aware modules implementing hook_file.
+/**
+ * An #upload_validators callback. Add the field to the file object.
+ *
+ * This validation function adds the field to the file object for later 
+ * use in field aware modules implementing hook_file. It's not truly a
+ * validation at all, rather a convient way to add properties to the uploaded
+ * file.
  */
 function filefield_validate_associate_field(&$file, $field) {
   $file->field = $field;

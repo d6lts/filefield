@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * Token hook implementations. Included if token.module is installed.
+ */
+
+/**
  * Implementation of hook_token_list().
  *
  * Provide a user readable list of FileField tokens.

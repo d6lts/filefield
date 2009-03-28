@@ -12,13 +12,8 @@
  */
 
 /**
- * @file
- *
- * FileField Widget Settings Hooks.
- * @todo: move description property to filefield_widget widget callbacks
- *        (filefield_widget_widget_{$op}).
+ * Implementation of CCK's hook_widget_settings($op == 'form').
  */
-
 function filefield_widget_settings_form($widget) {
   $form = array();
   $form['file_extensions'] = array(
@@ -29,6 +24,7 @@ function filefield_widget_settings_form($widget) {
     '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
     '#weight' => 1,
   );
+
   $form['path_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('Path settings'),
@@ -36,7 +32,6 @@ function filefield_widget_settings_form($widget) {
     '#collapsed' => TRUE,
     '#weight' => 6,
   );
-
   $form['path_settings']['file_path'] = array(
     '#type' => 'textfield',
     '#title' => t('File path'),
@@ -54,8 +49,6 @@ function filefield_widget_settings_form($widget) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  // upload validator. @todo: consider replacing with global
-  // && node validate.
   $form['max_filesize']['max_filesize_per_file'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum upload size per file'),
@@ -65,8 +58,6 @@ function filefield_widget_settings_form($widget) {
     '#description' => t('Specify the size limit that applies to each file separately. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the allowed file size. If you leave this this empty the file sizes will be limited only by PHP\'s maximum post and file upload sizes (current limit <strong>%limit</strong>).', array('%limit' => format_size(file_upload_max_size()))),
     '#element_validate' => array('_filefield_widget_settings_max_filesize_per_file_validate'),
   );
-
-  // node validate.
   $form['max_filesize']['max_filesize_per_node'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum upload size per node'),
@@ -76,9 +67,13 @@ function filefield_widget_settings_form($widget) {
     '#description' => t('Specify the total size limit for all files in field on a given node. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the total size of a node. Leave this empty if there should be no size restriction.'),
     '#element_validate' => array('_filefield_widget_settings_max_filesize_per_node_validate'),
   );
+
   return $form;
 }
 
+/**
+ * Implementation of CCK's hook_widget_settings($op == 'save').
+ */
 function filefield_widget_settings_save($widget) {
   return array(
     'file_extensions', 'file_path', 'max_filesize_per_file',
@@ -95,8 +90,8 @@ function _filefield_widget_settings_max_filesize_per_file_validate($element, &$f
   if (empty($form_state['values']['max_filesize_per_file'])) {
     return; // Empty means no size restrictions, so don't throw an error.
   }
-  else if (!is_numeric(parse_size($form_state['values']['max_filesize_per_file']))) {
-    form_error($element, t('The "Maximum file size for each file" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).'));
+  elseif (!is_numeric(parse_size($form_state['values']['max_filesize_per_file']))) {
+    form_error($element, t('The "@field" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).', array('@field' => t('Maximum upload size per file'))));
   }
 }
 
@@ -104,16 +99,18 @@ function _filefield_widget_settings_max_filesize_per_node_validate($element, &$f
   if (empty($form_state['values']['max_filesize_per_node'])) {
     return; // Empty means no size restrictions, so don't throw an error.
   }
-  else if (!is_numeric(parse_size($form_state['values']['max_filesize_per_node']))) {
-    form_error($element, t('The "Maximum file size per node" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).'));
+  elseif (!is_numeric(parse_size($form_state['values']['max_filesize_per_node']))) {
+    form_error($element, t('The "@field" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).', array('@field' => t('Maximum upload size per node'))));
   }
 }
 
 /**
  * Determine the widget's files directory
  *
- * @param $field CCK field
- * @return files directory path.
+ * @param $field
+ *   A CCK field array.
+ * @return
+ *   The files directory path, with any tokens replaced.
  */
 function filefield_widget_file_path($field_instance) {
   $dest = $field_instance['widget']['file_path'];
@@ -125,6 +122,15 @@ function filefield_widget_file_path($field_instance) {
   return file_directory_path() .'/'. $dest;
 }
 
+/**
+ * Given a FAPI element, save any files that may have been uploaded into it.
+ *
+ * This function should only be called during validate, submit, or
+ * value_callback functions.
+ *
+ * @param $element
+ *   The FAPI element whose values are being saved.
+ */
 function filefield_save_upload($element) {
   $upload_name = $element['#field_name'] .'_'. $element['#delta'];
   $field_instance = content_fields($element['#field_name'], $element['#type_name']);
@@ -149,7 +155,7 @@ function filefield_save_upload($element) {
 }
 
 /**
- * FileField widget element callbacks.
+ * The #value_callback for the filefield_widget type element.
  */
 function filefield_widget_value($element, $edit = FALSE) {
   if (!$edit) {
@@ -179,6 +185,12 @@ function filefield_widget_value($element, $edit = FALSE) {
   return $item;
 }
 
+/**
+ * An element #process callback for the filefield_widget field type.
+ *
+ * Expands the filefield_widget type to include the upload field, upload and
+ * remove buttons, and the description field.
+ */
 function filefield_widget_process($element, $edit, &$form_state, $form) {
   // The widget is being presented, so apply the JavaScript.
   drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
@@ -310,6 +322,9 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   return $element;
 }
 
+/**
+ * An #element_validate callback for the filefield_widget field.
+ */
 function filefield_widget_validate($element, &$form_state) {
   // Currently all handled by filefield_widget_upload_validators().
 }
@@ -384,9 +399,12 @@ function theme_filefield_widget_file($element) {
 }
 
 /**
- * #require validation for filetype fields.
+ * Additional #validate handler for the node form.
+ *
+ * This function checks the #required properties on file fields and calculates
+ * node upload totals for all file fields. The #required property is not
+ * properly supported on file fields by Drupal core, so we do this manually.
  */
-
 function filefield_node_form_validate($form, &$form_state) {
   $type = content_types($form['type']['#value']);
   foreach ($type['fields'] as $field_name => $field) {
@@ -418,10 +436,15 @@ function filefield_node_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Additional #submit handler for the node form.
+ */
 function filefield_node_form_submit($form, &$form_state) {
-  // we ignore all but the save button here.
-  if ($form_state['values']['op'] != t('Save')) {
+  // Only add additional submit handling on save.
+  if ($form_state['values']['op'] == t('Save')) {
+    // TODO: Immediately delete temporary files that were uploaded but never
+    // saved. This isn't critical to do, since any file not saved with the node
+    // will by cleaned up by system_cron() after 6 hours.
     return;
   }
-  // @todo:  try to delete removed files.
 }

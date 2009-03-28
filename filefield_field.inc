@@ -3,9 +3,12 @@
 
 /**
  * @file
- * FileField field hooks and callbacks.
+ * FileField CCK field hooks and callbacks.
  */
 
+/**
+ * Implementation of CCK's hook_field_settings($op = 'form').
+ */
 function filefield_field_settings_form($field) {
   drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
 
@@ -35,13 +38,16 @@ function filefield_field_settings_form($field) {
   return $form;
 }
 
-function filefield_field_settings_validate($field) {
-}
-
+/**
+ * Implementation of CCK's hook_field_settings($op = 'save').
+ */
 function filefield_field_settings_save($field) {
   return array('list_field', 'list_default', 'description_field');
 }
 
+/**
+ * Implementation of CCK's hook_field_settings($op = 'database_columns').
+ */
 function filefield_field_settings_database_columns($field) {
   return array(
     'fid' => array('type' => 'int', 'not null' => FALSE),
@@ -50,6 +56,9 @@ function filefield_field_settings_database_columns($field) {
   );
 }
 
+/**
+ * Implementation of CCK's hook_field_settings($op = 'views_data').
+ */
 function filefield_field_settings_views_data($field) {
   $data = content_views_field_views_data($field);
   $db_info = content_database_info($field);
@@ -74,10 +83,8 @@ function filefield_field_settings_views_data($field) {
   return $data;
 }
 
-
-
 /**
- * Implementation of CCK's hook_field().
+ * Implementation of CCK's hook_field($op = 'load').
  */
 function filefield_field_load($node, $field, &$items, $teaser, $page) {
   if (empty($items)) {
@@ -103,10 +110,16 @@ function filefield_field_load($node, $field, &$items, $teaser, $page) {
   return array($field['field_name'] => $items);
 }
 
+/**
+ * Implementation of CCK's hook_field($op = 'insert').
+ */
 function filefield_field_insert($node, $field, &$items, $teaser, $page) {
   return filefield_field_update($node, $field, $items, $teaser, $page);
 }
 
+/**
+ * Implementation of CCK's hook_field($op = 'update').
+ */
 function filefield_field_update($node, $field, &$items, $teaser, $page) {
 
   // Accumulator to gather current fid to compare with the original node
@@ -123,8 +136,7 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
     }
   }
 
-  // if this is a new node... there are no
-  // old items to worry about.
+  // If this is a new node there are no old items to worry about.
   if ($node->is_new) {
     return;
   } 
@@ -143,6 +155,9 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
   }
 }
 
+/**
+ * Implementation of CCK's hook_field($op = 'delete_revision').
+ */
 function filefield_field_delete_revision($node, $field, &$items, $teaser, $page) {
   foreach ($items as $delta => $item) {
     // For hook_file_references, remember that this is being deleted.
@@ -153,7 +168,9 @@ function filefield_field_delete_revision($node, $field, &$items, $teaser, $page)
   }
 }
 
-
+/**
+ * Implementation of CCK's hook_field($op = 'delete').
+ */
 function filefield_field_delete($node, $field, &$items, $teaser, $page) {
   foreach ($items as $delta => $item) {
     // For hook_file_references(), remember that this is being deleted.
@@ -165,6 +182,9 @@ function filefield_field_delete($node, $field, &$items, $teaser, $page) {
   }
 }
 
+/**
+ * Implementation of CCK's hook_field($op = 'sanitize').
+ */
 function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
   foreach ($items as $delta => $item) {
     // Cleanup $items during node preview.
@@ -204,5 +224,3 @@ function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
     }
   }
 }
-
-

@@ -1,13 +1,12 @@
 <?php
 // $Id$
+
 /**
  * @file
- * FileField: Defines a CCK file field type.
+ * Theme functions used for normal file output.
  *
  * Uses content.module to store the fid and field specific metadata,
  * and Drupal's {files} table to store the actual file data.
- *
- * This file contains common theme functions.
  */
 
 /**

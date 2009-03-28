@@ -1,18 +1,20 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Common functionality for file handling CCK field modules.
  */
 
 /**
- * Load a file object from the database.
+ * Load a file from the database.
  *
  * @param $fid
  *   A numeric file id or string containing the file path.
- *
  * @param $reset
  *   Whether to reset the internal file_load cache.
+ * @return
+ *   A file array.
  */
 function field_file_load($fid, $reset = NULL) {
   // Reset internal cache.
@@ -44,23 +46,23 @@ function field_file_load($fid, $reset = NULL) {
       $function($file);
     }
 
-    // Cache the fully loaded file for later reusability.
+    // Cache the fully loaded file for later use.
     $files = _field_file_cache($file);
   }
 
-  // Cast to array for field. hook_file() expects objects as well as
-  // core file functions.
+  // Cast to an array for the field storage.
+  // Contrary to fields, hook_file() and core file functions expect objects.
   return (array)$files[$fid];
 }
 
 /**
- * Save a file upload to a new location. The source file is validated as a
- * proper upload and handled as such. By implementing hook_file($op = 'insert'),
- * modules are able to act on the file upload and to add their own properties
- * to the file.
+ * Save a file upload to a new location.
+ * The source file is validated as a proper upload and handled as such. By
+ * implementing hook_file($op = 'insert'), modules are able to act on the file
+ * upload and to add their own properties to the file.
  *
- * The file will be added to the files table as a temporary file. Temporary files
- * are periodically cleaned. To make the file permanent file call
+ * The file will be added to the files table as a temporary file. Temporary
+ * files are periodically cleaned. To make the file permanent file call
  * file_set_status() to change its status.
  *
  * @param $source
@@ -110,7 +112,6 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE) {
  *   not provided or is not writable, the temporary directory will be used.
  * @return
  *   An array containing the file information, or 0 in the event of an error.
- *
  */
 function field_file_save_file($filepath, $validators = array(), $dest = FALSE) {
   global $user;
