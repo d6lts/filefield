@@ -311,12 +311,8 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
 }
 
 function filefield_widget_validate($element, &$form_state) {
-
+  // Currently all handled by filefield_widget_upload_validators().
 }
-
-function _filefield_widget_validate($element, &$form_state) {
-}
-
 
 /**
  * FormAPI theme function. Theme the output of an image field.
