@@ -75,10 +75,7 @@ function filefield_widget_settings_form($widget) {
  * Implementation of CCK's hook_widget_settings($op == 'save').
  */
 function filefield_widget_settings_save($widget) {
-  return array(
-    'file_extensions', 'file_path', 'max_filesize_per_file',
-    'max_filesize_per_node', 'file_widgets'
-  );
+  return array('file_extensions', 'file_path', 'max_filesize_per_file', 'max_filesize_per_node');
 }
 
 function _filefield_widget_settings_file_path_validate($element, &$form_state) {
