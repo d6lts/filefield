@@ -3,12 +3,10 @@
 
 /**
  * @file
- * FileField: Defines a CCK file field type.
+ * This file contains CCK widget related functionality.
  *
  * Uses content.module to store the fid and field specific metadata,
- * and Drupal's {files} table to store the actual file data.
- *
- * This file contains CCK widget related functionality.
+ * and Drupal's files table to store the actual file data.
  */
 
 /**
