@@ -79,6 +79,12 @@ function filefield_widget_settings_save($widget) {
 function _filefield_widget_settings_file_path_validate($element, &$form_state) {
   // Strip slashes from the beginning and end of $widget['file_path']
   $form_state['values']['file_path'] = trim($form_state['values']['file_path'], '\\/');
+
+  // Do not allow the file path to be the same as the file_directory_path().
+  // This causes all sorts of problems with things like file_create_url().
+  if (strpos($form_state['values']['file_path'], file_directory_path()) === 0) {
+    form_error($element, t('The file path (@file_path) cannot start with the system files directory (@files_directory), as this may cause conflicts when building file URLs.', array('@file_path' => $form_state['values']['file_path'], '@files_directory' => file_directory_path())));
+  }
 }
 
 function _filefield_widget_settings_max_filesize_per_file_validate($element, &$form_state) {
@@ -165,6 +171,7 @@ function filefield_widget_value($element, $edit = FALSE) {
     if ($fid = filefield_save_upload($element)) {
       $item['fid'] = $fid;
     }
+
     // Load file if the FID has changed so that it can be saved by CCK.
     $file = field_file_load($item['fid']);
 
