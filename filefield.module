@@ -201,14 +201,15 @@ function filefield_file_download($file) {
 /**
  * Implementation of hook_form_alter().
  *
- * Set the appropriate attibutes to allow file uploads on the field settings
- * form.
+ * Set the enctype on forms that need to accept file uploads.
  */
 function filefield_form_alter(&$form, $form_state, $form_id) {
+  // Field configuration (for default images).
   if ($form_id == 'content_field_edit_form' && isset($form['#field']) && $form['#field']['type'] == 'filefield') {
     $form['#attributes']['enctype'] = 'multipart/form-data';
   }
 
+  // Node forms.
   if (preg_match('/_node_form$/', $form_id)) {
     $form['#attributes']['enctype'] = 'multipart/form-data';
   }
