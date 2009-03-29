@@ -44,17 +44,15 @@ function filefield_menu() {
 
 /**
  * Implementation of hook_elements().
- * @todo: autogenerate element registry entries for widgets.
  */
 function filefield_elements() {
   $elements = array();
-  $elements['filefield_widget'] =  array(
+  $elements['filefield_widget'] = array(
     '#input' => TRUE,
     '#columns' => array('fid', 'list', 'data'),
     '#process' => array('filefield_widget_process'),
     '#value_callback' => 'filefield_widget_value',
     '#element_validate' => array('filefield_widget_validate'),
-    '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
   );
   return $elements;
 }
