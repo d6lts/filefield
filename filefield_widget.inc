@@ -259,8 +259,11 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['filefield_upload']['#access'] = empty($item['fid']);
   $element['filefield_remove']['#access'] = !empty($item['fid']);
 
-  // Figure out our fid...
-  $element['fid'] = array('#type' => 'hidden', '#value' => $item['fid']);
+  // Set the FID.
+  $element['fid'] = array(
+    '#type' => 'hidden',
+    '#value' => $item['fid'],
+  );
 
   if ($item['fid'] != 0) {
     $element['preview'] = array(
@@ -327,8 +330,23 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
 /**
  * An #element_validate callback for the filefield_widget field.
  */
-function filefield_widget_validate($element, &$form_state) {
-  // Currently all handled by filefield_widget_upload_validators().
+function filefield_widget_validate(&$element, &$form_state) {
+  // If referencing an existing file, only allow if there are existing
+  // references. This prevents unmanaged files (outside of FileField) from
+  // being deleted if this node were to be deleted.
+  if (!empty($element['fid']['#value'])) {
+    $field = content_fields($element['#field_name'], $element['#type_name']);
+    if ($file = field_file_load($element['fid']['#value'])) {
+      $file = (object) $file;
+      // TODO: Currently fields can only reference files by the same field.
+      if ($file->status == FILE_STATUS_PERMANENT && field_file_references($file, $field) == 0) {
+        form_error($element, t('Referencing to the file used the %field field is not allowed.', array('%field' => $element['#title'])));
+      }
+    }
+    else {
+      form_error($element, t('The file referenced by the %field field does not exist.', array('%field' => $element['#title'])));
+    }
+  }
 }
 
 /**
