@@ -171,6 +171,15 @@ function filefield_widget_value($element, $edit = FALSE) {
     if ($fid = filefield_save_upload($element)) {
       $item['fid'] = $fid;
     }
+    // Check for #filefield_value_callback values.
+    // Because FAPI does not allow multiple #value_callback values like it does
+    // for #element_validate and #process, this fills the missing functionality
+    // to allow FileField to be extended purely through FAPI.
+    elseif (isset($element['#filefield_value_callback'])) {
+      foreach ($element['#filefield_value_callback'] as $callback) {
+        $callback($element, $item);
+      }
+    }
 
     // Load file if the FID has changed so that it can be saved by CCK.
     $file = field_file_load($item['fid']);
