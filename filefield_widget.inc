@@ -338,9 +338,13 @@ function filefield_widget_validate(&$element, &$form_state) {
     $field = content_fields($element['#field_name'], $element['#type_name']);
     if ($file = field_file_load($element['fid']['#value'])) {
       $file = (object) $file;
-      // TODO: Currently fields can only reference files by the same field.
-      if ($file->status == FILE_STATUS_PERMANENT && field_file_references($file, $field) == 0) {
-        form_error($element, t('Referencing to the file used the %field field is not allowed.', array('%field' => $element['#title'])));
+      if ($file->status == FILE_STATUS_PERMANENT) {
+        // TODO: We could use field_file_references() here to reference any file
+        // but hook_file_delete() needs to be implemented first.
+        $references = module_invoke('filefield', 'file_references', $file);
+        if ($references['filefield'] == 0) {
+          form_error($element, t('Referencing to the file used the %field field is not allowed.', array('%field' => $element['#title'])));
+        }
       }
     }
     else {

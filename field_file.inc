@@ -370,33 +370,14 @@ function field_file_strip_path($path) {
   return $path;
 }
 
-
 /**
- * Return all the references to a file by a single field.
+ * Return a count of the references to a file by all modules.
  */
-function field_file_references($file, $field) {
-  $db_info = content_database_info($field);
-  $references = db_result(db_query(
-    'SELECT count('. $db_info['columns']['fid']['column'] .')
-      FROM {'. $db_info['table'] .'}
-      WHERE '. $db_info['columns']['fid']['column'] .' = %d', $file->fid
-  ));
-
-  // If a field_name is present in the file object, the file is being deleted
-  // from this field.
-  if (isset($file->field_name) && $field['field_name'] == $file->field_name) {
-    // If deleting the entire node, count how many references to decrement.
-    if (isset($file->delete_nid)) {
-      $node_references = db_result(db_query(
-        'SELECT count('. $db_info['columns']['fid']['column'] .')
-          FROM {'. $db_info['table'] .'}
-          WHERE '. $db_info['columns']['fid']['column'] .' = %d AND nid = %d', $file->fid, $file->delete_nid
-      ));
-      $references = $references - $node_references;
-    }
-    else {
-      $references = $references - 1;
-    }
+function field_file_references($file) {
+  $references = (array) module_invoke_all('file_references', $file);
+  $reference_count = 0;
+  foreach ($references as $module => $count) {
+    $reference_count += $count;
   }
-  return $references;
+  return $reference_count;
 }

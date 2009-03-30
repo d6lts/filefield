@@ -530,7 +530,7 @@ function filefield_file_references($file) {
     if ($field['type'] != 'filefield') {
       continue;
     }
-    $references += field_file_references($file, $field);
+    $references += filefield_get_file_reference_count($file, $field);
   }
   return array('filefield' => $references);
 }
@@ -744,4 +744,45 @@ function filefield_validate_is_image(&$file) {
 function filefield_validate_associate_field(&$file, $field) {
   $file->field = $field;
   return array();
+}
+
+/*******************************************************************************
+ * Public API functions for FileField.
+ ******************************************************************************/
+
+/**
+ * Count the number of times the file is referenced within a field.
+ *
+ * @param $file
+ *   A file object.
+ * @param $field
+ *   The CCK field array.
+ * @return
+ *   An integer value.
+ */
+function filefield_get_file_reference_count($file, $field) {
+  $db_info = content_database_info($field);
+  $references = db_result(db_query(
+    'SELECT count('. $db_info['columns']['fid']['column'] .')
+      FROM {'. $db_info['table'] .'}
+      WHERE '. $db_info['columns']['fid']['column'] .' = %d', $file->fid
+  ));
+
+  // If a field_name is present in the file object, the file is being deleted
+  // from this field.
+  if (isset($file->field_name) && $field['field_name'] == $file->field_name) {
+    // If deleting the entire node, count how many references to decrement.
+    if (isset($file->delete_nid)) {
+      $node_references = db_result(db_query(
+        'SELECT count('. $db_info['columns']['fid']['column'] .')
+          FROM {'. $db_info['table'] .'}
+          WHERE '. $db_info['columns']['fid']['column'] .' = %d AND nid = %d', $file->fid, $file->delete_nid
+      ));
+      $references = $references - $node_references;
+    }
+    else {
+      $references = $references - 1;
+    }
+  }
+  return $references;
 }
