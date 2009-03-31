@@ -184,6 +184,11 @@ function filefield_widget_value($element, $edit = FALSE) {
     // Load file if the FID has changed so that it can be saved by CCK.
     $file = field_file_load($item['fid']);
 
+    // If the file entry doesn't exist, don't save anything.
+    if (empty($file)) {
+      $item = array();
+    }
+
     // Checkboxes loose their value when empty.
     // If the list field is present make sure its unchecked value is saved.
     if ($field['list_field'] && empty($edit['list'])) {
