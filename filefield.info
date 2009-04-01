@@ -4,4 +4,4 @@ description = Defines a file field type.
 dependencies[] = content
 package = CCK
 core = 6.x
-php = 5.2
+php = 5.0
