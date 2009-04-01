@@ -149,7 +149,7 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
       if (isset($oitem['fid']) && !in_array($oitem['fid'], $curfids)) {
         // For hook_file_references, remember that this is being deleted.
         $oitem['field_name'] = $field['field_name'];
-        field_file_delete($oitem); 
+        filefield_field_delete_file($oitem, $field); 
       }
     }
   }
@@ -162,7 +162,7 @@ function filefield_field_delete_revision($node, $field, &$items, $teaser, $page)
   foreach ($items as $delta => $item) {
     // For hook_file_references, remember that this is being deleted.
     $item['field_name'] = $field['field_name'];
-    if (field_file_delete($item)) {
+    if (filefield_field_delete_file($item, $field)) {
       $items[$delta] = NULL;
     }
   }
@@ -178,8 +178,34 @@ function filefield_field_delete($node, $field, &$items, $teaser, $page) {
     // Pass in the nid of the node that is being removed so all references can
     // be counted in hook_file_references().
     $item['delete_nid'] = $node->nid;
-    field_file_delete($item);
+    filefield_field_delete_file($item, $field);
   }
+}
+
+/**
+ * Check that FileField controls a file before attempting to deleting it.
+ */
+function filefield_field_delete_file($file, $field) {
+  $file = (object) $file;
+
+  // Remove the field_name and delete_nid properties so that references can be
+  // counted including the files to be deleted.
+  $field_name = isset($file->field_name) ? $file->field_name : NULL;
+  $delete_nid = isset($file->delete_nid) ? $file->delete_nid : NULL;
+  unset($file->field_name, $file->delete_nid);
+
+  // To prevent FileField from deleting files it doesn't know about, check the
+  // FileField reference count. Temporary files can be deleted because they
+  // are not yet associated with any content at all.
+  if ($file->status == 0 || filefield_get_file_reference_count($file, $field) > 0) {
+    $file->field_name = $field_name;
+    $file->delete_nid = $delete_nid;
+    return field_file_delete($file);
+  }
+
+  // Even if the file is not deleted, return TRUE to indicate the FileField
+  // record can be removed from the FileField database tables.
+  return TRUE;
 }
 
 /**
