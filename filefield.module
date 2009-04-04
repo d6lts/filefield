@@ -39,6 +39,12 @@ function filefield_menu() {
     'access arguments' => array(3),
     'type' => MENU_CALLBACK,
   );
+  $items['filefield/progress'] = array(
+    'page callback' => 'filefield_progress',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
 }
 
@@ -508,6 +514,70 @@ function filefield_js($type_name, $field_name, $delta) {
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
 }
+
+/**
+ * Menu callback for upload progress.
+ */
+function filefield_progress($key) {
+  $progress = array(
+    'message' => t('Starting upload...'),
+    'percentage' => -1,
+  );
+
+  $implementation = filefield_progress_implementation();
+  if ($implementation == 'uploadprogress') {
+    $status = uploadprogress_get_info($key);
+    if (isset($status['bytes_uploaded']) && !empty($status['bytes_total'])) {
+      $progress['message'] = t('Uploading... (@current of @total)', array('@current' => filefield_bytes($status['bytes_uploaded']), '@total' => filefield_bytes($status['bytes_total'])));
+      $progress['percentage'] = round(100 * $status['bytes_uploaded'] / $status['bytes_total']);
+    }
+  }
+  elseif ($implementation == 'apc') {
+    $status = apc_fetch('upload_' . $key);
+    if (isset($status['current']) && !empty($status['total'])) {
+      $progress['message'] = t('Uploading... (@current of @total)', array('@current' => filefield_bytes($status['current']), '@total' => filefield_bytes($status['total'])));
+      $progress['percentage'] = round(100 * $status['current'] / $status['total']);
+    }
+  }
+
+  drupal_json($progress);
+}
+
+/**
+ * Determine which upload progress implementation to use, if any available.
+ */
+function filefield_progress_implementation() {
+  static $implementation;
+  if (!isset($implementation)) {
+    $implementation = FALSE;
+
+    // We prefer the PECL extension uploadprogress because it supports multiple
+    // simultaneous uploads. APC only supports one at a time.
+    if (extension_loaded('uploadprogress')) {
+      $implementation = 'uploadprogress';
+    }
+    elseif (extension_loaded('apc') && ini_get('apc.rfc1867')) {
+      $implementation = 'apc';
+    }
+  }
+  return $implementation;
+}
+
+/**
+ * Pretty-print a MB/KB value.
+ */
+function filefield_bytes($bytes) {
+  if ($bytes > 1073741824) {
+    return t('@size GB', array('@size' => round($bytes / 1073741824, 2)));
+  }
+  elseif ($bytes > 1048576) {
+    return t('@size MB', array('@size' => round($bytes / 1048576, 1)));
+  }
+  else {
+    return t('@size KB', array('@size' => round($bytes / 1024, 0)));
+  }
+}
+
 
 /**
  * Implementation of hook_file_references().

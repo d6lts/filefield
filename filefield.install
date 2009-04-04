@@ -43,6 +43,56 @@ function filefield_disable() {
 }
 
 /**
+ * Implementation of hook_requirements().
+ *
+ * Display information about getting upload progress bars working.
+ */
+function filefield_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time
+  $t = get_t();
+
+  // Report Drupal version
+  if ($phase == 'runtime') {
+    $implementation = filefield_progress_implementation();
+    $apache = strpos($_SERVER["SERVER_SOFTWARE"], 'Apache') !== FALSE;
+    $php_52 = version_compare(phpversion(), '5.2.0', '>');
+    if (!$apache || !$php_52) {
+      $value = $t('Not enabled');
+      $description = $t('Your server is not capable of displaying file upload progress. File upload progress requires PHP 5.2 and an Apache server.');
+      $severity = REQUIREMENT_INFO;
+    }
+    elseif (!$implementation && extension_loaded('apc')) {
+      $value = $t('Not enabled');
+      $description = $t('Your server is capable of displaying file upload progress through APC, but it is not enabled. Add <code>apc.rfc1867 = 1</code> to your php.ini configuration. Alternatively, it is recommended to use <a href="http://pecl.php.net/package/uploadprogress">PECL uploadprogress</a>, which supports more than one simultaneous upload.');
+      $severity = REQUIREMENT_WARNING;
+    }
+    elseif (!$implementation) {
+      $value = $t('Not enabled');
+      $description = t('Your server is capable of displaying file upload progress, but does not have the required libraries. It is recommended to install the <a href="http://pecl.php.net/package/uploadprogress">PECL uploadprogress library<a> (prefered) or to install <a href="http://us2.php.net/apc">APC</a>.');
+      $severity = REQUIREMENT_WARNING;
+    }
+    elseif ($implementation == 'apc') {
+      $value = $t('Enabled (<a href="http://php.net/manual/en/apc.configuration.php#ini.apc.rfc1867">APC RFC1867</a>)');
+      $description = t('Your server is capable of displaying file upload progress using APC RFC1867. Note that only one upload at a time is supported. It is recommneded to use the <a href="http://pecl.php.net/package/uploadprogress">PECL uploadprogress library<a> if possible.');
+      $severity = REQUIREMENT_OK;
+    }
+    elseif ($implementation == 'uploadprogress') {
+      $value = $t('Enabled (<a href="http://pecl.php.net/package/uploadprogress">PECL uploadprogress</a>)');
+      $severity = REQUIREMENT_OK;
+    }
+    $requirements['filefield_progress'] = array(
+      'title' => $t('Upload progress'),
+      'value' => $value,
+      'severity' => $severity,
+      'description' => $description,
+    );
+  }
+
+  return $requirements;
+}
+
+/**
  * Implementation of hook_update_last_removed().
  */
 function filefield_update_last_removed() {

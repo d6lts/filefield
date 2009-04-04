@@ -61,7 +61,16 @@
   padding: 1px 13px 2px 3px; /* RTL */
 }
 
+.filefield-element div.ahah-progress-bar {
+  display: none;
+  margin-top: 4px;
+  width: 28em;
+  padding: 0;
+}
 
+.filefield-element div.ahah-progress-bar div.bar {
+  margin: 0;
+}
 
 /* End general widget form styles. */
 

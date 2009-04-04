@@ -37,7 +37,9 @@ Drupal.behaviors.filefieldValidateAutoAttach = function(context) {
  * Prevent FileField uploads when using buttons not intended to upload.
  */
 Drupal.behaviors.filefieldButtons = function(context) {
-  $('input.form-submit').bind('mousedown', Drupal.filefield.disableFields);
+  $('input.form-submit')
+    .bind('mousedown', Drupal.filefield.disableFields)
+    .bind('mousedown', Drupal.filefield.progressBar);
 };
 
 /**
@@ -87,5 +89,26 @@ Drupal.filefield = {
     setTimeout(function(){
       $disabledFields.attr('disabled', '');
     }, 1000);
+  },
+  progressBar: function(event) {
+    var clickedButton = this;
+    var $progressId = $(clickedButton).parents('div.filefield-element').find('input.filefield-progress');
+    if ($progressId.size()) {
+      var originalName = $progressId.attr('name');
+
+      // Replace the name with the required identifier.
+      $progressId.attr('name', originalName.match(/APC_UPLOAD_PROGRESS|UPLOAD_IDENTIFIER/)[0]);
+
+      // Restore the original name after the upload begins.
+      setTimeout(function() {
+        $progressId.attr('name', originalName);
+      }, 1000);
+
+      // Show the progress bar if the upload takes longer than 3 seconds.
+      setTimeout(function() {
+        $(clickedButton).parents('div.filefield-element').find('div.ahah-progress-bar').slideDown();
+      }, 500);
+
+    }
   }
 };

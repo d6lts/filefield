@@ -273,6 +273,30 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['filefield_upload']['#access'] = empty($item['fid']);
   $element['filefield_remove']['#access'] = !empty($item['fid']);
 
+  // Add progress bar support to the upload if possible.
+  if ($implementation = filefield_progress_implementation()) {
+    $upload_progress_key = md5(mt_rand());
+
+    if ($implementation == 'uploadprogress') {
+      $element['UPLOAD_IDENTIFIER'] = array(
+        '#type' => 'hidden',
+        '#value' => $upload_progress_key,
+        '#attributes' => array('class' => 'filefield-progress'),
+      );
+    }
+    elseif ($implementation == 'apc') {
+      $element['APC_UPLOAD_PROGRESS'] = array(
+        '#type' => 'hidden',
+        '#value' => $upload_progress_key,
+        '#attributes' => array('class' => 'filefield-progress'),
+      );
+    }
+
+    // Add the upload progress callback.
+    $element['filefield_upload']['#ahah']['progress']['type'] = 'bar';
+    $element['filefield_upload']['#ahah']['progress']['path'] = 'filefield/progress/' . $upload_progress_key;
+  }
+
   // Set the FID.
   $element['fid'] = array(
     '#type' => 'hidden',
