@@ -74,9 +74,16 @@ Drupal.filefield = {
       return;
     }
 
-    // Using the grandparent, we ensure that we get up to at least the level
-    // of the CCK multiple field wrapper.
-    var $enabledFields = $(this).parent().parent().find('input.form-file');
+    // Check if we're working with an "Upload" button.
+    var $enabledFields = [];
+    if ($(this).parents('div.filefield-element').size() > 0) {
+      $enabledFields = $(this).parent().parent().find('input.form-file');
+    }
+    // Otherwise we're probably dealing with CCK's "Add another item" button.
+    else if ($(this).parents('div.content-add-more').size() > 0) {
+      $enabledFields = $(this).parent().parent().find('input.form-file');
+    }
+
     var $disabledFields = $('div.filefield-element input.form-file').not($enabledFields);
 
     // Disable upload fields other than the one we're currently working with.
