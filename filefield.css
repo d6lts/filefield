@@ -29,10 +29,12 @@
   padding-right: 10px; /* RTL */
   border-right: 1px solid #CCC; /* RTL */
   margin-right: 10px; /* RTL */
+  max-width: 30%;
 }
 
 .filefield-element .widget-edit {
   float: left; /* RTL */
+  max-width: 70%;
 }
 
 .filefield-element .filefield-preview {
