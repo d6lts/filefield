@@ -528,14 +528,14 @@ function filefield_progress($key) {
   if ($implementation == 'uploadprogress') {
     $status = uploadprogress_get_info($key);
     if (isset($status['bytes_uploaded']) && !empty($status['bytes_total'])) {
-      $progress['message'] = t('Uploading... (@current of @total)', array('@current' => filefield_bytes($status['bytes_uploaded']), '@total' => filefield_bytes($status['bytes_total'])));
+      $progress['message'] = t('Uploading... (@current of @total)', array('@current' => format_size($status['bytes_uploaded']), '@total' => format_size($status['bytes_total'])));
       $progress['percentage'] = round(100 * $status['bytes_uploaded'] / $status['bytes_total']);
     }
   }
   elseif ($implementation == 'apc') {
     $status = apc_fetch('upload_' . $key);
     if (isset($status['current']) && !empty($status['total'])) {
-      $progress['message'] = t('Uploading... (@current of @total)', array('@current' => filefield_bytes($status['current']), '@total' => filefield_bytes($status['total'])));
+      $progress['message'] = t('Uploading... (@current of @total)', array('@current' => format_size($status['current']), '@total' => format_size($status['total'])));
       $progress['percentage'] = round(100 * $status['current'] / $status['total']);
     }
   }
@@ -562,22 +562,6 @@ function filefield_progress_implementation() {
   }
   return $implementation;
 }
-
-/**
- * Pretty-print a MB/KB value.
- */
-function filefield_bytes($bytes) {
-  if ($bytes > 1073741824) {
-    return t('@size GB', array('@size' => round($bytes / 1073741824, 2)));
-  }
-  elseif ($bytes > 1048576) {
-    return t('@size MB', array('@size' => round($bytes / 1048576, 1)));
-  }
-  else {
-    return t('@size KB', array('@size' => round($bytes / 1024, 0)));
-  }
-}
-
 
 /**
  * Implementation of hook_file_references().
