@@ -117,8 +117,7 @@ function theme_filefield_file($file) {
   // at http://darrelopry.com/story/microformats-and-media-rfc-if-you-js-or-css
   $options = array(
     'attributes' => array(
-      'type' => $file['filemime'],
-      'length' => $file['filesize'],
+      'type' => $file['filemime'] . '; length=' . $file['filesize'],
     ),
   );
 
