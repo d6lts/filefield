@@ -118,8 +118,19 @@ function _filefield_widget_settings_max_filesize_per_node_validate($element, &$f
 function filefield_widget_file_path($field, $account = NULL) {
   $account = isset($account) ? $account : $GLOBALS['user'];
   $dest = $field['widget']['file_path'];
+  // Replace user level tokens.
+  // Node level tokens require a lot of complexity like temporary storage
+  // locations when values don't exist. See the filefield_paths module.
   if (module_exists('token')) {
     $dest = token_replace($dest, 'user', $account);
+  }
+  // Replace nasty characters in the path if possible.
+  if (module_exists('transliteration')) {
+    $dest_array = array_filter(explode('/', $dest));
+    foreach ($dest_array as $key => $directory) {
+      $dest_array[$key] = transliteration_clean_filename($directory);
+    }
+    $dest = implode('/', $dest_array);
   }
 
   return file_directory_path() .'/'. $dest;
