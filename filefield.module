@@ -254,7 +254,7 @@ function filefield_field_settings($op, $field) {
 }
 
 /**
- * Implementtation of CCK's hook_field().
+ * Implementation of CCK's hook_field().
  */
 function filefield_field($op, $node, $field, &$items, $teaser, $page) {
   module_load_include('inc', 'filefield', 'filefield_field');
@@ -347,6 +347,27 @@ function filefield_widget_upload_validators($field) {
  */
 function filefield_content_is_empty($item, $field) {
   return empty($item['fid']) || (int)$item['fid'] == 0;
+}
+
+/**
+ * Implementation of CCK's hook_default_value().
+ *
+ * Note this is a widget-level hook, so it does not affect ImageField or other
+ * modules that extend FileField.
+ *
+ * @see content_default_value()
+ */
+function filefield_default_value(&$form, &$form_state, $field, $delta) {
+  // Reduce the default number of upload fields to one.
+  // CCK will automatically add one more field than necessary.
+  if (!isset($form_state['item_count'][$field['field_name']])) {
+    $form_state['item_count'][$field['field_name']] = 0;
+  }
+
+  // The default value is actually handled in hook_widget().
+  // hook_default_value() is only helpful for new nodes, and we need to affect
+  // all widgets, such as when a new field is added via "Add another item".
+  return array();
 }
 
 /**
