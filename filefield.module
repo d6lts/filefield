@@ -205,6 +205,16 @@ function filefield_file_download($file) {
 }
 
 /**
+ * Implementation of hook_views_api().
+ */
+function filefield_views_api() {
+  return array(
+    'api' => 2.0,
+    'path' => drupal_get_path('module', 'filefield') . '/views',
+  );
+}
+
+/**
  * Implementation of hook_form_alter().
  *
  * Set the enctype on forms that need to accept file uploads.
