@@ -193,7 +193,7 @@ function field_file_save_file($filepath, $validators = array(), $dest = FALSE) {
 }
 
 /**
- * Update an field item file. Delete marked items if neccessary and set new items as permamant.
+ * Save a node file. Delete items if necessary and set new items as permanent.
  *
  * @param $node
  *    Node object this file is be associated with.
