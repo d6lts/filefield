@@ -298,9 +298,6 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   if (empty($form['#validate']) || !in_array('filefield_node_form_validate', $form['#validate'])) {
     $form['#validate'][] = 'filefield_node_form_validate';
   }
-  if (empty($form['#submit']) || !in_array('filefield_node_form_submit', $form['#submit'])) {
-    $form['#submit'][] = 'filefield_node_form_submit';
-  }
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
 
   module_load_include('inc', 'filefield', 'field_widget');

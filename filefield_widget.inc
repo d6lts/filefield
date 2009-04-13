@@ -280,6 +280,14 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   // $form_state['clicked_button'] is only available after this #process
   // callback is finished.
   if (_form_button_was_clicked($element['filefield_remove'])) {
+    // Delete the file if it is currently unused. Note that field_file_delete()
+    // does a reference check in addition to our basic status check.
+    if (isset($edit['fid'])) {
+      $removed_file = field_file_load($edit['fid']);
+      if ($removed_file['status'] == 0) {
+        field_file_delete($removed_file);
+      }
+    }
     $item = array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
   }
 
@@ -510,18 +518,5 @@ function filefield_node_form_validate($form, &$form_state) {
                                     )
                                   ));
     }
-  }
-}
-
-/**
- * Additional #submit handler for the node form.
- */
-function filefield_node_form_submit($form, &$form_state) {
-  // Only add additional submit handling on save.
-  if ($form_state['values']['op'] == t('Save')) {
-    // TODO: Immediately delete temporary files that were uploaded but never
-    // saved. This isn't critical to do, since any file not saved with the node
-    // will by cleaned up by system_cron() after 6 hours.
-    return;
   }
 }
