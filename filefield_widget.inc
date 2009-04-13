@@ -126,6 +126,7 @@ function filefield_widget_file_path($field, $account = NULL) {
   }
   // Replace nasty characters in the path if possible.
   if (module_exists('transliteration')) {
+    module_load_include('inc', 'transliteration');
     $dest_array = array_filter(explode('/', $dest));
     foreach ($dest_array as $key => $directory) {
       $dest_array[$key] = transliteration_clean_filename($directory);
