@@ -162,7 +162,7 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
   // Delete items from original node if no new revision was created.
   $orig = node_load($node->nid); 
   // If there are, figure out which ones must go.
-  if ($node->revision == 0 && !empty($orig->$field['field_name'])) {
+  if (empty($node->revision) && !empty($orig->$field['field_name'])) {
     foreach ($orig->$field['field_name'] as $oitem) {
       if (isset($oitem['fid']) && !in_array($oitem['fid'], $curfids)) {
         // For hook_file_references, remember that this is being deleted.
