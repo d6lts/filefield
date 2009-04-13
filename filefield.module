@@ -420,6 +420,20 @@ function filefield_field_formatter_info() {
 }
 
 /**
+ * Implementation of CCK's hook_content_generate(). Used by generate.module.
+ */
+function filefield_content_generate($node, $field) {
+  module_load_include('inc', 'filefield', 'filefield.devel');
+
+  if (content_handle('widget', 'multiple values', $field) == CONTENT_HANDLE_MODULE) {
+    return content_devel_multiple('_filefield_content_generate', $node, $field);
+  }
+  else {
+    return _filefield_content_generate($node, $field);
+  }
+}
+
+/**
  * Determine the most appropriate icon for the given file's mimetype.
  *
  * @param $file
