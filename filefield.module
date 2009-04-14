@@ -745,7 +745,7 @@ function filefield_validate_image_resolution(&$file, $maximum_dimensions = 0, $m
           $errors[] = t('The image will not fit between the dimensions of %min_dimensions and %max_dimensions pixels.', array('%min_dimensions' => $minimum_dimensions, '%max_dimensions' => $maximum_dimensions));
         }
         // Try to resize the image to fit the dimensions.
-        elseif (image_get_toolkit() && image_scale($file->filepath, $file->filepath, $max_width, $max_height)) {
+        elseif (image_get_toolkit() && @image_scale($file->filepath, $file->filepath, $max_width, $max_height)) {
           drupal_set_message(t('The image was resized to fit within the maximum allowed dimensions of %dimensions pixels.', array('%dimensions' => $maximum_dimensions)));
 
           // Clear the cached filesize and refresh the image information.
