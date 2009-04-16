@@ -10,7 +10,7 @@ function _filefield_content_generate($node, $field) {
 
     $item = (array) $file;
     $item['list'] = 1;
-    $item['data']['alt'] = devel_create_greeking(10);
+    $item['data']['alt'] = devel_create_greeking(4);
     $item['data']['title'] = devel_create_greeking(10);
   }
   else {
