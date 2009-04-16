@@ -611,7 +611,8 @@ function filefield_progress_implementation() {
  * Implementation of hook_file_references().
  */
 function filefield_file_references($file) {
-  return array('filefield' => filefield_get_file_reference_count($file));
+  $count = filefield_get_file_reference_count($file);
+  return $count ? array('filefield' => $count) : NULL;
 }
 
 /**
