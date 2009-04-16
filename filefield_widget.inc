@@ -344,6 +344,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       '#type' => 'textfield',
       '#title' => t('Description'),
       '#value' => isset($item['data']['description']) ? $item['data']['description'] : '',
+      '#type' => variable_get('filefield_description_type', 'textfield'),
       '#maxlength' => variable_get('filefield_description_length', 128),
     );
   }
