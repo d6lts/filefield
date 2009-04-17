@@ -405,7 +405,7 @@ function filefield_widget_validate(&$element, &$form_state) {
         // but hook_file_delete() needs to be implemented first.
         $references = module_invoke('filefield', 'file_references', $file);
         if ($references['filefield'] == 0) {
-          form_error($element, t('Referencing to the file used the %field field is not allowed.', array('%field' => $element['#title'])));
+          form_error($element, t('Referencing to the file used in the %field field is not allowed.', array('%field' => $element['#title'])));
         }
       }
     }
