@@ -23,6 +23,19 @@ function filefield_widget_settings_form($widget) {
     '#weight' => 1,
   );
 
+  $form['progress_indicator'] = array(
+    '#type' => 'radios',
+    '#title' => t('Progress indicator'),
+    '#options' => array(
+      'bar' => t('Bar with progress meter'),
+      'throbber' => t('Throbber'),
+    ),
+    '#default_value' => empty($widget['progress_indicator']) ? 'bar' : $widget['progress_indicator'],
+    '#description' => t('Your server supports upload progress capabilities. The "throbber" display does not indicate progress but takes up less room on the form, you may want to use it if you\'ll only be uploading small files or if experiencing problems with the progress bar.'),
+    '#weight' => 5,
+    '#access' => filefield_progress_implementation(),
+  );
+
   $form['path_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('Path settings'),
@@ -73,7 +86,7 @@ function filefield_widget_settings_form($widget) {
  * Implementation of CCK's hook_widget_settings($op == 'save').
  */
 function filefield_widget_settings_save($widget) {
-  return array('file_extensions', 'file_path', 'max_filesize_per_file', 'max_filesize_per_node');
+  return array('file_extensions', 'file_path', 'progress_indicator', 'max_filesize_per_file', 'max_filesize_per_node');
 }
 
 function _filefield_widget_settings_file_path_validate($element, &$form_state) {
@@ -296,7 +309,8 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['filefield_remove']['#access'] = !empty($item['fid']);
 
   // Add progress bar support to the upload if possible.
-  if ($implementation = filefield_progress_implementation()) {
+  $progress_indicator = isset($field['widget']['progress_indicator']) ? $field['widget']['progress_indicator'] : 'bar';
+  if ($progress_indicator != 'throbber' && $implementation = filefield_progress_implementation()) {
     $upload_progress_key = md5(mt_rand());
 
     if ($implementation == 'uploadprogress') {
