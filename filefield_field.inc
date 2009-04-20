@@ -237,6 +237,7 @@ function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
       // TODO: Provide an API to ImageField to do this itself?
       if (!empty($field['widget']['use_default_image']) && !empty($field['widget']['default_image']['filepath'])) {
         $items[$delta] = $field['widget']['default_image'];
+        $items[$delta]['default'] = TRUE;
       }
       else {
         $items[$delta] = NULL;
