@@ -100,8 +100,8 @@ function filefield_meta(&$file) {
     $file->data['audio_format'] = $info['audio']['dataformat']; //e.g. mp3
     $file->data['audio_sample_rate'] = $info['audio']['sample_rate']; //e.g. 44100
     $file->data['audio_channel_mode'] = $info['audio']['channelmode']; // e.g. mono
-    $file->data['audio_bitrate'] = $info['audio']['bitrate']; //e.g. 64000
-    $file->data['audio_bitrate_mode'] = $info['audio']['bitrate_mode']; //e.g. cbr
+    $file->data['audio_bitrate'] = isset($info['audio']['bitrate']) ? $info['audio']['bitrate'] : NULL; //e.g. 64000
+    $file->data['audio_bitrate_mode'] = isset($info['audio']['bitrate_mode']) ? $info['audio']['bitrate_mode'] : NULL; //e.g. cbr
   }
 };
 
