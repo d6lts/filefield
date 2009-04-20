@@ -202,12 +202,19 @@ function filefield_update_6100() {
   $fields = content_fields();
   foreach ($fields as $field) {
     if ($field['type'] == 'filefield') {
-      $field['list_field'] = empty($field['force_list_default']);
-      $field['description_field'] = $field['show_description'];
+      if (isset($field['force_list_default'])) {
+        $field['list_field'] = !$field['force_list_default'];
+      }
+      if (isset($field['show_description'])) {
+        $field['description_field'] = $field['show_description'];
+      }
       _content_field_write($field);
       $ret[] = array('success' => TRUE, 'query' => t('The File field %field has been updated with new settings.', array('%field' => $field['field_name'])));
     }
   }
+
+  cache_clear_all('*', content_cache_tablename(), TRUE);
+  cache_clear_all('*', 'cache', TRUE);
 
   return $ret;
 }
