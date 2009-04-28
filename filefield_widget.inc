@@ -218,7 +218,7 @@ function filefield_widget_value($element, $edit = FALSE) {
 
     // Checkboxes loose their value when empty.
     // If the list field is present make sure its unchecked value is saved.
-    if ($field['list_field'] && empty($edit['list'])) {
+    if (!empty($field['list_field']) && empty($edit['list'])) {
       $item['list'] = 0;
     }
   }
@@ -353,7 +353,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     '#access' => !empty($item['fid']),
   );
 
-  if ($field['description_field']) {
+  if (!empty($field['description_field'])) {
     $element['data']['description'] = array(
       '#type' => 'textfield',
       '#title' => t('Description'),
@@ -363,7 +363,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     );
   }
 
-  if ($field['list_field']) {
+  if (!empty($field['list_field'])) {
     $element['list'] = array(
       '#type' => empty($item['fid']) ? 'hidden' : 'checkbox',
       '#title' => t('List'),

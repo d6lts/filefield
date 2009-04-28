@@ -92,7 +92,7 @@ function theme_filefield_item($file, $field) {
  *   A CCK field instance array.
  */
 function filefield_file_listed($file, $field) {
-  if ($field['list_field']) {
+  if (!empty($field['list_field'])) {
     return (bool)$file['list'];
   }
   return TRUE;
