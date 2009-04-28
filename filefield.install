@@ -57,6 +57,7 @@ function filefield_requirements($phase) {
     $implementation = filefield_progress_implementation();
     $apache = strpos($_SERVER["SERVER_SOFTWARE"], 'Apache') !== FALSE;
     $php_52 = version_compare(phpversion(), '5.2.0', '>');
+    $description = NULL;
     if (!$apache || !$php_52) {
       $value = $t('Not enabled');
       $description = $t('Your server is not capable of displaying file upload progress. File upload progress requires PHP 5.2 and an Apache server.');
