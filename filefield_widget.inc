@@ -270,7 +270,10 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     '#post' => $element['#post'],
   );
   $element['filefield_remove'] = array(
-    '#name' => $element['#field_name'] .'_'. $element['#delta'] .'_filefield_remove',
+    // With default CCK edit forms, $element['#parents'] is array($element['#field_name'], $element['#delta']).
+    // However, if some module (for example, flexifield) places our widget deeper in the tree, we want to
+    // use that information in constructing the button name.
+    '#name' => implode('_', $element['#parents']) .'_filefield_remove',
     '#type' => 'submit',
     '#value' => t('Remove'),
     '#process' => array('form_expand_ahah'),
