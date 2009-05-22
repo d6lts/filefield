@@ -64,7 +64,7 @@ function filefield_meta_schema() {
         'default' => 0,
       ),
       'audio_channel_mode' => array(
-        'description' => 'The number of channels in the audio, by name (stereo or mono.)',
+        'description' => 'The number of channels in the audio, by name (stereo or mono).',
         'type' => 'varchar',
         'length' => 10,
         'not null' => TRUE,
