@@ -957,6 +957,7 @@ function filefield_get_file_references($file, $field = NULL) {
  */
 function filefield_get_node_files($node, $field = NULL) {
   $fields = filefield_get_field_list($node->type, $field);
+  $files = array();
 
   // Get the file rows.
   foreach ($fields as $field) {
