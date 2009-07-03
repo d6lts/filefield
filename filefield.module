@@ -178,7 +178,7 @@ function filefield_file_download($file) {
       // what if 'view revisions' is disabled? So, let's just check for the
       // current revision of that node.
       if (isset($nodes[$content['nid']])) {
-        continue; // don't check the same node twice
+        continue; // Don't check the same node twice.
       }
       if ($denied == FALSE && $node = node_load($content['nid']) && node_access('view', $node)) {
         // You don't have permission to view the node this file is attached to.
@@ -191,10 +191,10 @@ function filefield_file_download($file) {
     }
   }
 
-  // Well I guess you can see this file.
+  // Access is granted.
   $name = mime_header_encode($file->filename);
   $type = mime_header_encode($file->filemime);
-  // Serve images and text inline for the browser to display rather than download.
+  // Serve images and text inline for display rather than download.
   $disposition = (ereg('^(text/|image/)', $file->filemime) || ereg('flash$', $file->filemime)) ? 'inline' : 'attachment';
   return array(
     'Content-Type: '. $type .'; name='. $name,
