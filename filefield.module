@@ -10,14 +10,14 @@
  */
 
 // FileField API hooks should always be available.
-include_once dirname(__FILE__) .'/field_file.inc';
+include_once dirname(__FILE__) . '/field_file.inc';
+include_once dirname(__FILE__) . '/filefield_widget.inc';
 
 /**
  * Implementation of hook_init().
  */
 function filefield_init() {
   // File hooks and callbacks may be used by any module.
-  module_load_include('inc', 'filefield', 'filefield_widget');
   drupal_add_css(drupal_get_path('module', 'filefield') .'/filefield.css');
 
   // Conditional module support.
