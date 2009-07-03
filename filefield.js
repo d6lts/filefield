@@ -43,6 +43,13 @@ Drupal.behaviors.filefieldButtons = function(context) {
 };
 
 /**
+ * Open links to files within the node form in a new window.
+ */
+Drupal.behaviors.filefieldPreviewLinks = function(context) {
+  $('div.filefield-element div.widget-preview a').click(Drupal.filefield.openInNewWindow).attr('target', '_blank');
+}
+
+/**
  * Admin enhancement: only show the "Files listed by default" when needed.
  */
 Drupal.behaviors.filefieldAdmin = function(context) {
@@ -117,5 +124,9 @@ Drupal.filefield = {
       }, 500);
 
     }
+  },
+  openInNewWindow: function(event) {
+    window.open(this.href, 'filefieldPreview', 'toolbar=0,scrollbars=1,location=1,statusbar=1,menubar=0,resizable=1,width=500,height=550');
+    return false;
   }
 };
