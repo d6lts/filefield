@@ -197,7 +197,7 @@ function filefield_file_download($file) {
   // Serve images and text inline for display rather than download.
   $disposition = (ereg('^(text/|image/)', $file->filemime) || ereg('flash$', $file->filemime)) ? 'inline' : 'attachment';
   return array(
-    'Content-Type: ' . $type . '; name='. $name,
+    'Content-Type: ' . $type . '; name="' . $name . '"',
     'Content-Length: ' . $file->filesize,
     'Content-Disposition: ' . $disposition . '; filename="' . $name . '"',
     'Cache-Control: private',
