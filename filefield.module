@@ -160,19 +160,25 @@ function filefield_file_insert($node, $field, &$file) {
   else {
     $widget_file_path = $field['widget']['file_path'];
   }
- 
-  $filepath = file_create_path($widget_file_path) . '/' . $file['filename'];
-  
-  if (filefield_check_directory($widget_file_path) && $file = file_save_upload((object)$file, $filepath)) {
-    $file = (array)$file;
-    $file['fid'] = db_next_id('{files}_fid');
-    $file['filemime'] = mimedetect_mime($file);
-    db_query("INSERT into {files} (fid, nid, filename, filepath, filemime, filesize)
-              VALUES (%d, %d, '%s','%s','%s',%d)",
-              $file['fid'], $node->nid, $file['filename'], $file['filepath'],
-              $file['filemime'], $file['filesize']);
-    module_invoke_all('filefield', 'file_save', $node, $field, $file);
-    return (array)$file;
+
+  if (filefield_check_directory($widget_file_path)){
+    $filepath = file_create_path($widget_file_path) . '/' . $file['filename'];
+    if ($file = file_save_upload((object) $file, $filepath)) {
+      $file = (array) $file;
+      $file['fid'] = db_next_id('{files}_fid');
+      $file['filemime'] = mimedetect_mime($file);
+      db_query("INSERT into {files} (fid, nid, filename, filepath, filemime, filesize)
+                VALUES (%d, %d, '%s','%s','%s',%d)",
+                $file['fid'], $node->nid, $file['filename'], $file['filepath'],
+                $file['filemime'], $file['filesize']);
+      module_invoke_all('filefield', 'file_save', $node, $field, $file);
+      return (array) $file;
+    }
+    else {
+      // Include file name in upload error.
+      form_set_error(NULL, t('File upload was unsuccessful.'));
+      return FALSE;
+    }
   }
   else {
     // Include file name in upload error.
@@ -851,7 +857,9 @@ function filefield_check_directory($directory, $form_element = array()) {
   foreach(explode('/', $directory) as $dir) {
     $dirs[] = $dir;
     $path = file_create_path(implode($dirs,'/'));
-    file_check_directory($path, FILE_CREATE_DIRECTORY, $form_element['#parents'][0]);
+    if (!file_check_directory($path, FILE_CREATE_DIRECTORY, $form_element['#parents'][0])){
+      return FALSE;
+    }
   }
   return TRUE;
 }
