@@ -195,8 +195,16 @@ function filefield_file_download($file) {
   // Access is granted.
   $name = mime_header_encode($file->filename);
   $type = mime_header_encode($file->filemime);
-  // Serve images and text inline for display rather than download.
-  $disposition = (ereg('^(text/|image/)', $file->filemime) || ereg('flash$', $file->filemime)) ? 'inline' : 'attachment';
+  // By default, serve images, text, and flash content for display rather than
+  // download. Or if variable 'filefield_inline_types' is set, use its patterns.
+  $inline_types = variable_get('filefield_inline_types', array('^text/', '^image/', 'flash$'));
+  $disposition = 'attachment';
+  foreach ($inline_types as $inline_type) {
+    // Exclamation marks are used as delimiters to avoid escaping slashes.
+    if (preg_match('!' . $inline_type . '!', $file->filemime)) {
+      $disposition = 'inline';
+    }
+  }
   return array(
     'Content-Type: ' . $type . '; name="' . $name . '"',
     'Content-Length: ' . $file->filesize,
