@@ -374,9 +374,10 @@ function filefield_content_is_empty($item, $field) {
  * @see content_default_value()
  */
 function filefield_default_value(&$form, &$form_state, $field, $delta) {
-  // Reduce the default number of upload fields to one.
-  // CCK will automatically add one more field than necessary.
-  if (!isset($form_state['item_count'][$field['field_name']])) {
+  // Reduce the default number of upload fields to one. CCK 2 (but not 3) will
+  // automatically add one more field than necessary. We use the
+  // content_multiple_value_after_build function to determine the version.
+  if (!function_exists('content_multiple_value_after_build') && !isset($form_state['item_count'][$field['field_name']])) {
     $form_state['item_count'][$field['field_name']] = 0;
   }
 
