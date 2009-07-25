@@ -9,7 +9,7 @@
  * table to store the actual file data.
  */
 
-define('FILEFIELD_MINIMUM_PHP', '5.2');
+define('FILEFIELD_MINIMUM_PHP', '5.0');
 
 function filefield_menu($may_cache) {
   $items = array();
@@ -51,11 +51,11 @@ function filefield_requirements($phase) {
   // Ensure translations don't break at install time
   $t = get_t();
 
-  if (version_compare(phpversion(), FILEFIELD_MINIMUM_PHP) < 0) {
+  if ($phase == 'runtime' && version_compare(phpversion(), FILEFIELD_MINIMUM_PHP) < 0) {
     $requirements['filefield_php'] = array(
       'title' => $t('FileField PHP'),
-      'description' => $t('FileField requires at least PHP %version.', array('%version' => FILEFIELD_MINIMUM_PHP)),
-      'severity' => REQUIREMENT_ERROR
+      'description' => $t('FileField recommends at least PHP %version. Older versions of PHP are not supported but may function.', array('%version' => FILEFIELD_MINIMUM_PHP)),
+      'severity' => REQUIREMENT_WARNING
     );
   }
 
