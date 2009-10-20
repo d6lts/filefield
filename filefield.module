@@ -180,8 +180,7 @@ function filefield_file_download($file) {
       if (isset($nodes[$content['nid']])) {
         continue; // Don't check the same node twice.
       }
-      $node = node_load($content['nid']);
-      if ($denied == FALSE && node_access('view', $node) == FALSE) {
+      if ($denied == FALSE && ($node = node_load($content['nid'])) && node_access('view', $node) == FALSE) {
         // You don't have permission to view the node this file is attached to.
         $denied = TRUE;
       }
