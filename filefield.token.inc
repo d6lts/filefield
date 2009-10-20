@@ -34,8 +34,7 @@ function filefield_token_list($type = 'all') {
  * Provide the token values for a given file item.
  */
 function filefield_token_values($type, $object = NULL) {
-  $tokens = array();
-  if ($type == 'field' && isset($object[0]['fid'])) {
+  if ($type == 'field') {
     $item = $object[0];
     $tokens['filefield-fid']                = $item['fid'];
     $tokens['filefield-description']        = isset($item['data']['description']) ? $item['data']['description'] : '';
@@ -61,6 +60,6 @@ function filefield_token_values($type, $object = NULL) {
       $tokens['filefield-onlyname'] = $info['filename'];
       $tokens['filefield-extension'] = $info['extension'];
     }
+    return $tokens;  
   }
-  return $tokens;  
 }
