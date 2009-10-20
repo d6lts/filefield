@@ -266,7 +266,7 @@ function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
 
     // Verify the file exists on the server.
     if (!empty($item['filepath']) && !file_exists($item['filepath'])) {
-      watchdog('filefield', 'FileField was trying to display the file %file, but it does not exist.', array('%file' => $item['filepath']));
+      watchdog('filefield', 'FileField was trying to display the file %file, but it does not exist.', array('%file' => $item['filepath']), WATCHDOG_WARNING);
     }
   }
 }
