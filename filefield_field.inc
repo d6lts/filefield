@@ -19,7 +19,7 @@ function filefield_field_settings_form($field) {
     '#title' => t('List field'),
     '#options' => array(0 => t('Disabled'), 1 => t('Enabled')),
     '#default_value' => $field['list_field'] === '' ? 0 : (int) $field['list_field'],
-    '#description' => t('The "list" option lets a user choose if a file should shown in a list when viewing the content after creation.'),
+    '#description' => t('The "list" option lets a user choose if a file should be shown in a list when viewing the content after creation.'),
     '#attributes' => array('class' => 'filefield-list-field'),
   );
   $form['list_default'] = array(
