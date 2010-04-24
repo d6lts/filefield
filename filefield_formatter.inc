@@ -93,7 +93,7 @@ function theme_filefield_item($file, $field) {
  */
 function filefield_file_listed($file, $field) {
   if (!empty($field['list_field'])) {
-    return (bool)$file['list'];
+    return !empty($file['list']);
   }
   return TRUE;
 }
