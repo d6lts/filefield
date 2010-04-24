@@ -37,9 +37,8 @@ Drupal.behaviors.filefieldValidateAutoAttach = function(context) {
  * Prevent FileField uploads when using buttons not intended to upload.
  */
 Drupal.behaviors.filefieldButtons = function(context) {
-  $('input.form-submit')
-    .bind('mousedown', Drupal.filefield.disableFields)
-    .bind('mousedown', Drupal.filefield.progressBar);
+  $('input.form-submit').bind('mousedown', Drupal.filefield.disableFields);
+  $('div.filefield-element input.form-submit', context).bind('mousedown', Drupal.filefield.progressBar);
 };
 
 /**
