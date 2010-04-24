@@ -976,9 +976,13 @@ function filefield_get_node_files($node, $field = NULL) {
   // Get the file rows.
   foreach ($fields as $field) {
     $db_info = content_database_info($field);
-    $sql =  'SELECT f.* FROM {files} f INNER JOIN {' . $db_info['table'] . '} c ON f.fid = c.' . $db_info['columns']['fid']['column'] . ' AND c.vid = %d';
+    $fields = 'f.*';
+    $fields .= ', c.'. $db_info['columns']['list']['column'] .' AS list';
+    $fields .= ', c.'. $db_info['columns']['data']['column'] .' AS data';
+    $sql =  'SELECT '. $fields .' FROM {files} f INNER JOIN {' . $db_info['table'] . '} c ON f.fid = c.' . $db_info['columns']['fid']['column'] . ' AND c.vid = %d';
     $result = db_query($sql, $node->vid);
     while ($file = db_fetch_array($result)) {
+      $file['data'] = unserialize($file['data']);
       $files[$file['fid']] = $file;
     }
   }
