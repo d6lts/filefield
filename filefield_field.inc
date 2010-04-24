@@ -76,6 +76,7 @@ function filefield_field_settings_views_data($field) {
     'handler' => 'content_handler_relationship',
     'label' => t($field['widget']['label']),
     'content_field_name' => $field['field_name'],
+    'skip base' => array('files'),
   );
 
   // Use the Views boolean handler for filtering the list value.
@@ -97,6 +98,25 @@ function filefield_field_settings_views_data($field) {
   unset($data[$table_alias][$field['field_name'] .'_data']['filter']);
   unset($data[$table_alias][$field['field_name'] .'_data']['argument']);
   unset($data[$table_alias][$field['field_name'] .'_list']['argument']);
+
+  // Set up relationship with file views.
+  $data[$table_alias]['table']['join']['files'] = array(
+    'table' => $db_info['table'],
+    'left_field' => 'fid',
+    'field' => $db_info['columns']['fid']['column'],
+  );
+  $data[$table_alias]['vid'] = array(
+    'title' => t($field['widget']['label']),
+    'help' => t('The node the uploaded file is attached to'),
+    'relationship' => array(
+      'label' => t($field['widget']['label']),
+      'base' => 'node',
+      'base field' => 'vid',
+      // This allows us to not show this relationship if the base is already
+      // node so users won't create circular relationships.
+      'skip base' => array('node', 'node_revisions'),
+    ),
+  );
 
   return $data;
 }
