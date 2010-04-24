@@ -45,7 +45,7 @@ Drupal.behaviors.filefieldButtons = function(context) {
  * Open links to files within the node form in a new window.
  */
 Drupal.behaviors.filefieldPreviewLinks = function(context) {
-  $('div.filefield-element div.widget-preview a').click(Drupal.filefield.openInNewWindow).attr('target', '_blank');
+  $('div.filefield-element div.widget-preview a', context).click(Drupal.filefield.openInNewWindow).attr('target', '_blank');
 }
 
 /**
