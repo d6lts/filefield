@@ -357,6 +357,19 @@ function filefield_content_is_empty($item, $field) {
 }
 
 /**
+ * Implementation of CCK's hook_content_diff_values().
+ */
+function filefield_content_diff_values($node, $field, $items) {
+  $return = array();
+  foreach ($items as $item) {
+    if (is_array($item) && !empty($item['filepath'])) {
+      $return[] = $item['filepath'];
+    }
+  }
+  return $return;
+}
+
+/**
  * Implementation of CCK's hook_default_value().
  *
  * Note this is a widget-level hook, so it does not affect ImageField or other
