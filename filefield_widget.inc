@@ -14,12 +14,17 @@
  */
 function filefield_widget_settings_form($widget) {
   $form = array();
+
+  // Convert the extensions list to be a human-friendly comma-separated list.
+  $extensions = is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt';
+  $extensions = implode(', ', explode(' ', $extensions));
   $form['file_extensions'] = array(
     '#type' => 'textfield',
     '#title' => t('Permitted upload file extensions'),
-    '#default_value' => is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt',
+    '#default_value' => $extensions,
     '#size' => 64,
     '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
+    '#element_validate' => array('_filefield_widget_settings_extensions_validate'),
     '#weight' => 1,
   );
 
@@ -87,6 +92,14 @@ function filefield_widget_settings_form($widget) {
  */
 function filefield_widget_settings_save($widget) {
   return array('file_extensions', 'file_path', 'progress_indicator', 'max_filesize_per_file', 'max_filesize_per_node');
+}
+
+function _filefield_widget_settings_extensions_validate($element, &$form_state) {
+  // Remove commas from file extensions.
+  $value = str_replace(',', ' ', $element['#value']);
+  $value = array_filter(explode(' ', $value));
+  $value = implode(' ', $value);
+  form_set_value($element, $value, $form_state);
 }
 
 function _filefield_widget_settings_file_path_validate($element, &$form_state) {
