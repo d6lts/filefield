@@ -446,6 +446,7 @@ function filefield_widget_validate(&$element, &$form_state) {
  * FormAPI theme function. Theme the output of an image field.
  */
 function theme_filefield_widget($element) {
+  $element['#id'] .= '-upload'; // Link the label to the upload field.
   return theme('form_element', $element, $element['#children']);
 }
 
