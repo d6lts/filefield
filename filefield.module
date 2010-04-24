@@ -159,14 +159,6 @@ function filefield_file_download($file) {
     return;
   }
 
-  // If any node includes this file but the user may not view this field,
-  // then deny the download.
-  foreach ($cck_files as $field_name => $field_files) {
-    if (!filefield_view_access($field_name)) {
-      return -1;
-    }
-  }
-
   // So the overall field view permissions are not denied, but if access is
   // denied for ALL nodes containing the file, deny the download as well.
   // Node access checks also include checking for 'access content'.
@@ -180,7 +172,7 @@ function filefield_file_download($file) {
       if (isset($nodes[$content['nid']])) {
         continue; // Don't check the same node twice.
       }
-      if ($denied == FALSE && ($node = node_load($content['nid'])) && node_access('view', $node) == FALSE) {
+      if ($denied == FALSE && ($node = node_load($content['nid'])) && (node_access('view', $node) == FALSE || filefield_view_access($field_name, $node) == FALSE)) {
         // You don't have permission to view the node this file is attached to.
         $denied = TRUE;
       }
@@ -459,8 +451,8 @@ function filefield_icon_url($file) {
  * us to check, so we can make sure that the user may actually edit the file.
  */
 function filefield_edit_access($field_name) {
-  if (module_exists('content_permissions')) {
-    return user_access('edit '. $field_name);
+  if (!content_access('edit', content_fields($field_name))) {
+    return FALSE;
   }
   // No content permissions to check, so let's fall back to a more general permission.
   return user_access('access content');
@@ -469,9 +461,9 @@ function filefield_edit_access($field_name) {
 /**
  * Access callback that checks if the current user may view the filefield.
  */
-function filefield_view_access($field_name) {
-  if (module_exists('content_permissions')) {
-    return user_access('view '. $field_name);
+function filefield_view_access($field_name, $node = NULL) {
+  if (!content_access('view', content_fields($field_name), NULL, $node)) {
+    return FALSE;
   }
   // No content permissions to check, so let's fall back to a more general permission.
   return user_access('access content');
