@@ -125,12 +125,13 @@ function theme_filefield_meta_duration($duration) {
  * Formats audio sample rate.
  */
 function theme_filefield_meta_samplerate($samplerate) {
-  return sprintf("%.1f kHz", $samplerate/1000);
+  return t('@sampleratekHz', array('@samplerate' => (int) ($samplerate/1000)));
 }
  
 /**
  * Formats audio bit rate.
  */
 function theme_filefield_meta_bitrate($bitrate) {
-  return sprintf("%d Kbps", $bitrate/1000);
+  dsm($bitrate);
+  return t('@bitrateKbps', array('@bitrate' => (int) ($bitrate/1000)));
 }
