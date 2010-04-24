@@ -448,6 +448,6 @@ msgid "CCK"
 msgstr "CCK"
 
 #: filefield.js:0
-msgid "The selected file %filename cannot not be uploaded. Only files with the following extensions are allowed: %extensions."
+msgid "The selected file %filename cannot be uploaded. Only files with the following extensions are allowed: %extensions."
 msgstr "Die ausgewählte Datei %filename konnte nicht hochgeladen werden. Nur Dateien mit den folgenden Erweiterungen sind zulässig: %extensions."
 

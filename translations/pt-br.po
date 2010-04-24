@@ -397,7 +397,7 @@ msgid "Token Integration for FileField."
 msgstr "Integração de Tokens para FileField."
 
 #: filefield.js:0
-msgid "The selected file %filename cannot not be uploaded. Only files with the following extensions are allowed: %extensions."
+msgid "The selected file %filename cannot be uploaded. Only files with the following extensions are allowed: %extensions."
 msgstr "O arquivo selecionado %filename não pôde ser transferido. Somente arquivos com as seguintes extensões são permitidos: %extensions."
 
 #: filefield_meta/filefield_meta.module:0
