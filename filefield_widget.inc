@@ -243,7 +243,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $delta = $element['#delta'];
   $element['#theme'] = 'filefield_widget_item';
 
-  $field = content_fields($element['#field_name'], $element['#type_name']);
+  $field = $form['#field_info'][$field_name];
 
   // Title is not necessary for each individual field.
   if ($field['multiple'] > 0) {
