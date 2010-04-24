@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * FileField Meta: Add Video Support to File Field.
@@ -132,6 +133,5 @@ function theme_filefield_meta_samplerate($samplerate) {
  * Formats audio bit rate.
  */
 function theme_filefield_meta_bitrate($bitrate) {
-  dsm($bitrate);
   return t('@bitrateKbps', array('@bitrate' => (int) ($bitrate/1000)));
 }
