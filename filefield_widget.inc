@@ -506,8 +506,7 @@ function theme_filefield_widget_file($element) {
  * properly supported on file fields by Drupal core, so we do this manually.
  */
 function filefield_node_form_validate($form, &$form_state) {
-  $type = content_types($form['type']['#value']);
-  foreach ($type['fields'] as $field_name => $field) {
+  foreach ($form['#field_info'] as $field_name => $field) {
     if (!(in_array($field['module'], array('imagefield', 'filefield')))) continue;
     $empty = $field['module'] .'_content_is_empty';
     $valid = FALSE;
