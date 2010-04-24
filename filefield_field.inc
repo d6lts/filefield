@@ -142,9 +142,14 @@ function filefield_field_load($node, $field, &$items, $teaser, $page) {
       while (!empty($item['data']) && is_string($item['data'])) {
         $item['data'] = unserialize($item['data']);
       }
+      // Merge any data added by modules in hook_file_load().
+      if (isset($file['data']) && isset($item['data'])) {
+        $file['data'] = array_merge((array) $item['data'], (array) $file['data']);
+      }
       $items[$delta] = array_merge($item, $file);
     }
   }
+
   return array($field['field_name'] => $items);
 }
 
