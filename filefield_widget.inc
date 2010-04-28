@@ -360,6 +360,11 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     );
   }
 
+  // Grant access to temporary files.
+  if ($item['fid'] && isset($item['status']) && $item['status'] == 0 && variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
+    $_SESSION['filefield_access'][] = $item['fid'];
+  }
+
   // placeholder.. will be serialized into the data column. this is a place for widgets
   // to put additional data.
   $element['data'] = array(

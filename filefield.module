@@ -154,8 +154,10 @@ function filefield_file_download($file) {
       }
     }
   }
-  // If no file field item is involved with this file, we don't care about it.
-  if (empty($cck_files)) {
+
+  // If no file field item is involved with this file, we don't care about it,
+  // unless it's a newly uploaded image that isn't yet associated with a field.
+  if (empty($cck_files) && !($file->status == 0 && isset($_SESSION['filefield_access']) && in_array($file->fid, $_SESSION['filefield_access']))) {
     return;
   }
 
@@ -292,8 +294,12 @@ function filefield_widget_settings($op, $widget) {
  * Implementation of hook_widget().
  */
 function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  if (module_exists('devel_themer') && (user_access('access devel theme information') || user_access('access devel information'))) {
+    drupal_set_message(t('Files may not be uploaded while the Theme Developer tool is enabled. It is highly recommended to <a href="!url">disable this module</a> unless it is actively being used.', array('!url' => url('admin/build/modules'))), 'error');
+  }
+
   // CCK doesn't give a validate callback at the field level...
-  // and FAPI's #require is naieve to complex structures...
+  // and FAPI's #require is naive to complex structures...
   // we validate at the field level ourselves.
   if (empty($form['#validate']) || !in_array('filefield_node_form_validate', $form['#validate'])) {
     $form['#validate'][] = 'filefield_node_form_validate';
