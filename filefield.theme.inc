@@ -21,7 +21,7 @@ function theme_filefield_icon($file) {
   }
   $mime = check_plain($file['filemime']);
 
-  $dashed_mime = strtr($mime, array('/' => '-'));
+  $dashed_mime = strtr($mime, array('/' => '-', '+' => '-'));
 
   if ($icon_url = filefield_icon_url($file)) {
     $icon = '<img class="field-icon-'. $dashed_mime .'"  alt="'. $mime .' icon" src="'. $icon_url .'" />';
