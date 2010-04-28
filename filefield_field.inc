@@ -261,7 +261,7 @@ function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
     if (empty($item['fid']) || !empty($item['delete'])) {
       // Check for default images at the widget level.
       // TODO: Provide an API to ImageField to do this itself?
-      if (!empty($field['widget']['use_default_image']) && !empty($field['widget']['default_image']['filepath'])) {
+      if (!empty($field['widget']['use_default_image']) && !empty($field['widget']['default_image']['filepath']) && $delta == 0) {
         $items[$delta] = $field['widget']['default_image'];
         $items[$delta]['default'] = TRUE;
       }
