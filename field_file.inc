@@ -52,7 +52,7 @@ function field_file_load($fid, $reset = NULL) {
 
   // Cast to an array for the field storage.
   // Contrary to fields, hook_file() and core file functions expect objects.
-  return (array)$files[$fid];
+  return isset($files[$fid]) ? (array) $files[$fid] : FALSE;
 }
 
 /**

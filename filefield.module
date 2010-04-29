@@ -748,8 +748,8 @@ function filefield_validate_size_help($size) {
 function filefield_validate_image_resolution(&$file, $maximum_dimensions = 0, $minimum_dimensions = 0) {
   $errors = array();
 
-  list($max_width, $max_height) = explode('x', $maximum_dimensions);
-  list($min_width, $min_height) = explode('x', $minimum_dimensions);
+  @list($max_width, $max_height) = explode('x', $maximum_dimensions);
+  @list($min_width, $min_height) = explode('x', $minimum_dimensions);
 
   // Check first that the file is an image.
   if ($info = image_get_info($file->filepath)) {
