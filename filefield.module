@@ -762,8 +762,14 @@ function filefield_validate_image_resolution(&$file, $maximum_dimensions = 0, $m
           $errors[] = t('The image must be exactly %dimensions pixels.', array('%dimensions' => $maximum_dimensions));
         }
         // Check that scaling won't drop the image below the minimum dimensions.
-        elseif (image_get_toolkit() && (($info['width'] * $ratio < $min_width) || ($info['height'] * $ratio < $min_height))) {
+        elseif ((image_get_toolkit() || module_exists('imageapi')) && (($info['width'] * $ratio < $min_width) || ($info['height'] * $ratio < $min_height))) {
           $errors[] = t('The image will not fit between the dimensions of %min_dimensions and %max_dimensions pixels.', array('%min_dimensions' => $minimum_dimensions, '%max_dimensions' => $maximum_dimensions));
+        }
+        // Try resizing the image with ImageAPI if available.
+        elseif (module_exists('imageapi') && imageapi_default_toolkit()) {
+          $res = imageapi_image_open($file->filepath);
+          imageapi_image_scale($res, $max_width, $max_height);
+          imageapi_image_close($res, $file->filepath);
         }
         // Try to resize the image to fit the dimensions.
         elseif (image_get_toolkit() && @image_scale($file->filepath, $file->filepath, $max_width, $max_height)) {
