@@ -338,6 +338,11 @@ function filefield_widget_upload_validators($field) {
     $max_filesize = parse_size($field['widget']['max_filesize_per_file']);
   }
 
+  // Match the default value if no file extensions have been saved at all.
+  if (!isset($field['widget']['file_extensions'])) {
+    $field['widget']['file_extensions'] = 'txt';
+  }
+
   $validators = array(
     // associate the field to the file on validation.
     'filefield_validate_associate_field' => array($field),
@@ -408,6 +413,7 @@ function filefield_widget_info() {
       'multiple values' => CONTENT_HANDLE_CORE,
       'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
       'description' => t('A plain file upload widget.'),
+      'file_extensions' => 'txt',
     ),
   );
 }
