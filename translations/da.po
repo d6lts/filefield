@@ -140,7 +140,7 @@ msgid "Audio bitrate"
 msgstr "Lyd bithastighed"
 
 #: field_file.inc:88
-msgid "Could not set permissons on destination file: %file"
+msgid "Could not set permissions on destination file: %file"
 msgstr "Kan ikke sætte tilladelser på filen %file"
 
 #: filefield.token.inc:19

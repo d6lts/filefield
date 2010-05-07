@@ -55,7 +55,7 @@ msgid "filefield"
 msgstr ""
 
 #: field_file.inc:88
-msgid "Could not set permissons on destination file: %file"
+msgid "Could not set permissions on destination file: %file"
 msgstr ""
 
 #: field_file.inc:178

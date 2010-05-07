@@ -85,7 +85,7 @@ function field_file_save_upload($source, $validators = array(), $dest = FALSE) {
     return 0;
   }
   if (!@chmod($file->filepath, 0664)) {
-    watchdog('filefield', 'Could not set permissons on destination file: %file', array('%file' => $file->filepath));
+    watchdog('filefield', 'Could not set permissions on destination file: %file', array('%file' => $file->filepath));
   }
 
   // Let modules add additional properties to the yet barebone file object.

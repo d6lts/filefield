@@ -62,7 +62,7 @@ msgid "filefield"
 msgstr "bestandveld"
 
 #: field_file.inc:88
-msgid "Could not set permissons on destination file: %file"
+msgid "Could not set permissions on destination file: %file"
 msgstr "Kan geen permisses geven aan bestand %file"
 
 #: field_file.inc:176
