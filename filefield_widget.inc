@@ -71,7 +71,7 @@ function filefield_widget_settings_form($widget) {
     '#default_value' => is_string($widget['max_filesize_per_file'])
                         ? $widget['max_filesize_per_file']
                          : '',
-    '#description' => t('Specify the size limit that applies to each file separately. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the allowed file size. If you leave this this empty the file sizes will be limited only by PHP\'s maximum post and file upload sizes (current limit <strong>%limit</strong>).', array('%limit' => format_size(file_upload_max_size()))),
+    '#description' => t('Specify the size limit that applies to each file separately. Enter a value like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes) in order to restrict the allowed file size. If you leave this empty the file sizes will be limited only by PHP\'s maximum post and file upload sizes (current limit <strong>%limit</strong>).', array('%limit' => format_size(file_upload_max_size()))),
     '#element_validate' => array('_filefield_widget_settings_max_filesize_per_file_validate'),
   );
   $form['max_filesize']['max_filesize_per_node'] = array(
@@ -543,7 +543,7 @@ function filefield_node_form_validate($form, &$form_state) {
     }
     $max_filesize = parse_size($field['widget']['max_filesize_per_node']);
     if ($max_filesize && $total_filesize > $max_filesize) {
-      form_set_error($field_name, t('Total filesize for %title, %tsize,  exceeds field settings of %msize.',
+      form_set_error($field_name, t('Total filesize for %title, %tsize, exceeds field settings of %msize.',
                                     array(
                                       '%title' => $field['widget']['label'],
                                       '%tsize' => format_size($total_filesize),

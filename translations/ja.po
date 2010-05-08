@@ -194,7 +194,7 @@ msgid "Migrating filefield values"
 msgstr "ファイルフィールドの値を流用"
 
 #: filefield.install:213
-msgid "The File field %field has been updated with new settings."
+msgid "The file field %field has been updated with new settings."
 msgstr "ファイルフィールド %field を新しい設定で更新しました。"
 
 #: (duplicate) filefield.install:62

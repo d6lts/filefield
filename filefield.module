@@ -239,7 +239,7 @@ function filefield_form_alter(&$form, $form_state, $form_id) {
 function filefield_field_info() {
   return array(
     'filefield' => array(
-      'label' => 'File',
+      'label' => t('File'),
       'description' => t('Store an arbitrary file.'),
     ),
   );

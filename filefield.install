@@ -216,7 +216,7 @@ function filefield_update_6100() {
         $field['description_field'] = $field['show_description'];
       }
       _content_field_write($field);
-      $ret[] = array('success' => TRUE, 'query' => t('The File field %field has been updated with new settings.', array('%field' => $field['field_name'])));
+      $ret[] = array('success' => TRUE, 'query' => t('The file field %field has been updated with new settings.', array('%field' => $field['field_name'])));
     }
   }
 
