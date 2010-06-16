@@ -172,7 +172,7 @@ function filefield_file_download($filepath) {
   // denied for ALL nodes containing the file, deny the download as well.
   // Node access checks also include checking for 'access content'.
   $nodes = array();
-  $denied = FALSE;
+  $denied = TRUE;
   foreach ($cck_files as $field_name => $field_files) {
     foreach ($field_files as $revision_id => $content) {
       // Checking separately for each revision is probably not the best idea -
@@ -181,15 +181,16 @@ function filefield_file_download($filepath) {
       if (isset($nodes[$content['nid']])) {
         continue; // Don't check the same node twice.
       }
-      if ($denied == FALSE && ($node = node_load($content['nid'])) && (node_access('view', $node) == FALSE || filefield_view_access($field_name, $node) == FALSE)) {
-        // You don't have permission to view the node this file is attached to.
-        $denied = TRUE;
+      if (($node = node_load($content['nid'])) && (node_access('view', $node) && filefield_view_access($field_name, $node))) {
+        $denied = FALSE;
+        break 2;
       }
       $nodes[$content['nid']] = $node;
     }
-    if ($denied) {
-      return -1;
-    }
+  }
+
+  if ($denied) {
+    return -1;
   }
 
   // Access is granted.
