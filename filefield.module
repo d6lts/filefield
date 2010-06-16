@@ -645,7 +645,7 @@ function filefield_file_references($file) {
  * Implementation of hook_file_delete().
  */
 function filefield_file_delete($file) {
-  // foreach  field... remove items referencing $file.
+  filefield_delete_file_references($file);
 }
 
 /**
@@ -1006,4 +1006,50 @@ function filefield_get_node_files($node, $field = NULL) {
   }
 
   return $files;
+}
+
+/**
+ * Delete all node references of a file.
+ *
+ * @param $file
+ *   The file object for which to find references.
+ * @param $field
+ *   Optional. The CCK field array or field name as a string.
+ */
+function filefield_delete_file_references($file, $field = NULL) {
+  $fields = filefield_get_field_list(NULL, $field);
+  $file = (object) $file;
+
+  $references = filefield_get_file_references($file, $field);
+  foreach ($references as $nid => $node_references) {
+    // Do not update a node if it is already being deleted directly by the user.
+    if (isset($file->delete_nid) && $file->delete_nid == $nid) {
+      continue;
+    }
+
+    foreach ($node_references as $vid) {
+      // Do not update the node revision if that revision is already being
+      // saved or deleted directly by the user.
+      if (isset($file->delete_vid) && $file->delete_vid == $vid) {
+        continue;
+      }
+
+      $node = node_load(array('vid' => $vid));
+      foreach ($fields as $field_name => $field) {
+        if (isset($node->$field_name)) {
+          foreach ($node->$field_name as $delta => $item) {
+            if ($item['fid'] == $file->fid) {
+              unset($node->{$field_name}[$delta]);
+            }
+          }
+          $node->$field_name = array_values(array_filter($node->$field_name));
+        }
+      }
+
+      // Save the node after removing the file references. This flag prevents
+      // FileField from attempting to delete the file again.
+      $node->skip_filefield_delete = TRUE;
+      node_save($node);
+    }
+  }
 }
