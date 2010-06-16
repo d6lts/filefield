@@ -36,7 +36,7 @@ function filefield_menu() {
     'page callback' => 'filefield_js',
     'page arguments' => array(2, 3, 4),
     'access callback' => 'filefield_edit_access',
-    'access arguments' => array(3),
+    'access arguments' => array(2, 3),
     'type' => MENU_CALLBACK,
   );
   $items['filefield/progress'] = array(
@@ -482,23 +482,23 @@ function filefield_icon_url($file) {
  * The content_permissions module provides nice fine-grained permissions for
  * us to check, so we can make sure that the user may actually edit the file.
  */
-function filefield_edit_access($field_name) {
-  if (!content_access('edit', content_fields($field_name))) {
+function filefield_edit_access($type_name, $field_name) {
+  if (!content_access('edit', content_fields($field_name, $type_name))) {
     return FALSE;
   }
   // No content permissions to check, so let's fall back to a more general permission.
-  return user_access('access content');
+  return user_access('access content') || user_access('administer nodes');
 }
 
 /**
  * Access callback that checks if the current user may view the filefield.
  */
-function filefield_view_access($field_name, $node = NULL) {
-  if (!content_access('view', content_fields($field_name), NULL, $node)) {
+function filefield_view_access($field_name, $node) {
+  if (!content_access('view', content_fields($field_name, $node->type), NULL, $node)) {
     return FALSE;
   }
   // No content permissions to check, so let's fall back to a more general permission.
-  return user_access('access content');
+  return user_access('access content') || user_access('administer nodes');
 }
 
 /**
