@@ -122,12 +122,19 @@ function filefield_theme() {
 /**
  * Implementation of hook_file_download().
  */
-function filefield_file_download($file) {
-  $file = file_create_path($file);
+function filefield_file_download($filepath) {
+  $filepath = file_create_path($filepath);
+  $result = db_query("SELECT * FROM {files} WHERE filepath = '%s'", $filepath);
 
-  $result = db_query("SELECT * FROM {files} WHERE filepath = '%s'", $file);
-  if (!$file = db_fetch_object($result)) {
-    // We don't really care about this file.
+  // Ensure case-sensitivity of uploaded file names.
+  while ($file = db_fetch_object($result)) {
+    if (strcmp($file->filepath, $filepath) == 0) {
+      break;
+    }
+  }
+
+  // If the file is not found in the database, we're not responsible for it.
+  if (!isset($file)) {
     return;
   }
 
