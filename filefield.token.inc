@@ -38,9 +38,9 @@ function filefield_token_values($type, $object = NULL) {
   if ($type == 'field' && isset($object[0]['fid'])) {
     $item = $object[0];
     $tokens['filefield-fid']                = $item['fid'];
-    $tokens['filefield-description']        = isset($item['data']['description']) ? $item['data']['description'] : '';
-    $tokens['filefield-filename']           = $item['filename'];
-    $tokens['filefield-filepath']           = $item['filepath'];
+    $tokens['filefield-description']        = isset($item['data']['description']) ? check_plain($item['data']['description']) : '';
+    $tokens['filefield-filename']           = check_plain($item['filename']);
+    $tokens['filefield-filepath']           = check_plain($item['filepath']);
     $tokens['filefield-filemime']           = $item['filemime'];
     $tokens['filefield-filesize']           = $item['filesize'];
     $tokens['filefield-filesize_formatted'] = format_size($item['filesize']);
