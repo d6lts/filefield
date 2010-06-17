@@ -930,9 +930,9 @@ function filefield_token_values($type, $object = NULL) {
   if ($type == 'field') {
     $item = $object[0];
     $tokens['fid']         = $item['fid'];
-    $tokens['description'] = $item['description'];
-    $tokens['filename']    = $item['filename'];
-    $tokens['filepath']    = $item['filepath'];
+    $tokens['description'] = check_plain($item['description']);
+    $tokens['filename']    = check_plain($item['filename']);
+    $tokens['filepath']    = check_plain($item['filepath']);
     $tokens['filemime']    = $item['filemime'];
     $tokens['filesize']    = $item['filesize'];
     $tokens['view']        = $item['view'];
