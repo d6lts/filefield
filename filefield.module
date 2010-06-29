@@ -181,7 +181,7 @@ function filefield_file_download($filepath) {
       if (isset($nodes[$content['nid']])) {
         continue; // Don't check the same node twice.
       }
-      if (($node = node_load($content['nid'])) && (node_access('view', $node) && filefield_view_access($field_name, $node))) {
+      if (($node = node_load($content['nid'])) && (node_access('view', $node) && filefield_view_access($field_name))) {
         $denied = FALSE;
         break 2;
       }
@@ -494,8 +494,8 @@ function filefield_edit_access($type_name, $field_name) {
 /**
  * Access callback that checks if the current user may view the filefield.
  */
-function filefield_view_access($field_name, $node) {
-  if (!content_access('view', content_fields($field_name, $node->type), NULL, $node)) {
+function filefield_view_access($field_name) {
+  if (!content_access('view', content_fields($field_name))) {
     return FALSE;
   }
   // No content permissions to check, so let's fall back to a more general permission.
