@@ -17,7 +17,6 @@ function filefield_widget_settings_form($widget) {
 
   // Convert the extensions list to be a human-friendly comma-separated list.
   $extensions = is_string($widget['file_extensions']) ? $widget['file_extensions'] : 'txt';
-  $extensions = implode(', ', explode(' ', $extensions));
   $form['file_extensions'] = array(
     '#type' => 'textfield',
     '#title' => t('Permitted upload file extensions'),
@@ -26,6 +25,7 @@ function filefield_widget_settings_form($widget) {
     '#maxlength' => 512,
     '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
     '#element_validate' => array('_filefield_widget_settings_extensions_validate'),
+    '#pre_render' => array('_filefield_widget_settings_extensions_value'),
     '#weight' => 1,
   );
 
@@ -95,6 +95,17 @@ function filefield_widget_settings_save($widget) {
   return array('file_extensions', 'file_path', 'progress_indicator', 'max_filesize_per_file', 'max_filesize_per_node');
 }
 
+/**
+ * A FAPI #pre_render() function to set a cosmetic default value for extensions.
+ */
+function _filefield_widget_settings_extensions_value($element) {
+  $element['#value'] = implode(', ', explode(' ', $element['#value']));
+  return $element;
+}
+
+/**
+ * A FAPI #element_validate callback to strip commas from extension lists.
+ */
 function _filefield_widget_settings_extensions_validate($element, &$form_state) {
   // Remove commas from file extensions.
   $value = str_replace(',', ' ', $element['#value']);
