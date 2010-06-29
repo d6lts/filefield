@@ -24,9 +24,8 @@ function theme_filefield_icon($file) {
   $dashed_mime = strtr($mime, array('/' => '-', '+' => '-'));
 
   if ($icon_url = filefield_icon_url($file)) {
-    $icon = '<img class="field-icon-'. $dashed_mime .'"  alt="'. $mime .' icon" src="'. $icon_url .'" />';
+    return '<img class="filefield-icon field-icon-'. $dashed_mime .'"  alt="'. t('@mime icon', array('@mime' => $mime)) .'" src="'. $icon_url .'" />';
   }
-  return '<div class="filefield-icon field-icon-'. $dashed_mime .'">'. $icon .'</div>';
 }
 
 /**
