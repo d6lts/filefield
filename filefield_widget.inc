@@ -23,6 +23,7 @@ function filefield_widget_settings_form($widget) {
     '#title' => t('Permitted upload file extensions'),
     '#default_value' => $extensions,
     '#size' => 64,
+    '#maxlength' => 512,
     '#description' => t('Extensions a user can upload to this field. Separate extensions with a space and do not include the leading dot. Leaving this blank will allow users to upload a file with any extension.'),
     '#element_validate' => array('_filefield_widget_settings_extensions_validate'),
     '#weight' => 1,
