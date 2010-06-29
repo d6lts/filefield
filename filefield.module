@@ -10,8 +10,8 @@
  */
 
 // FileField API hooks should always be available.
-include_once dirname(__FILE__) . '/field_file.inc';
-include_once dirname(__FILE__) . '/filefield_widget.inc';
+require_once dirname(__FILE__) . '/field_file.inc';
+require_once dirname(__FILE__) . '/filefield_widget.inc';
 
 /**
  * Implementation of hook_init().
@@ -473,7 +473,7 @@ function filefield_content_generate($node, $field) {
  *   The URL of the icon image file, or FALSE if no icon could be found.
  */
 function filefield_icon_url($file) {
-  include_once(drupal_get_path('module', 'filefield') .'/filefield.theme.inc');
+  module_load_include('inc', 'filefield', 'filefield.theme');
   return _filefield_icon_url($file);
 }
 
