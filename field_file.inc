@@ -38,7 +38,7 @@ function field_file_load($fid, $reset = NULL) {
     }
 
     if (!$file) {
-      $file = array('fid' => 0, 'filepath' => '', 'filename' => '', 'filemime' => '', 'filesize' => 0);
+      $file = (object) array('fid' => 0, 'filepath' => '', 'filename' => '', 'filemime' => '', 'filesize' => 0);
     }
 
     foreach (module_implements('file_load') as $module) {

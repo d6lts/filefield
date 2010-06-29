@@ -204,7 +204,7 @@ function filefield_widget_value($element, $edit = FALSE) {
     $item = $element['#default_value'];
   }
   else {
-    $item = array_merge($element['#default_value'], $edit);
+    $item = $edit;
     $field = content_fields($element['#field_name'], $element['#type_name']);
 
     // Uploads take priority over value of fid text field.
@@ -236,6 +236,9 @@ function filefield_widget_value($element, $edit = FALSE) {
     }
   }
   // Merge file and item data so it is available to all widgets.
+  if (isset($item['data']) && isset($file['data'])) {
+    $file['data'] = array_merge($item['data'], $file['data']);
+  }
   $item = array_merge($item, $file);
 
   return $item;
