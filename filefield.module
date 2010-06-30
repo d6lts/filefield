@@ -477,6 +477,18 @@ function filefield_icon_url($file) {
   return _filefield_icon_url($file);
 }
 
+
+/**
+ * Implementation of hook_filefield_icon_sets().
+ *
+ * Define a list of icon sets and directories that contain the icons.
+ */
+function filefield_filefield_icon_sets() {
+  return array(
+    'default' => drupal_get_path('module', 'filefield') . '/icons',
+  );
+}
+
 /**
  * Access callback for the JavaScript upload and deletion AHAH callbacks.
  *
