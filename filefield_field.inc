@@ -289,9 +289,9 @@ function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
     if (!empty($item['fid']) && empty($item['filepath'])) {
       $file = (array) field_file_load($item['fid']);
       if (isset($file['data'])) {
-        $items[$delta]['data'] = array_merge($item['data'], $file['data']);
+        $file['data'] = array_merge($items[$delta]['data'], $file['data']);
       }
-      $items[$delta] = array_merge($item, $file);
+      $items[$delta] = array_merge($items[$delta], $file);
     }
 
     // Verify the file exists on the server.
