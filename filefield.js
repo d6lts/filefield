@@ -116,13 +116,12 @@ Drupal.filefield = {
       setTimeout(function() {
         $progressId.attr('name', originalName);
       }, 1000);
-
-      // Show the progress bar if the upload takes longer than 3 seconds.
-      setTimeout(function() {
-        $(clickedButton).parents('div.filefield-element').find('div.ahah-progress-bar').slideDown();
-      }, 500);
-
     }
+
+    // Show the progress bar if the upload takes longer than 3 seconds.
+    setTimeout(function() {
+      $(clickedButton).parents('div.filefield-element').find('div.ahah-progress-bar').slideDown();
+    }, 500);
   },
   openInNewWindow: function(event) {
     window.open(this.href, 'filefieldPreview', 'toolbar=0,scrollbars=1,location=1,statusbar=1,menubar=0,resizable=1,width=500,height=550');
