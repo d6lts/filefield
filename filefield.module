@@ -722,7 +722,7 @@ function filefield_validate_extensions($file, $extensions) {
  */
 function filefield_validate_extensions_help($extensions) {
   if (!empty($extensions)) {
-    return t('Allowed Extensions: %ext', array('%ext' => $extensions));
+    return t('Allowed extensions: %ext', array('%ext' => $extensions));
   }
   else {
     return '';
@@ -765,7 +765,7 @@ function filefield_validate_size($file, $file_limit = 0, $user_limit = 0) {
  * Automatic help text appended to fields that have file size validation.
  */
 function filefield_validate_size_help($size) {
-  return t('Maximum Filesize: %size', array('%size' => format_size(parse_size($size))));
+  return t('Maximum file size: %size', array('%size' => format_size(parse_size($size))));
 }
 
 /**
