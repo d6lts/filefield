@@ -58,7 +58,7 @@ function filefield_token_values($type, $object = NULL) {
     }
     if (!isset($tokens['filefield-extension'])) {
       $info = pathinfo($item['filename']);
-      $tokens['filefield-onlyname'] = $info['filename'];
+      $tokens['filefield-onlyname'] = basename($info['basename'], '.'. $info['extension']);
       $tokens['filefield-extension'] = $info['extension'];
     }
   }
