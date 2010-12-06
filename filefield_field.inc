@@ -227,6 +227,17 @@ function filefield_field_delete($node, $field, &$items, $teaser, $page) {
     $item['delete_nid'] = $node->nid;
     filefield_field_delete_file($item, $field);
   }
+
+  // Delete all the remaining items present only in older revisions.
+  $db_info = content_database_info($field);
+  $result = db_query('SELECT vid, f.* FROM {' . $db_info['table'] . '} t INNER JOIN {files} f ON t.' . $db_info['columns']['fid']['column'] . ' = f.fid WHERE nid = %d AND vid != %d', $node->nid, $node->vid);
+  while ($item = db_fetch_array($result)) {
+    if (isset($item['fid'])) {
+      $item['field_name'] = $field['field_name'];
+      $item['delete_vid'] = $item['vid'];
+      filefield_field_delete_file($item, $field); 
+    }
+  }
 }
 
 /**
