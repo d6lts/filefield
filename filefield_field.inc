@@ -86,6 +86,7 @@ function filefield_field_settings_views_data($field) {
   $data[$table_alias][$field['field_name'] .'_data']['field'] = array(
     'title' => $data[$table_alias][$field['field_name'] .'_data']['title'],
     'title short' => $data[$table_alias][$field['field_name'] .'_data']['title short'],
+    'help' => t('Can be used to display specific alt, title, or description information. May cause duplicate rows if grouping fields.'),
     'field' => $db_info['columns']['data']['column'],
     'table' => $db_info['table'],
     'handler' => 'filefield_handler_field_data',
