@@ -145,9 +145,9 @@ function filefield_field_load($node, $field, &$items, $teaser, $page) {
       }
       // Merge any data added by modules in hook_file_load().
       if (isset($file['data']) && isset($item['data'])) {
-        $file['data'] = array_merge((array) $item['data'], (array) $file['data']);
+        $file['data'] = array_merge((array) $file['data'], (array) $item['data']);
       }
-      $items[$delta] = array_merge($item, $file);
+      $items[$delta] = array_merge($file, $item);
     }
   }
 
@@ -290,9 +290,9 @@ function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
     if (!empty($item['fid']) && empty($item['filepath'])) {
       $file = (array) field_file_load($item['fid']);
       if (isset($file['data'])) {
-        $file['data'] = array_merge($items[$delta]['data'], $file['data']);
+        $file['data'] = array_merge($file['data'], $items[$delta]['data']);
       }
-      $items[$delta] = array_merge($items[$delta], $file);
+      $items[$delta] = array_merge($file, $items[$delta]);
     }
 
     // Verify the file exists on the server.
