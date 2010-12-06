@@ -42,8 +42,10 @@ function field_file_load($fid, $reset = NULL) {
     }
 
     foreach (module_implements('file_load') as $module) {
-      $function = $module .'_file_load';
-      $function($file);
+      if ($module != 'field') {
+        $function = $module .'_file_load';
+        $function($file);
+      }
     }
 
     // Cache the fully loaded file for later use.
