@@ -19,7 +19,7 @@ function filefield_field_settings_form($field) {
     '#title' => t('List field'),
     '#options' => array(0 => t('Disabled'), 1 => t('Enabled')),
     '#default_value' => $field['list_field'] === '' ? 0 : (int) $field['list_field'],
-    '#description' => t('The "list" option lets a user choose if a file should be shown in a list when viewing the content after creation.'),
+    '#description' => t('Display a checkbox where users may choose if a file should be shown when viewing the content. Most formatters other than <em>Generic file</em> do not support this option.'),
     '#attributes' => array('class' => 'filefield-list-field'),
   );
   $form['list_default'] = array(
@@ -32,7 +32,7 @@ function filefield_field_settings_form($field) {
     '#title' => t('Description field'),
     '#default_value' => $field['description_field'] === '' ? 0 : (int) $field['description_field'],
     '#options' => array(0 => t('Disabled'), 1 => t('Enabled')),
-    '#description' => t('When enabled, will display a text field where users may enter a description about the uploaded file.'),
+    '#description' => t('Display a text field where users may enter a description about the uploaded file. The description text is used when using the <em>Generic file</em> formatter to link to the file, the file name will be used otherwise. Most other formatters do not use the description field on output.'),
   );
 
   return $form;
