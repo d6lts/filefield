@@ -263,8 +263,7 @@ function filefield_widget_value($element, $edit = FALSE) {
  * remove buttons, and the description field.
  */
 function filefield_widget_process($element, $edit, &$form_state, $form) {
-  // The widget is being presented, so apply the JavaScript.
-  drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
+  static $settings_added;
 
   $item = $element['#value'];
   $field_name = $element['#field_name'];
@@ -272,6 +271,18 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['#theme'] = 'filefield_widget_item';
 
   $field = $form['#field_info'][$field_name];
+
+  // The widget is being presented, so apply the JavaScript.
+  drupal_add_js(drupal_get_path('module', 'filefield') .'/filefield.js');
+  if (!isset($settings_added[$field_name]) && isset($element['#upload_validators']['filefield_validate_extensions'])) {
+    $settings_added[$field_name] = TRUE;
+    $settings = array(
+      'filefield' => array(
+        $field_name => $element['#upload_validators']['filefield_validate_extensions'][0],
+      ),
+    );
+    drupal_add_js($settings, 'setting');
+  }
 
   // Title is not necessary for each individual field.
   if ($field['multiple'] > 0) {
@@ -423,9 +434,6 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     '#type' => 'file',
     '#description' => implode('<br />', $desc),
     '#size' => 22,
-    '#attributes' => array(
-      'accept' => implode(',', array_filter(explode(' ', $field['widget']['file_extensions']))),
-    ),
     '#access' => empty($item['fid']),
   );
 
