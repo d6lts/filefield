@@ -99,7 +99,7 @@ function filefield_widget_settings_save($widget) {
  * A FAPI #pre_render() function to set a cosmetic default value for extensions.
  */
 function _filefield_widget_settings_extensions_value($element) {
-  $element['#value'] = implode(', ', explode(' ', $element['#value']));
+  $element['#value'] = implode(', ', array_filter(explode(' ', str_replace(',', ' ', $element['#value']))));
   return $element;
 }
 
@@ -107,8 +107,9 @@ function _filefield_widget_settings_extensions_value($element) {
  * A FAPI #element_validate callback to strip commas from extension lists.
  */
 function _filefield_widget_settings_extensions_validate($element, &$form_state) {
-  // Remove commas from file extensions.
+  // Remove commas and leading dots from file extensions.
   $value = str_replace(',', ' ', $element['#value']);
+  $value = str_replace(' .', ' ', $value);
   $value = array_filter(explode(' ', $value));
   $value = implode(' ', $value);
   form_set_value($element, $value, $form_state);
