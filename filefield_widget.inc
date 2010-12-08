@@ -186,7 +186,7 @@ function filefield_widget_file_path($field, $account = NULL) {
  *   The FAPI element whose values are being saved.
  */
 function filefield_save_upload($element) {
-  $upload_name = $element['#field_name'] .'_'. $element['#delta'];
+  $upload_name = implode('_', $element['#array_parents']);
   $field = content_fields($element['#field_name'], $element['#type_name']);
 
   if (empty($_FILES['files']['name'][$upload_name])) {
@@ -430,8 +430,9 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
       $desc[] = call_user_func_array($help_func, $arguments);
     }
   }
+
   $element['upload'] = array(
-    '#name' => 'files['. $element['#field_name'] .'_'. $element['#delta'] .']',
+    '#name' => 'files[' . implode('_', $element['#array_parents']) . ']',
     '#type' => 'file',
     '#description' => implode('<br />', $desc),
     '#size' => 22,
