@@ -54,7 +54,7 @@ Drupal.filefield = {
     var fieldName = this.name.replace(/^files\[([a-z0-9_]+)_\d+\]$/, '$1');
     var extensions = '';
     if (Drupal.settings.filefield && Drupal.settings.filefield[fieldName]) {
-      extensions = Drupal.settings.filefield[fieldName].replace(/,\s*/g, '|');
+      extensions = Drupal.settings.filefield[fieldName].replace(/[, ]+/g, '|');
     }
     if (extensions.length > 1 && this.value.length > 0) {
       var extensionPattern = new RegExp('\\.(' + extensions + ')$', 'gi');
