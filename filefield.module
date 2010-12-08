@@ -473,6 +473,59 @@ function filefield_content_generate($node, $field) {
 }
 
 /**
+ * Get a list of possible information stored in a file field "data" column.
+ */
+function filefield_data_info() {
+  static $columns;
+
+  if (!isset($columns)) {
+    $columns = array();
+    foreach (module_implements('filefield_data_info') as $module) {
+      $function = $module . '_filefield_data_info';
+      $data = (array) $function();
+      foreach ($data as $key => $value) {
+        $data[$key] = $value;
+        $data[$key]['module'] = $module;
+      }
+      $columns = array_merge($columns, $data);
+    }
+  }
+
+  return $columns;
+}
+
+/**
+ * Given an array of data options, dispatch the necessary callback function.
+ */
+function filefield_data_value($key, $value) {
+  $info = filefield_data_info();
+  if (isset($info[$key]['callback'])) {
+    $callback = $info[$key]['callback'];
+    $value = $callback($value);
+  }
+  else {
+    $value = check_plain((string) $value);
+  }
+  return $value;
+}
+
+/**
+ * Implementation of hook_filefield_data_info().
+ *
+ * Define a list of values that this module stores in the "data" column of a
+ * file field. The callback function receives the portion of the data column
+ * defined by key and should return a value suitable for printing to the page.
+ */
+function filefield_filefield_data_info() {
+  return array(
+    'description' => array(
+      'title' => t('Description'),
+      'callback' => 'check_plain',
+    ),
+  );
+}
+
+/**
  * Determine the most appropriate icon for the given file's mimetype.
  *
  * @param $file
@@ -484,7 +537,6 @@ function filefield_icon_url($file) {
   module_load_include('inc', 'filefield', 'filefield.theme');
   return _filefield_icon_url($file);
 }
-
 
 /**
  * Implementation of hook_filefield_icon_sets().
