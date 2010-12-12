@@ -134,7 +134,7 @@ function filefield_file_download($filepath) {
   }
 
   // If the file is not found in the database, we're not responsible for it.
-  if (!isset($file)) {
+  if (empty($file)) {
     return;
   }
 
