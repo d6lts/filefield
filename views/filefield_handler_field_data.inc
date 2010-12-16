@@ -30,7 +30,7 @@ class filefield_handler_field_data extends views_handler_field_node {
       '#options' => $options,
       '#required' => TRUE,
       '#default_value' => $this->options['data_key'],
-      '#description' => t('The data column may contain only a few or none any of these data options. The name of the module that provides the data is shown in parathesis.'),
+      '#description' => t('The data column may contain only a few or none any of these data options. The name of the module that provides the data is shown in parentheses.'),
       '#weight' => 4,
     );
   }
