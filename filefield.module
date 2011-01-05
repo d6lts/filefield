@@ -322,7 +322,6 @@ function filefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   }
   $form['#attributes']['enctype'] = 'multipart/form-data';
 
-  module_load_include('inc', 'filefield', 'field_widget');
   module_load_include('inc', $field['widget']['module'], $field['widget']['module'] .'_widget');
 
   $item = array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
