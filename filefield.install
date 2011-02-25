@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file
  * FileField: Defines a CCK file field type.

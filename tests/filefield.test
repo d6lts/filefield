@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 class FileFieldTestCase extends DrupalWebTestCase {
   protected $admin_user;

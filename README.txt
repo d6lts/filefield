@@ -1,4 +1,3 @@
-// $Id$
 
 FileField provides an "File" field type to CCK. It provides many advantages over
 the Drupal core "Upload" module including:

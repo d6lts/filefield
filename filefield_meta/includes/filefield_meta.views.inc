@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file
  * Provide views data for filefield_meta.module.

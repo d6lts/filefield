@@ -1,4 +1,3 @@
-# $Id$
 #
 # Brazilian portuguese translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>

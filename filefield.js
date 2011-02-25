@@ -1,4 +1,3 @@
-// $Id$
 
 /**
  * Auto-attach standard client side file input validation.

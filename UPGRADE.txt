@@ -1,4 +1,3 @@
-// $Id$
 
 Upgrading from previous versions of FileField does not differ from the
 recommended approach for other modules.
