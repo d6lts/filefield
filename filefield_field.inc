@@ -205,11 +205,13 @@ function filefield_field_update($node, $field, &$items, $teaser, $page) {
  */
 function filefield_field_delete_revision($node, $field, &$items, $teaser, $page) {
   foreach ($items as $delta => $item) {
-    // For hook_file_references, remember that this is being deleted.
-    $item['field_name'] = $field['field_name'];
-    $item['delete_vid'] = $node->vid;
-    if (filefield_field_delete_file($item, $field)) {
-      $items[$delta] = NULL;
+    if (isset($item['fid'])) {
+      // For hook_file_references, remember that this is being deleted.
+      $item['field_name'] = $field['field_name'];
+      $item['delete_vid'] = $node->vid;
+      if (filefield_field_delete_file($item, $field)) {
+        $items[$delta] = NULL;
+      }
     }
   }
 }
@@ -219,12 +221,14 @@ function filefield_field_delete_revision($node, $field, &$items, $teaser, $page)
  */
 function filefield_field_delete($node, $field, &$items, $teaser, $page) {
   foreach ($items as $delta => $item) {
-    // For hook_file_references(), remember that this is being deleted.
-    $item['field_name'] = $field['field_name'];
-    // Pass in the nid of the node that is being removed so all references can
-    // be counted in hook_file_references().
-    $item['delete_nid'] = $node->nid;
-    filefield_field_delete_file($item, $field);
+    if (isset($item['fid'])) {
+      // For hook_file_references(), remember that this is being deleted.
+      $item['field_name'] = $field['field_name'];
+      // Pass in the nid of the node that is being removed so all references can
+      // be counted in hook_file_references().
+      $item['delete_nid'] = $node->nid;
+      filefield_field_delete_file($item, $field);
+    }
   }
 
   // Delete all the remaining items present only in older revisions.
