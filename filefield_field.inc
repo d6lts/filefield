@@ -135,7 +135,9 @@ function filefield_field_load($node, $field, &$items, $teaser, $page) {
       $items[$delta] = NULL;
     }
     else {
-      $item['data'] = unserialize($item['data']);
+      if (isset($item['data']) && !empty($item['data'])) {
+        $item['data'] = unserialize($item['data']);
+      }
       // Temporary fix to unserialize data serialized multiple times.
       // See the FileField issue http://drupal.org/node/402860.
       // And the CCK issue http://drupal.org/node/407446.
