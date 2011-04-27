@@ -231,6 +231,11 @@ function _filefield_generic_icon_map($file) {
     case 'application/rtf':
       return 'text-rtf';
 
+    // Google earth files.
+    case 'application/vnd.google-earth.kml+xml':
+    case 'application/vnd.google-earth.kmz':
+      return 'application-google-earth';
+
     // Executable types.
     case 'application/x-macbinary':
     case 'application/x-ms-dos-executable':
