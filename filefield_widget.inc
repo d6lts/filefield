@@ -234,7 +234,7 @@ function filefield_widget_value($element, $edit = FALSE) {
     }
 
     // Load file if the FID has changed so that it can be saved by CCK.
-    $file = field_file_load($item['fid']);
+    $file = isset($item['fid']) ? field_file_load($item['fid']) : NULL;
 
     // If the file entry doesn't exist, don't save anything.
     if (empty($file)) {
