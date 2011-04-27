@@ -1058,9 +1058,9 @@ function filefield_get_file_references($file, $field = NULL) {
 /**
  * Get all FileField files connected to a node ID.
  *
- * @param $nid
+ * @param $node
  *   The node object.
- * @param $field_name
+ * @param $field
  *   Optional. The CCK field array or field name as a string.
  * @return
  *   An array of all files attached to that field (or all fields).
