@@ -239,6 +239,7 @@ function filefield_widget_value($element, $edit = FALSE) {
     // If the file entry doesn't exist, don't save anything.
     if (empty($file)) {
       $item = array();
+      $file = array();
     }
 
     // Checkboxes loose their value when empty.
