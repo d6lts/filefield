@@ -61,7 +61,7 @@ Drupal.filefield = {
         var error = Drupal.t("The selected file %filename cannot be uploaded. Only files with the following extensions are allowed: %extensions.",
           { '%filename' : this.value, '%extensions' : extensions.replace(/\|/g, ', ') }
         );
-        $(this).before('<div class="messages error file-upload-js-error">' + error + '</div>');
+        $(this).parent().before('<div class="messages error file-upload-js-error">' + error + '</div>');
         this.value = '';
         return false;
       }
