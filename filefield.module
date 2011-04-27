@@ -110,11 +110,6 @@ function filefield_theme() {
       'arguments' => array('file' => NULL, 'field' => NULL),
       'file' => 'filefield_formatter.inc',
     ),
-    'filefield_file' => array(
-      'arguments' => array('file' => NULL),
-      'file' => 'filefield_formatter.inc',
-    ),
-
  );
 }
 
