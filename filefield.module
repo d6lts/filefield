@@ -539,13 +539,13 @@ function filefield_filefield_icon_sets() {
 }
 
 /**
- * Access callback for the JavaScript upload and deletion AHAH callbacks.
+ * Access callback for AHAH upload/delete callbacks and node form validation.
  *
  * The content_permissions module provides nice fine-grained permissions for
  * us to check, so we can make sure that the user may actually edit the file.
  */
-function filefield_edit_access($type_name, $field_name) {
-  if (!content_access('edit', content_fields($field_name, $type_name))) {
+function filefield_edit_access($type_name, $field_name, $node = NULL) {
+  if (!content_access('edit', content_fields($field_name, $type_name), NULL, $node)) {
     return FALSE;
   }
   // No content permissions to check, so let's fall back to a more general permission.

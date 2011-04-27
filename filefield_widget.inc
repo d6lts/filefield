@@ -559,7 +559,7 @@ function filefield_node_form_validate($form, &$form_state) {
       }
     }
 
-    if (!$valid && $field['required'] && filefield_edit_access($field['type_name'], $field_name)) {
+    if (!$valid && $field['required'] && filefield_edit_access($field['type_name'], $field_name, $form['#node'])) {
       form_set_error($field_name, t('%title field is required.', array('%title' => $field['widget']['label'])));
     }
     $max_filesize = parse_size($field['widget']['max_filesize_per_node']);
