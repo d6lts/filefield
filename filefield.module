@@ -619,7 +619,8 @@ function filefield_js($type_name, $field_name, $delta) {
       $form_element = $form[$group_name][$field_name][$delta];
     }
   }
-  else {
+
+  if (!isset($form_element)) {
     $form_element = $form[$field_name][$delta];
   }
 
