@@ -48,8 +48,7 @@ class filefield_handler_field_data extends views_handler_field_node {
     // Copied from views_handler_field_node(). We just remove the call to
     // sanitize_value() from the original call, becaue our value has already
     // been cleaned by filefield_data_value().
-    $value = $this->get_value($values);
-    return $this->render_link($value, $values);
+    return $this->render_link($values->{$this->field_alias}, $values);
   }
 
 }

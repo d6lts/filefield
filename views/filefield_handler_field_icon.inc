@@ -13,12 +13,11 @@ class filefield_handler_field_icon extends views_handler_field {
   }
 
   function render($values) {
-    $value = $this->get_value($values);
     $pseudo_file = array(
-      'fid' => $this->get_value($values, 'fid'),
-      'filemime' => $value,
-      'filename' => $this->get_value($values, 'filename'),
-      'filesize' => $this->get_value($values, 'filesize'),
+      'fid' => $values->{$this->aliases['fid']},
+      'filemime' => $values->{$this->field_alias},
+      'filename' => $values->{$this->aliases['filename']},
+      'filesize' => $values->{$this->aliases['filesize']},
     );
     return theme('filefield_icon', $pseudo_file);
   }
