@@ -731,7 +731,7 @@ function filefield_validate_extensions($file, $extensions) {
   $errors = array();
 
   if (!empty($extensions)) {
-    $regex = '/\.('. ereg_replace(' +', '|', preg_quote($extensions)) .')$/i';
+    $regex = '/\.('. @ereg_replace(' +', '|', preg_quote($extensions)) .')$/i';
     $matches = array();
     if (preg_match($regex, $file->filename, $matches)) {
       $extension = $matches[1];
