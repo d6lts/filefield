@@ -612,6 +612,9 @@ function filefield_js($type_name, $field_name, $delta) {
     $form_element = $form[$field_name][$delta];
   }
 
+  // Prevent duplicate wrappers
+  unset($form_element['#prefix'], $form_element['#suffix']);
+
   if (isset($form_element['_weight'])) {
     unset($form_element['_weight']);
   }
