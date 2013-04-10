@@ -1107,7 +1107,7 @@ function filefield_delete_file_references($file, $field = NULL) {
         continue;
       }
 
-      $node = node_load(array('vid' => $vid));
+      $node = node_load($nid, $vid);
       foreach ($fields as $field_name => $field) {
         if (isset($node->$field_name)) {
           foreach ($node->$field_name as $delta => $item) {
