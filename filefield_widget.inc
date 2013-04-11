@@ -479,7 +479,7 @@ function theme_filefield_widget($element) {
 
 function theme_filefield_widget_preview($item) {
   // Remove the current description so that we get the filename as the link.
-  if (isset($item['data']['description'])) {
+  if (isset($item['data']) && is_array($item['data']) && isset($item['data']['description'])) {
     unset($item['data']['description']);
   }
 
