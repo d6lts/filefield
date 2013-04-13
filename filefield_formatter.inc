@@ -119,7 +119,13 @@ function theme_filefield_file($file) {
   // Check for remote filepath, if so return the raw path with protocol prefix
   if (strpos($path, 'http://') === 0 || strpos($path, 'https://' === 0)) {
     return l($file['filename'], $path);
-  } else {
+  }
+  else {
+    // We need to manually URL encode links to files if using the public
+    // downloads method. file_create_url() encodes private downloads.
+    if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC) {
+      $path = drupal_urlencode(str_replace('\\', '/', $path));
+    }
     $url = file_create_url($path);
   }
   $icon = theme('filefield_icon', $file);
