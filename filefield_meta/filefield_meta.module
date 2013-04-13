@@ -103,7 +103,7 @@ function filefield_meta_file_delete($file) {
 function filefield_meta(&$file) {
   $info = getid3_analyze($file->filepath);
 
-  $file->data = isset($file->data) ? $file->data : array();
+  $file->data = !empty($file->data) ? $file->data : array();
   $file->data['width'] = $file->data['height'] = $file->data['duration'] = 0;
   if (isset($info['video']['resolution_x'])) {
     $file->data['width'] = $info['video']['resolution_x'];
