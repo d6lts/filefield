@@ -305,7 +305,7 @@ function filefield_field_sanitize($node, $field, &$items, $teaser, $page) {
     // Load the complete file if a filepath is not available.
     if (!empty($item['fid']) && empty($item['filepath'])) {
       $file = (array) field_file_load($item['fid']);
-      if (isset($file['data'])) {
+      if (isset($file['data']) && isset($items[$delta]['data'])) {
         $file['data'] = array_merge($file['data'], $items[$delta]['data']);
       }
       $items[$delta] = array_merge($file, $items[$delta]);
