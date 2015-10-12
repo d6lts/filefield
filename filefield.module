@@ -191,9 +191,10 @@ function filefield_file_download($filepath) {
           // If revision is the current revision, grant access.
           $revision_access = TRUE;
         }
-        elseif (!$denied && $revision_node = node_load($content['nid'], $revision_id) && _node_revision_access($revision_node, 'view')) {
+        elseif (!$denied) {
+          $revision_node = node_load($content['nid'], $revision_id);
           // You have access to the node as well as that particular revision.
-          $revision_access = TRUE;
+          $revision_access = $revision_node && _node_revision_access($revision_node, 'view');
         }
 
         // If node access denied, skip other revisions; or if we have node

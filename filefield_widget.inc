@@ -381,7 +381,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   );
 
   if ($item['fid'] != 0) {
-    if (function_exists('file_download_access') && $item['status'] && !file_download_access($item['filepath'])) {
+    if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE && function_exists('file_download_access') && $item['status'] && !file_download_access($item['filepath'])) {
       $element['preview'] = array(
         '#type' => 'markup',
         '#value' => t('Access denied'),
@@ -466,7 +466,7 @@ function filefield_widget_validate(&$element, &$form_state) {
     if ($file = field_file_load($element['fid']['#value'])) {
       $file = (object) $file;
       if ($file->status == FILE_STATUS_PERMANENT) {
-        if (field_file_references($file) == 0 || (function_exists('file_download_access') && !file_download_access($file->filepath))) {
+        if (field_file_references($file) == 0 || (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE && function_exists('file_download_access') && !file_download_access($file->filepath))) {
           form_error($element, t('Referencing to the file used in the %field field is not allowed.', array('%field' => $element['#title'])));
         }
       }
