@@ -338,7 +338,8 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     // does a reference check in addition to our basic status check.
     if (isset($edit['fid'])) {
       $removed_file = field_file_load($edit['fid']);
-      if ($removed_file['status'] == 0) {
+      // Users are only allowed to remove their own files.
+      if ($removed_file['status'] == 0  && $GLOBALS['user']->uid == $removed_file['uid']) {
         field_file_delete($removed_file);
       }
     }
