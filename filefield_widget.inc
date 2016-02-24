@@ -377,11 +377,11 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   // Set the FID.
   $element['fid'] = array(
     '#type' => 'hidden',
-    '#value' => $item['fid'],
+    '#value' => isset($item['fid']) ? $item['fid'] : 0,
   );
 
-  if ($item['fid'] != 0) {
-    if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE && function_exists('file_download_access') && $item['status'] && !file_download_access($item['filepath'])) {
+  if (!empty($item['fid'])) {
+    if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE && function_exists('file_download_access') && !empty($item['status']) && !file_download_access($item['filepath'])) {
       $element['preview'] = array(
         '#type' => 'markup',
         '#value' => t('Access denied'),
@@ -396,7 +396,7 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   }
 
   // Grant access to temporary files.
-  if ($item['fid'] && isset($item['status']) && $item['status'] == 0 && variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
+  if (!empty($item['fid']) && isset($item['status']) && $item['status'] == 0 && variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE) {
     $_SESSION['filefield_access'][] = $item['fid'];
   }
 
@@ -409,7 +409,6 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
 
   if (!empty($field['description_field'])) {
     $element['data']['description'] = array(
-      '#type' => 'textfield',
       '#title' => t('Description'),
       '#value' => isset($item['data']['description']) ? $item['data']['description'] : '',
       '#type' => variable_get('filefield_description_type', 'textfield'),
