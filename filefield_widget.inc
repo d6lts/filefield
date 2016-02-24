@@ -345,10 +345,6 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
     $item = array('fid' => 0, 'list' => $field['list_default'], 'data' => array('description' => ''));
   }
 
-  // Set access on the buttons.
-  $element['filefield_upload']['#access'] = empty($item['fid']);
-  $element['filefield_remove']['#access'] = !empty($item['fid']);
-
   // Add progress bar support to the upload if possible.
   $progress_indicator = isset($field['widget']['progress_indicator']) ? $field['widget']['progress_indicator'] : 'bar';
   if ($progress_indicator != 'throbber' && $implementation = filefield_progress_implementation()) {
@@ -450,6 +446,13 @@ function filefield_widget_process($element, $edit, &$form_state, $form) {
   $element['#prefix'] = '<div '. drupal_attributes($element['#attributes']) .'>';
   $element['#suffix'] = '</div>';
 
+  return $element;
+}
+
+function filefield_widget_after_build($element, &$form_state) {
+  // Set access on the buttons.
+  $element['filefield_upload']['#access'] = empty($element['fid']['#value']);
+  $element['filefield_remove']['#access'] = !empty($element['fid']['#value']);
   return $element;
 }
 

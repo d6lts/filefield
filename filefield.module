@@ -56,6 +56,7 @@ function filefield_elements() {
     '#input' => TRUE,
     '#columns' => array('fid', 'list', 'data'),
     '#process' => array('filefield_widget_process'),
+    '#after_build' => array('filefield_widget_after_build'),
     '#value_callback' => 'filefield_widget_value',
     '#element_validate' => array('filefield_widget_validate'),
   );
