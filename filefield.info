@@ -4,3 +4,8 @@ dependencies[] = content
 package = CCK
 core = 6.x
 php = 5.0
+; Information added by Drupal 6 LTS vendors on 2018-04-25
+version = "6.x-3.15"
+core = "6.x"
+project = "filefield"
+datestamp = "1524673078"
