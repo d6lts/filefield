@@ -117,7 +117,7 @@ function theme_filefield_file($file) {
 
   $path = $file['filepath'];
   // Check for remote filepath, if so return the raw path with protocol prefix
-  if (strpos($path, 'http://') === 0 || strpos($path, 'https://' === 0)) {
+  if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
     return l($file['filename'], $path);
   }
   else {
